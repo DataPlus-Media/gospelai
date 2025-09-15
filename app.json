@@ -8,15 +8,21 @@
     "scheme": "gospelai",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "extra": {
+      "API_BASE": "https://your-api.up.railway.app",
+      "MOBILE_APP_SECRET": "the-same-secret"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.steomi.gospelai"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.steomi.gospelai"
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +39,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
