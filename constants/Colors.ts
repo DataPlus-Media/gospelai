@@ -1,26 +1,23 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
-
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
-
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+export default {
+  primary: '#20AB6E',    // keep: vibrant accent green
+  deep_navy: '#0F172A',  // deep navy (twilight)
+  pink: '#E879F9',       // soft pink/violet highlight
+  slate: '#1E293B',      // slate / charcoal blue
+  sky: '#38BDF8',        // bright cyan / sky pop
+  teal: '#0A192F',       // midnight teal-blue
+  yellow: '#FACC15',     // golden yellow (contrast on dark)
+  orange: '#EF580B',     // keep: energetic orange
+  blue: '#93C5FD',       // soft light blue
+  green: '#064E3B',      // dark forest green
+  light: '#FDE68A',      // pale warm yellow for contrast
+  grey: '#242026',       // dark neutral grey
+  greyLight: '#B8B3BA',  // soft muted grey (labels / disabled)
+  input: '#1E1B26',      // darker input background
+  search_input: '#EEE9F0',
+  plum: '#3F1D38',   // plum highlight (selected state)
+  dark: '#0A0A0A',       // almost black
+  selected: '#F7F2F9',
+  clear: '#FFFCFF',
+  header_bg: '#0b0b10',
+  header_txt: '#FFFFFF',
 };

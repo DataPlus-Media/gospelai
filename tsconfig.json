@@ -1,16 +1,37 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "./node_modules/expo/tsconfig.base",
   "compilerOptions": {
+    "jsx": "react-jsx",
     "strict": true,
+    "target": "ES2021",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": [
+      "ES2021",
+      "DOM"
+    ],
+    "noEmit": true,
+    "allowJs": true,
+    "skipLibCheck": true,
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "types": [
+      "react",
+      "react-native",
+      "expo",
+      "expo-router"
+    ],
+    "typeRoots": ["./types", "./node_modules/@types"]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    "**/*.js",
+    "**/*.jsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ]
