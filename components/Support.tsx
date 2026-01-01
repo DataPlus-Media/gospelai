@@ -10,13 +10,13 @@ import {
   TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  View
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Map UI amounts → App Store product IDs
 const PRODUCT_IDS_BY_AMOUNT: Record<number, string> = {
-  5: 'tip_5',   // make sure these IDs exactly match App Store Connect
+  5: 'tip_5', // make sure these IDs exactly match App Store Connect
   10: 'tip_10',
   20: 'tip_20',
 };
@@ -54,51 +54,53 @@ function AmountChips({
 export default function SupportScreen() {
   const [amount, setAmount] = useState(5);
   const [freq, setFreq] = useState<'once' | 'monthly'>('once');
-  //const [coverFees, setCoverFees] = useState(false);
 
-  const {
-    connected,
-    products,
-    fetchProducts,
-    requestPurchase,
-    finishTransaction,
-  } = useIAP({
-    onPurchaseSuccess: async (purchase) => {
-      try {
-        await finishTransaction({ purchase, isConsumable: true });
-        Alert.alert('Thank you!', 'Your gift helps us keep sharing GospelAI.');
-      } catch (err) {
-        console.warn('finishTransaction error', err);
-      }
-    },
-    onPurchaseError: (error) => {
-      console.warn('Purchase failed:', error);
-      Alert.alert(
-        'Purchase error',
-        error?.message || 'Unable to complete the purchase. Please try again.'
-      );
-    },
-  });
+  const { connected, products, fetchProducts, requestPurchase, finishTransaction } =
+    useIAP({
+      onPurchaseSuccess: async (purchase) => {
+        try {
+          await finishTransaction({ purchase, isConsumable: true });
+          Alert.alert('Thank you!', 'Your gift helps us keep sharing GospelAI.');
+        } catch (err) {
+          console.warn('finishTransaction error', err);
+        }
+      },
+      onPurchaseError: (error) => {
+        console.warn('Purchase failed:', error);
+        Alert.alert(
+          'Purchase error',
+          error?.message || 'Unable to complete the purchase. Please try again.'
+        );
+      },
+    });
 
   // Load products once StoreKit is ready
   useEffect(() => {
-    if (connected) {
-      fetchProducts({ skus: ALL_PRODUCT_IDS, type: 'in-app' }).then((res) => {
-        console.log('Loaded IAP products:', res);
-      });
-    }
+    if (!connected) return;
+
+    fetchProducts({ skus: ALL_PRODUCT_IDS, type: 'in-app' }).then((res) => {
+      console.log('Loaded IAP products:', res);
+    });
   }, [connected, fetchProducts]);
 
-  const currentSku = useMemo(
-    () => PRODUCT_IDS_BY_AMOUNT[amount],
-    [amount]
+  const currentSku = useMemo(() => PRODUCT_IDS_BY_AMOUNT[amount], [amount]);
+
+  // ✅ NEW: look up the selected product from the loaded products list
+  const currentProduct = useMemo(
+    () => products.find((p) => p.id === currentSku),
+    [products, currentSku]
+  );
+
+  // ✅ NEW: only allow purchasing when Store is connected AND the selected product exists
+  const canPurchase = useMemo(
+    () => connected && !!currentSku && !!currentProduct,
+    [connected, currentSku, currentProduct]
   );
 
   // Use App Store price if available, otherwise fall back to €amount
   const currentDisplayPrice = useMemo(() => {
-    const p = products.find((prod) => prod.id === currentSku);
-    return p?.displayPrice ?? `€${amount}`;
-  }, [products, currentSku, amount]);
+    return currentProduct?.displayPrice ?? `€${amount}`;
+  }, [currentProduct, amount]);
 
   const onCustomAmount = (v: string) => {
     const val = Number(String(v).replace(',', '.'));
@@ -119,6 +121,16 @@ export default function SupportScreen() {
       Alert.alert(
         'Amount not supported',
         'For now, please choose one of the preset amounts (5, 10, 20).'
+      );
+      return;
+    }
+
+    // ✅ NEW: if products didn't load (common when IAP not approved / not available),
+    // prevent a confusing purchase flow and show a clear message.
+    if (!currentProduct) {
+      Alert.alert(
+        'Purchases unavailable',
+        'Tips are temporarily unavailable. Please try again later.'
       );
       return;
     }
@@ -168,6 +180,13 @@ export default function SupportScreen() {
                 onSubmitEditing={Keyboard.dismiss}
               />
             </View>
+
+            {/* ✅ Optional helper text when products aren't available */}
+            {connected && currentSku && !currentProduct ? (
+              <Text style={[styles.note, { marginTop: 10 }]}>
+                Purchases are currently unavailable.
+              </Text>
+            ) : null}
           </View>
 
           {/* Frequency (visual only) */}
@@ -185,35 +204,18 @@ export default function SupportScreen() {
             </View>
           </View>
 
-          {/* Cover fees (cosmetic only) */}
-          {/*<View style={[styles.blockRow, { marginTop: 6 }]}>
-            <Switch
-              value={coverFees}
-              onValueChange={setCoverFees}
-              thumbColor={coverFees ? '#2e7bef' : '#777'}
-              trackColor={{ true: '#2b3a66', false: '#1e2332' }}
-            />
-            <Text style={styles.coverText}>
-              {coverFees
-                ? 'We’ll treat this as going a little above to help cover platform fees.'
-                : 'Turn this on if you’d like to go a bit above to help with fees.'}
-            </Text>
-          </View>*/}
-
           {/* CTA */}
           <TouchableOpacity
-            style={styles.cta}
+            style={[styles.cta, !canPurchase && { opacity: 0.6 }]} // ✅ NEW: dim when disabled
             onPress={handleDonate}
-            disabled={!connected}
+            disabled={!canPurchase} // ✅ NEW: only enabled when product is loaded
           >
             <Text style={styles.ctaText}>
               Support GospelAI with {currentDisplayPrice}
             </Text>
           </TouchableOpacity>
 
-          <Text style={styles.note}>
-            Built with ❤️ · KJV Scripture references only ·
-          </Text>
+          <Text style={styles.note}>Built with ❤️ · KJV Scripture references only ·</Text>
         </View>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -297,3 +299,4 @@ const styles = StyleSheet.create({
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   note: { textAlign: 'center', marginTop: 22, color: '#8891a6' },
 });
+
