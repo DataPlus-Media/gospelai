@@ -19,7 +19,7 @@ app/                    # Expo Router file-based routes
   (auth)/               # Auth-protected routes
     (drawer)/           # Drawer navigation
     (modal)/            # Modal screens
-  index.tsx             # Entry redirect
+  index.tsx             # Landing page for non-signed-in users (feature showcase + sign-in/register)
   login.tsx             # Login screen
 assets/
   bible/kjv.sqlite      # KJV Bible SQLite database
@@ -55,8 +55,12 @@ npm run web   # Start Expo web dev server on port 5000
 - **Notes**: Local SQLite notes table (DB version 2) with `addNote`/`getNotes`/`deleteNote` helpers. Notes can be saved from AI chat messages (long-press) or Bible verses (long-press). Accessible via Notes screen in the drawer. Sources tracked as "chat" or "bible" with optional reference text.
 - **Copy to clipboard**: Long-press on AI chat bubbles or Bible verses to copy text via `expo-clipboard`.
 - **Full Bible Search**: Search icon in Bible screen header opens a full-screen search modal. Queries the KJV SQLite DB across all 31,000+ verses with 300ms debounce. Tapping a result navigates directly to that verse and highlights it.
-- **Verse of the Day**: `utils/verseOfDay.ts` (52 curated verses, cycles daily). `components/VerseOfDay.tsx` displays a gold-accented card on the home/chat screen, loads verse text from KJV SQLite. Share button lets users share as text or save a styled card image to camera roll (via `react-native-view-shot` + `expo-media-library`) to use as a photo widget.
+- **Verse of the Day**: `utils/verseOfDay.ts` (52 curated verses, cycles daily). `components/VerseOfDay.tsx` displays a gold-accented card on the home/chat screen. Loads verse text from KJV SQLite on native, falls back to hardcoded KJV texts on web. Share button uses `Share.share()` for text sharing.
 - **Shared Bible DB util**: `utils/bibleDb.ts` exports `openBibleDb()` used by both `Bible.tsx` and `VerseOfDay.tsx`.
+- **Landing page**: `app/index.tsx` — marketing-style page for non-signed-in users with feature cards, scripture quote, and sign-in/register/OAuth buttons. "Continue without account" gives free access. Routing in `_layout.tsx` redirects signed-in users to chat, keeps signed-out users on landing page.
+- **Support screen**: `components/Support.tsx` (native IAP) + `components/Support.web.tsx` (web fallback). Platform-specific file resolution prevents expo-iap crash on web.
+- **Header home button**: "GospelAI" header in chat is tappable — navigates signed-out users to landing page, signed-in users to new chat.
+- **Drawer auth footer**: Drawer footer conditionally shows user profile (signed in) or "Sign In" / "Create Account" buttons (signed out).
 
 ## Deployment
 

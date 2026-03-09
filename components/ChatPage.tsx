@@ -9,6 +9,7 @@ import { defaultStyles } from '@/constants/Styles';
 import { addChat, addMessage, getMessages } from '@/utils/Database';
 import { Message, Role } from '@/utils/Interfaces';
 
+import { useAuth } from '@clerk/clerk-expo';
 import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -181,11 +182,22 @@ const ChatPage = () => {
     router.push('/(auth)/(drawer)/(chat)/new');
   };
 
+  const { isSignedIn } = useAuth();
+
   return (
     <View style={defaultStyles.pageContainer}>
       <Stack.Screen
         options={{
-          headerTitle: () => <HeaderDropDown title="GospelAI" />,
+          headerTitle: () => (
+            <HeaderDropDown
+              title="GospelAI"
+              onPress={() =>
+                isSignedIn
+                  ? router.replace('/(auth)/(drawer)/(chat)/new')
+                  : router.replace('/')
+              }
+            />
+          ),
           headerStyle: { backgroundColor: Colors.header_bg },
           headerTintColor: Colors.header_txt,
           headerShadowVisible: false,
