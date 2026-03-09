@@ -71,8 +71,8 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
             key={index}
             style={styles.card}
             onPress={() => onSelectCard(`${item.title} ${item.text}`)}>
-            <Text style={{ fontSize: 16, fontWeight: '500' }}>{item.title}</Text>
-            <Text style={{ color: Colors.greyLight, fontSize: 14 }}>{item.text}</Text>
+            <Text style={{ fontSize: 16, fontWeight: '500' }} numberOfLines={1}>{item.title}</Text>
+            <Text style={{ color: Colors.greyLight, fontSize: 14 }} numberOfLines={2}>{item.text}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -90,6 +90,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.search_input,
     padding: 14,
     borderRadius: 10,
+    width: 200,
   },
   skeletonCard: {
     width: 200,
