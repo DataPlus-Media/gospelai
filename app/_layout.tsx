@@ -9,7 +9,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// Cache the Clerk JWT
 const tokenCache = {
   async getToken(key: string) {
     try {
@@ -27,7 +26,6 @@ const tokenCache = {
   },
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
 const InitialLayout = () => {
@@ -35,7 +33,7 @@ const InitialLayout = () => {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
 
-  const { isLoaded } = useAuth(); // ✅ we do NOT require isSignedIn anymore
+  const { isLoaded, isSignedIn } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
@@ -50,18 +48,23 @@ const InitialLayout = () => {
   useEffect(() => {
     if (!isLoaded) return;
 
-    const first = segments[0]; // top-level route segment
-    const inAppGroup = first === '(auth)'; // your drawer app lives here
+    const first = segments[0];
+    const inAppGroup = first === '(auth)';
     const inLogin = first === 'login';
+    const onIndex = segments.length === 0 || first === undefined || first === 'index';
 
-    // ✅ Always let users reach the app (signed in OR not).
-    // If they land on / (index) or any non-app route (except /login), send them into the app.
-    if (!inAppGroup && !inLogin) {
-      router.replace('/(auth)/(drawer)/(chat)/new');
+    if (isSignedIn) {
+      if (!inAppGroup) {
+        router.replace('/(auth)/(drawer)/(chat)/new');
+      }
+    } else {
+      if (inAppGroup) {
+      } else if (!onIndex && !inLogin) {
+        router.replace('/');
+      }
     }
-  }, [isLoaded, segments]);
+  }, [isLoaded, isSignedIn, segments]);
 
-  // Keep Slot while things load to avoid blank screen
   if (!loaded || !isLoaded) {
     return <Slot />;
   }
