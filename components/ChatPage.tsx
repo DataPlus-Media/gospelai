@@ -193,33 +193,45 @@ const ChatPage = () => {
       />
 
       <View style={styles.page}>
-        {messages.length === 0 && (
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('@/assets/images/logo-white.png')}
-              style={styles.image}
-            />
-          </View>
+        {messages.length === 0 ? (
+          <FlashList<{ key: string }>
+            data={[{ key: 'empty-home' }]}
+            renderItem={() => (
+              <View>
+                <View style={styles.logoContainer}>
+                  <Image
+                    source={require('@/assets/images/logo-white.png')}
+                    style={styles.image}
+                  />
+                </View>
+                <VerseOfDay />
+              </View>
+            )}
+            keyExtractor={(item) => item.key}
+            {...({ estimatedItemSize: 300 } as any)}
+            contentContainerStyle={{ paddingTop: 30, paddingBottom: 260 }}
+            keyboardDismissMode="on-drag"
+          />
+        ) : (
+          <FlashList<Message>
+            data={messages}
+            renderItem={({ item, index }: ListRenderItemInfo<Message>) => (
+              <ChatMessage
+                {...item}
+                loading={
+                  pending &&
+                  index === messages.length - 1 &&
+                  item.role === Role.Bot &&
+                  item.content === ''
+                }
+              />
+            )}
+            keyExtractor={(_: Message, i: number) => String(i)}
+            {...({ estimatedItemSize: 400 } as any)}
+            contentContainerStyle={{ paddingTop: 30, paddingBottom: 200 }}
+            keyboardDismissMode="on-drag"
+          />
         )}
-
-        <FlashList<Message>
-          data={messages}
-          renderItem={({ item, index }: ListRenderItemInfo<Message>) => (
-            <ChatMessage
-              {...item}
-              loading={
-                pending &&
-                index === messages.length - 1 &&
-                item.role === Role.Bot &&
-                item.content === ''
-              }
-            />
-          )}
-          keyExtractor={(_: Message, i: number) => String(i)}
-          {...({ estimatedItemSize: 400 } as any)} // 👈 bypass type error
-          contentContainerStyle={{ paddingTop: 30, paddingBottom: 200 }}
-          keyboardDismissMode="on-drag"
-        />
       </View>
 
       <KeyboardAvoidingView
@@ -228,14 +240,11 @@ const ChatPage = () => {
         style={styles.kav}
       >
         {messages.length === 0 && (
-          <>
-            <VerseOfDay />
-            <MessageIdeas
-              onSelectCard={getCompletion}
-              ideas={ideas}
-              loading={ideasLoading}
-            />
-          </>
+          <MessageIdeas
+            onSelectCard={getCompletion}
+            ideas={ideas}
+            loading={ideasLoading}
+          />
         )}
         <MessageInput onShouldSend={getCompletion} onNewChat={handleNewChat} />
       </KeyboardAvoidingView>

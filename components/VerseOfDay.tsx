@@ -1,9 +1,8 @@
-import Colors from '@/constants/Colors';
 import { openBibleDb } from '@/utils/bibleDb';
-import { getTodaysVerse } from '@/utils/verseOfDay';
+import { getTodaysVerse, VotdEntry } from '@/utils/verseOfDay';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -15,11 +14,30 @@ import {
   View,
 } from 'react-native';
 
+const FALLBACK_ENTRY: VotdEntry = {
+  ref: 'John 3:16',
+  book: 'John',
+  bookId: 43,
+  chapter: 3,
+  verse: 16,
+};
+
+function safeGetTodaysVerse(): VotdEntry {
+  try {
+    return getTodaysVerse();
+  } catch {
+    return FALLBACK_ENTRY;
+  }
+}
+
 export default function VerseOfDay() {
   const router = useRouter();
-  const entry = getTodaysVerse();
+  const entryRef = useRef<VotdEntry>(safeGetTodaysVerse());
+  const entry = entryRef.current;
+
   const [text, setText] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,15 +56,23 @@ export default function VerseOfDay() {
             [entry.bookId, entry.chapter, entry.verse]
           );
         }
-        if (!cancelled && row?.text) setText(row.text);
+        if (!cancelled) {
+          if (row?.text) {
+            setText(row.text);
+          } else {
+            setFailed(true);
+          }
+        }
       } catch {
-        if (!cancelled) setText('');
+        if (!cancelled) setFailed(true);
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
     return () => { cancelled = true; };
   }, []);
+
+  if (failed) return null;
 
   const doShare = async () => {
     try {
@@ -67,9 +93,7 @@ export default function VerseOfDay() {
           cancelButtonIndex: 0,
           userInterfaceStyle: 'dark',
         },
-        (index) => {
-          if (index === 1) doShare();
-        }
+        (index) => { if (index === 1) doShare(); }
       );
     } else {
       doShare();
@@ -77,10 +101,12 @@ export default function VerseOfDay() {
   };
 
   const navigateToVerse = () => {
-    router.navigate({
-      pathname: '/(auth)/(drawer)/bible',
-      params: { ref: entry.ref },
-    });
+    try {
+      router.navigate({
+        pathname: '/(auth)/(drawer)/bible',
+        params: { ref: entry.ref },
+      });
+    } catch {}
   };
 
   return (
