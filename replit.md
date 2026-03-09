@@ -25,7 +25,7 @@ assets/
   bible/kjv.sqlite      # KJV Bible SQLite database
   fonts/                # Custom fonts
   images/               # App images
-components/             # Reusable UI components
+components/             # Reusable UI components (MessageIdeas fetches AI suggestions from backend)
 constants/              # Colors, styles, Bible books
 hooks/                  # Custom React hooks
 utils/                  # Utilities (Database, Storage, etc.)

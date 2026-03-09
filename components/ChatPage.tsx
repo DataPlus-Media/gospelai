@@ -14,7 +14,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 
 import Colors from '@/constants/Colors';
 import Constants from 'expo-constants';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 
 // ---- call your own backend (no client key) ----
@@ -26,6 +26,27 @@ export const API_BASE = RAW_API_BASE.replace(/\/+$/, ''); // trim trailing slash
 
 const APP_SECRET = 'your-mobile-app-secret';
 type ChatTurn = { role: 'user' | 'assistant'; content: string };
+type Idea = { title: string; text: string };
+
+const FALLBACK_IDEAS: Idea[] = [
+  { title: 'Like a mustard seed', text: "why is this significant" },
+  { title: 'Suggest godly activities', text: 'for the weekend with friends' },
+  { title: 'Provide three bible verses', text: "to say before a job interview" },
+];
+
+async function fetchIdeas(): Promise<Idea[]> {
+  const res = await fetch(`${API_BASE}/api/ideas`, {
+    headers: { 'x-app-secret': APP_SECRET },
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const ideas: Idea[] = (data.ideas ?? []).map((i: any) => ({
+    title: String(i.title ?? ''),
+    text: String(i.text ?? ''),
+  }));
+  if (ideas.length === 0) throw new Error('Empty ideas');
+  return ideas;
+}
 
 async function askServerChat(message: string, history: ChatTurn[]) {
   const res = await fetch(`${API_BASE}/api/chat`, {
@@ -45,6 +66,20 @@ const ChatPage = () => {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [pending, setPending] = useState(false);
+  const [ideas, setIdeas] = useState<Idea[]>([]);
+  const [ideasLoading, setIdeasLoading] = useState(false);
+
+  const loadIdeas = useCallback(async () => {
+    setIdeasLoading(true);
+    try {
+      const fetched = await fetchIdeas();
+      setIdeas(fetched);
+    } catch {
+      setIdeas(FALLBACK_IDEAS);
+    } finally {
+      setIdeasLoading(false);
+    }
+  }, []);
 
   // keep a local chatId that is kept in sync with the route param
   const [chatId, _setChatId] = useState<string | undefined>(id);
@@ -62,11 +97,11 @@ const ChatPage = () => {
       setChatId(id);
       getMessages(db, parseInt(id, 10)).then(setMessages);
     } else {
-      // /new route – no existing chat
       setChatId(undefined);
       setMessages([]);
+      loadIdeas();
     }
-  }, [id, db]);
+  }, [id, db, loadIdeas]);
 
   const getCompletion = async (text: string) => {
     const trimmed = text.trim();
@@ -141,7 +176,7 @@ const ChatPage = () => {
   };
 
   const handleNewChat = () => {
-    // Navigate to the "new chat" route under the drawer
+    loadIdeas();
     router.push('/(auth)/(drawer)/(chat)/new');
   };
 
@@ -191,7 +226,13 @@ const ChatPage = () => {
         keyboardVerticalOffset={70}
         style={styles.kav}
       >
-        {messages.length === 0 && <MessageIdeas onSelectCard={getCompletion} />}
+        {messages.length === 0 && (
+          <MessageIdeas
+            onSelectCard={getCompletion}
+            ideas={ideas}
+            loading={ideasLoading}
+          />
+        )}
         <MessageInput onShouldSend={getCompletion} onNewChat={handleNewChat} />
       </KeyboardAvoidingView>
     </View>
