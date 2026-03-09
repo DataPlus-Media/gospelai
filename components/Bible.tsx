@@ -1,9 +1,8 @@
-import { Asset } from 'expo-asset';
 import * as Clipboard from 'expo-clipboard';
-import * as FileSystem from 'expo-file-system/legacy';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useNavigation } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
 import { useSQLiteContext } from 'expo-sqlite';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -20,34 +19,15 @@ import {
   View,
 } from 'react-native';
 
+import { Ionicons } from '@expo/vector-icons';
 import HeaderDropDown from '@/components/HeaderDropDown';
-import { BOOKS, BOOK_NAME_TO_ID } from '@/constants/bibleBooks';
+import { BOOKS, BOOK_ID_TO_NAME, BOOK_NAME_TO_ID } from '@/constants/bibleBooks';
 import Colors from '@/constants/Colors';
 import { addNote } from '@/utils/Database';
+import { openBibleDb } from '@/utils/bibleDb';
 
 type VerseRow = { verse: number; text: string };
-
-// Ensure the bundled DB exists, then open it.
-async function openBibleDb(): Promise<SQLite.SQLiteDatabase> {
-  const sqliteDir = `${FileSystem.documentDirectory ?? ''}SQLite`;
-  const dbPath = `${sqliteDir}/kjv.sqlite`;
-
-  const dirInfo = await FileSystem.getInfoAsync(sqliteDir);
-  if (!dirInfo.exists) {
-    await FileSystem.makeDirectoryAsync(sqliteDir, { intermediates: true });
-  }
-
-  const dbInfo = await FileSystem.getInfoAsync(dbPath);
-  if (!dbInfo.exists) {
-    const asset = Asset.fromModule(require('../assets/bible/kjv.sqlite'));
-    await asset.downloadAsync();
-    const from = asset.localUri ?? asset.uri;
-    if (!from) throw new Error('Unable to locate bundled kjv.sqlite asset');
-    await FileSystem.copyAsync({ from, to: dbPath });
-  }
-
-  return SQLite.openDatabaseAsync('kjv.sqlite');
-}
+type SearchResult = { book_id: number; chapter: number; verse: number; text: string };
 
 // ---- tiny helper: parse "John 3:16" / "1 John 4:7-8" to {book, chapter, verse} (first verse if range)
 function parseSimpleRef(refRaw: string | undefined): {
@@ -75,6 +55,71 @@ function parseSimpleRef(refRaw: string | undefined): {
 export default function BibleScreen() {
   const { ref: refParam } = useLocalSearchParams<{ ref?: string }>();
   const appDb = useSQLiteContext();
+  const navigation = useNavigation();
+
+  // ===== Full Bible Search =====
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchOpen(true);
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const runSearch = async (q: string) => {
+    const term = q.trim();
+    if (!term || !db) {
+      setSearchResults([]);
+      return;
+    }
+    setSearchLoading(true);
+    try {
+      let results: SearchResult[] = [];
+      try {
+        results = await db.getAllAsync<SearchResult>(
+          'SELECT book_id, chapter, verse, text FROM verse WHERE text LIKE ? LIMIT 100',
+          [`%${term}%`]
+        );
+      } catch {
+        results = await db.getAllAsync<SearchResult>(
+          'SELECT book_id, chapter, verse, text FROM verses WHERE text LIKE ? LIMIT 100',
+          [`%${term}%`]
+        );
+      }
+      setSearchResults(results);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const onSearchChange = (text: string) => {
+    setSearchQuery(text);
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => runSearch(text), 300);
+  };
+
+  const onSelectSearchResult = (result: SearchResult) => {
+    const name = BOOK_ID_TO_NAME[result.book_id];
+    if (name) {
+      setBookName(name);
+      setChapter(result.chapter);
+      setChapterInput(String(result.chapter));
+      setHighlightVerse(result.verse);
+    }
+    closeSearch();
+  };
 
   const handleCopyVerse = async (verseNum: number, text: string) => {
     const formatted = `${bookName} ${chapter}:${verseNum} — "${text}"`;
@@ -254,6 +299,11 @@ export default function BibleScreen() {
           headerShadowVisible: false,
           headerStyle: { backgroundColor: Colors.header_bg },
           headerTintColor: Colors.header_txt,
+          headerRight: () => (
+            <TouchableOpacity onPress={openSearch} style={{ marginRight: 16 }}>
+              <Ionicons name="search-outline" size={22} color="#f3f4f6" />
+            </TouchableOpacity>
+          ),
         }}
       />
 
@@ -362,6 +412,79 @@ export default function BibleScreen() {
           </Text>
         </View>
       )}
+
+      {/* ===== Full Bible Search modal ===== */}
+      <Modal
+        visible={searchOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={closeSearch}
+      >
+        <View style={styles.drawerRoot}>
+          <View style={styles.drawerHeader}>
+            <Text style={styles.drawerTitle}>Search the Bible</Text>
+            <TouchableOpacity onPress={closeSearch}>
+              <Text style={styles.drawerClose}>Done</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.drawerSearch}>
+            <TextInput
+              placeholder="Search all verses (e.g. love one another)…"
+              value={searchQuery}
+              onChangeText={onSearchChange}
+              autoFocus
+              style={styles.drawerSearchInput}
+              placeholderTextColor="#555a6a"
+              clearButtonMode="while-editing"
+              returnKeyType="search"
+            />
+          </View>
+
+          {searchLoading ? (
+            <View style={styles.searchCenter}>
+              <ActivityIndicator size="small" color={Colors.primary} />
+              <Text style={styles.searchDim}>Searching…</Text>
+            </View>
+          ) : searchQuery.trim().length > 0 && searchResults.length === 0 ? (
+            <View style={styles.searchCenter}>
+              <Ionicons name="search-outline" size={36} color="#3a3d4a" />
+              <Text style={styles.searchDim}>No results found</Text>
+            </View>
+          ) : searchQuery.trim().length === 0 ? (
+            <View style={styles.searchCenter}>
+              <Ionicons name="book-outline" size={36} color="#3a3d4a" />
+              <Text style={styles.searchDim}>Type a word or phrase to search all 31,000+ KJV verses</Text>
+            </View>
+          ) : (
+            <FlatList
+              data={searchResults}
+              keyExtractor={(item, idx) => `${item.book_id}-${item.chapter}-${item.verse}-${idx}`}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 30 }}
+              renderItem={({ item }) => {
+                const bookName = BOOK_ID_TO_NAME[item.book_id] || `Book ${item.book_id}`;
+                const ref = `${bookName} ${item.chapter}:${item.verse}`;
+                return (
+                  <Pressable onPress={() => onSelectSearchResult(item)} style={styles.searchRow}>
+                    <View style={styles.searchRefPill}>
+                      <Text style={styles.searchRefText}>{ref}</Text>
+                    </View>
+                    <Text style={styles.searchVerseText} numberOfLines={3}>{item.text}</Text>
+                  </Pressable>
+                );
+              }}
+              ListHeaderComponent={
+                <Text style={styles.searchCount}>
+                  {searchResults.length === 100
+                    ? 'Top 100 results'
+                    : `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}`}
+                </Text>
+              }
+            />
+          )}
+        </View>
+      </Modal>
 
       {/* ===== Searchable Books & Chapters modal ===== */}
       <Modal
@@ -626,5 +749,52 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#f3f4f6',
+  },
+
+  searchCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 12,
+  },
+  searchDim: {
+    color: '#555a6a',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  searchCount: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    fontSize: 12,
+    color: '#8a90a2',
+    fontWeight: '600',
+  },
+  searchRow: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#191e2b',
+    gap: 6,
+  },
+  searchRefPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(59,130,246,0.12)',
+    borderWidth: 1,
+    borderColor: '#23314f',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  searchRefText: {
+    color: '#3b82f6',
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  searchVerseText: {
+    color: '#d4d4d8',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

@@ -59,9 +59,7 @@
           }
         }
       ]
-      /* If you plan to run a local Dev Client (not Expo Go), add:
-      ,"expo-dev-client"
-      */
+    
     ],
 
     "experiments": { "typedRoutes": true }

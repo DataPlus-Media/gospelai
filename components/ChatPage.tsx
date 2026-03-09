@@ -3,11 +3,13 @@ import ChatMessage from '@/components/ChatMessage';
 import HeaderDropDown from '@/components/HeaderDropDown';
 import MessageIdeas from '@/components/MessageIdeas';
 import MessageInput from '@/components/MessageInput';
+import VerseOfDay from '@/components/VerseOfDay';
 
 import { defaultStyles } from '@/constants/Styles';
 import { addChat, addMessage, getMessages } from '@/utils/Database';
 import { Message, Role } from '@/utils/Interfaces';
 
+import { useAuth } from '@clerk/clerk-expo';
 import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -180,11 +182,22 @@ const ChatPage = () => {
     router.push('/(auth)/(drawer)/(chat)/new');
   };
 
+  const { isSignedIn } = useAuth();
+
   return (
     <View style={defaultStyles.pageContainer}>
       <Stack.Screen
         options={{
-          headerTitle: () => <HeaderDropDown title="GospelAI" />,
+          headerTitle: () => (
+            <HeaderDropDown
+              title="GospelAI"
+              onPress={() =>
+                isSignedIn
+                  ? router.replace('/(auth)/(drawer)/(chat)/new')
+                  : router.replace('/')
+              }
+            />
+          ),
           headerStyle: { backgroundColor: Colors.header_bg },
           headerTintColor: Colors.header_txt,
           headerShadowVisible: false,
@@ -192,33 +205,45 @@ const ChatPage = () => {
       />
 
       <View style={styles.page}>
-        {messages.length === 0 && (
-          <View style={styles.logoContainer}>
-            <Image
-              source={require('@/assets/images/logo-white.png')}
-              style={styles.image}
-            />
-          </View>
+        {messages.length === 0 ? (
+          <FlashList<{ key: string }>
+            data={[{ key: 'empty-home' }]}
+            renderItem={() => (
+              <View>
+                <View style={styles.logoContainer}>
+                  <Image
+                    source={require('@/assets/images/logo-white.png')}
+                    style={styles.image}
+                  />
+                </View>
+                <VerseOfDay />
+              </View>
+            )}
+            keyExtractor={(item) => item.key}
+            {...({ estimatedItemSize: 300 } as any)}
+            contentContainerStyle={{ paddingTop: 30, paddingBottom: 260 }}
+            keyboardDismissMode="on-drag"
+          />
+        ) : (
+          <FlashList<Message>
+            data={messages}
+            renderItem={({ item, index }: ListRenderItemInfo<Message>) => (
+              <ChatMessage
+                {...item}
+                loading={
+                  pending &&
+                  index === messages.length - 1 &&
+                  item.role === Role.Bot &&
+                  item.content === ''
+                }
+              />
+            )}
+            keyExtractor={(_: Message, i: number) => String(i)}
+            {...({ estimatedItemSize: 400 } as any)}
+            contentContainerStyle={{ paddingTop: 30, paddingBottom: 200 }}
+            keyboardDismissMode="on-drag"
+          />
         )}
-
-        <FlashList<Message>
-          data={messages}
-          renderItem={({ item, index }: ListRenderItemInfo<Message>) => (
-            <ChatMessage
-              {...item}
-              loading={
-                pending &&
-                index === messages.length - 1 &&
-                item.role === Role.Bot &&
-                item.content === ''
-              }
-            />
-          )}
-          keyExtractor={(_: Message, i: number) => String(i)}
-          {...({ estimatedItemSize: 400 } as any)} // 👈 bypass type error
-          contentContainerStyle={{ paddingTop: 30, paddingBottom: 200 }}
-          keyboardDismissMode="on-drag"
-        />
       </View>
 
       <KeyboardAvoidingView

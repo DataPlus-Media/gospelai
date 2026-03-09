@@ -81,7 +81,6 @@ const MessageInput = ({ onShouldSend, onNewChat }: Props) => {
         </Animated.View>
 
         <TextInput
-          autoFocus
           ref={inputRef}
           placeholder="Message GospelAI"
           style={styles.messageInput}
