@@ -1,11 +1,14 @@
 import Colors from '@/constants/Colors';
+import { addNote } from '@/utils/Database';
 import { Message, Role } from '@/utils/Interfaces';
 import { useUser } from '@clerk/clerk-expo';
-import * as ContextMenu from '@zeego/context-menu';
+import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
+import { useSQLiteContext } from 'expo-sqlite';
 import React from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   StyleSheet,
@@ -13,9 +16,6 @@ import {
   View,
 } from 'react-native';
 
-/**
- * Link Bible verses inside text.
- */
 function VerseLinkedText({ text }: { text: string }) {
   const router = useRouter();
   const parts: React.ReactNode[] = [];
@@ -76,8 +76,23 @@ const ChatMessage = ({
 }: Message & { loading?: boolean }) => {
   const router = useRouter();
   const { user } = useUser();
+  const db = useSQLiteContext();
   const avatarUrl = user?.imageUrl || 'https://galaxies.dev/img/meerkat_2.jpg';
   const isBot = role === Role.Bot;
+
+  const handleCopy = async (text: string) => {
+    await Clipboard.setStringAsync(text);
+    Alert.alert('Copied', 'Text copied to clipboard.');
+  };
+
+  const handleSaveNote = async (text: string) => {
+    try {
+      await addNote(db, text, 'chat', 'AI Response');
+      Alert.alert('Saved', 'Note saved successfully.');
+    } catch {
+      Alert.alert('Error', 'Failed to save note.');
+    }
+  };
 
   const goToImageModal = () => {
     if (!imageUrl) return;
@@ -87,7 +102,6 @@ const ChatMessage = ({
     router.push(url as `/(${string})`);
   };
 
-  // AI: split into paragraphs by blank lines. User = single bubble.
   const paragraphs =
     isBot
       ? content
@@ -96,7 +110,6 @@ const ChatMessage = ({
           .filter(Boolean)
       : [content];
 
-  // Loading row
   if (loading) {
     return (
       <View style={styles.loadingRow}>
@@ -113,7 +126,6 @@ const ChatMessage = ({
     );
   }
 
-  // Pure image message
   if (imageUrl && content === '') {
     return (
       <View style={isBot ? styles.rowBot : styles.rowUser}>
@@ -125,24 +137,18 @@ const ChatMessage = ({
             />
           </View>
         )}
-        <ContextMenu.Root>
-          <ContextMenu.Trigger>
-            <Pressable onPress={goToImageModal}>
-              <Image source={{ uri: imageUrl }} style={styles.previewImage} />
-            </Pressable>
-          </ContextMenu.Trigger>
-        </ContextMenu.Root>
+        <Pressable onPress={goToImageModal}>
+          <Image source={{ uri: imageUrl }} style={styles.previewImage} />
+        </Pressable>
         {!isBot && <Image source={{ uri: avatarUrl }} style={styles.avatar} />}
       </View>
     );
   }
 
-  // Normal text messages
   return (
     <>
       {paragraphs.map((p, idx) => {
         if (isBot) {
-          // BOT: avatar on left, bubble to the right
           return (
             <View key={idx} style={styles.rowBot}>
               <View style={styles.botAvatarWrap}>
@@ -151,19 +157,30 @@ const ChatMessage = ({
                   style={styles.botLogo}
                 />
               </View>
-              <View style={[styles.bubble, styles.botBubble]}>
+              <Pressable
+                style={[styles.bubble, styles.botBubble]}
+                onLongPress={() => {
+                  Alert.alert('Message Options', undefined, [
+                    { text: 'Copy Text', onPress: () => handleCopy(p) },
+                    { text: 'Save to Notes', onPress: () => handleSaveNote(p) },
+                    { text: 'Cancel', style: 'cancel' },
+                  ]);
+                }}
+              >
                 <VerseLinkedText text={p} />
-              </View>
+              </Pressable>
             </View>
           );
         }
 
-        // USER: bubble on right, avatar at far right
         return (
           <View key={idx} style={styles.rowUser}>
-            <View style={[styles.bubble, styles.userBubble]}>
+            <Pressable
+              style={[styles.bubble, styles.userBubble]}
+              onLongPress={() => handleCopy(p)}
+            >
               <Text style={styles.text}>{p}</Text>
-            </View>
+            </Pressable>
             <Image source={{ uri: avatarUrl }} style={styles.avatar} />
           </View>
         );
@@ -172,7 +189,6 @@ const ChatMessage = ({
   );
 };
 
-/* ---------- Styles ---------- */
 const styles = StyleSheet.create({
   rowBot: {
     flexDirection: 'row',
