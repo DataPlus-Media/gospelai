@@ -54,6 +54,9 @@ npm run web   # Start Expo web dev server on port 5000
 
 - **Notes**: Local SQLite notes table (DB version 2) with `addNote`/`getNotes`/`deleteNote` helpers. Notes can be saved from AI chat messages (long-press) or Bible verses (long-press). Accessible via Notes screen in the drawer. Sources tracked as "chat" or "bible" with optional reference text.
 - **Copy to clipboard**: Long-press on AI chat bubbles or Bible verses to copy text via `expo-clipboard`.
+- **Full Bible Search**: Search icon in Bible screen header opens a full-screen search modal. Queries the KJV SQLite DB across all 31,000+ verses with 300ms debounce. Tapping a result navigates directly to that verse and highlights it.
+- **Verse of the Day**: `utils/verseOfDay.ts` (52 curated verses, cycles daily). `components/VerseOfDay.tsx` displays a gold-accented card on the home/chat screen, loads verse text from KJV SQLite. Share button lets users share as text or save a styled card image to camera roll (via `react-native-view-shot` + `expo-media-library`) to use as a photo widget.
+- **Shared Bible DB util**: `utils/bibleDb.ts` exports `openBibleDb()` used by both `Bible.tsx` and `VerseOfDay.tsx`.
 
 ## Deployment
 

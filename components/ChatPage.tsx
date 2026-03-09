@@ -3,6 +3,7 @@ import ChatMessage from '@/components/ChatMessage';
 import HeaderDropDown from '@/components/HeaderDropDown';
 import MessageIdeas from '@/components/MessageIdeas';
 import MessageInput from '@/components/MessageInput';
+import VerseOfDay from '@/components/VerseOfDay';
 
 import { defaultStyles } from '@/constants/Styles';
 import { addChat, addMessage, getMessages } from '@/utils/Database';
@@ -227,11 +228,14 @@ const ChatPage = () => {
         style={styles.kav}
       >
         {messages.length === 0 && (
-          <MessageIdeas
-            onSelectCard={getCompletion}
-            ideas={ideas}
-            loading={ideasLoading}
-          />
+          <>
+            <VerseOfDay />
+            <MessageIdeas
+              onSelectCard={getCompletion}
+              ideas={ideas}
+              loading={ideasLoading}
+            />
+          </>
         )}
         <MessageInput onShouldSend={getCompletion} onNewChat={handleNewChat} />
       </KeyboardAvoidingView>
