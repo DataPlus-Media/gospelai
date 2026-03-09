@@ -1,10 +1,13 @@
 import { Asset } from 'expo-asset';
+import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
+import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Keyboard,
   Modal,
@@ -20,6 +23,7 @@ import {
 import HeaderDropDown from '@/components/HeaderDropDown';
 import { BOOKS, BOOK_NAME_TO_ID } from '@/constants/bibleBooks';
 import Colors from '@/constants/Colors';
+import { addNote } from '@/utils/Database';
 
 type VerseRow = { verse: number; text: string };
 
@@ -70,6 +74,31 @@ function parseSimpleRef(refRaw: string | undefined): {
 
 export default function BibleScreen() {
   const { ref: refParam } = useLocalSearchParams<{ ref?: string }>();
+  const appDb = useSQLiteContext();
+
+  const handleCopyVerse = async (verseNum: number, text: string) => {
+    const formatted = `${bookName} ${chapter}:${verseNum} — "${text}"`;
+    await Clipboard.setStringAsync(formatted);
+    Alert.alert('Copied', 'Verse copied to clipboard.');
+  };
+
+  const handleSaveVerse = async (verseNum: number, text: string) => {
+    const reference = `${bookName} ${chapter}:${verseNum}`;
+    try {
+      await addNote(appDb, text, 'bible', reference);
+      Alert.alert('Saved', 'Verse saved to notes.');
+    } catch {
+      Alert.alert('Error', 'Failed to save note.');
+    }
+  };
+
+  const onVerseLongPress = (verseNum: number, text: string) => {
+    Alert.alert('Verse Options', undefined, [
+      { text: 'Copy Verse', onPress: () => handleCopyVerse(verseNum, text) },
+      { text: 'Save to Notes', onPress: () => handleSaveVerse(verseNum, text) },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   // Version dropdown (fixed to KJV for now)
   const [version, setVersion] = useState<'kjv'>('kjv');
@@ -294,12 +323,15 @@ export default function BibleScreen() {
         renderItem={({ item }) => {
           const isHit = item.verse === highlightVerse;
           return (
-            <View style={{ paddingHorizontal: 14 }}>
+            <Pressable
+              style={{ paddingHorizontal: 14 }}
+              onLongPress={() => onVerseLongPress(item.verse, item.text)}
+            >
               <View style={[styles.verseCard, isHit && styles.verseCardHit]}>
                 <Text style={[styles.verseNum, isHit && styles.verseNumHit]}>{item.verse}</Text>
                 <Text style={[styles.verseText, isHit && styles.verseTextHit]}>{item.text}</Text>
               </View>
-            </View>
+            </Pressable>
           );
         }}
         ListFooterComponent={

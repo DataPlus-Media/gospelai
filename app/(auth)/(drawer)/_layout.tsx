@@ -337,6 +337,32 @@ export default function Layout() {
       />
 
       <Drawer.Screen
+        name="notes"
+        options={{
+          title: 'Notes',
+          drawerIcon: () => (
+            <View
+              style={[
+                styles.item,
+                {
+                  backgroundColor: '#14151b',
+                  width: 28,
+                  height: 28,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: '#232637',
+                },
+              ]}
+            >
+              <Ionicons name="document-text-outline" size={18} color="#f3f4f6" />
+            </View>
+          ),
+        }}
+      />
+
+      <Drawer.Screen
         name="support"
         options={{
           title: 'Support Us',

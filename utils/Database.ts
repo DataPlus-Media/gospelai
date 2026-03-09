@@ -2,10 +2,16 @@ import { Message, Role } from '@/utils/Interfaces';
 import { type SQLiteDatabase } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system';
 
+export interface Note {
+  id: number;
+  content: string;
+  source: string;
+  reference: string;
+  created_at: string;
+}
+
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  // Log DB path for debugging
-  // console.log(FileSystem.documentDirectory);
-  const DATABASE_VERSION = 1;
+  const DATABASE_VERSION = 2;
   let result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
 
   let currentDbVersion = result?.user_version ?? 0;
@@ -34,9 +40,18 @@ CREATE TABLE messages (
 
     currentDbVersion = 1;
   }
-  // if (currentDbVersion === 1) {
-  //   Add more migrations
-  // }
+  if (currentDbVersion === 1) {
+    await db.execAsync(`
+CREATE TABLE IF NOT EXISTS notes (
+  id INTEGER PRIMARY KEY NOT NULL,
+  content TEXT NOT NULL,
+  source TEXT NOT NULL,
+  reference TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`);
+    currentDbVersion = 2;
+  }
 
   await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
 }
@@ -79,4 +94,26 @@ export const deleteChat = async (db: SQLiteDatabase, chatId: number) => {
 
 export const renameChat = async (db: SQLiteDatabase, chatId: number, title: string) => {
   return await db.runAsync('UPDATE chats SET title = ? WHERE id = ?', title, chatId);
+};
+
+export const addNote = async (
+  db: SQLiteDatabase,
+  content: string,
+  source: string,
+  reference: string = ''
+) => {
+  return await db.runAsync(
+    "INSERT INTO notes (content, source, reference, created_at) VALUES (?, ?, ?, datetime('now'))",
+    content,
+    source,
+    reference
+  );
+};
+
+export const getNotes = async (db: SQLiteDatabase): Promise<Note[]> => {
+  return await db.getAllAsync<Note>('SELECT * FROM notes ORDER BY created_at DESC');
+};
+
+export const deleteNote = async (db: SQLiteDatabase, noteId: number) => {
+  return await db.runAsync('DELETE FROM notes WHERE id = ?', noteId);
 };

@@ -28,7 +28,7 @@ assets/
 components/             # Reusable UI components (MessageIdeas fetches AI suggestions from backend)
 constants/              # Colors, styles, Bible books
 hooks/                  # Custom React hooks
-utils/                  # Utilities (Database, Storage, etc.)
+utils/                  # Utilities (Database with notes table, Storage, etc.)
 types/                  # TypeScript type definitions
 ```
 
@@ -49,6 +49,11 @@ npm run web   # Start Expo web dev server on port 5000
 - `EXPO_PUBLIC_API_BASE` - Backend Railway API URL
 - `EXPO_PUBLIC_REVOLUT_LINK_ONCE` - Payment link (one-time)
 - `EXPO_PUBLIC_REVOLUT_LINK_MONTHLY` - Payment link (monthly)
+
+## Features
+
+- **Notes**: Local SQLite notes table (DB version 2) with `addNote`/`getNotes`/`deleteNote` helpers. Notes can be saved from AI chat messages (long-press) or Bible verses (long-press). Accessible via Notes screen in the drawer. Sources tracked as "chat" or "bible" with optional reference text.
+- **Copy to clipboard**: Long-press on AI chat bubbles or Bible verses to copy text via `expo-clipboard`.
 
 ## Deployment
 
