@@ -1,0 +1,284 @@
+import os
+import re
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from openai import OpenAI, APIConnectionError, AuthenticationError, RateLimitError, APIStatusError
+from typing import List
+
+
+router = APIRouter()
+
+SYSTEM_PROMPT = (
+    "ROLE & TONE:\n"
+    "- You are a conservative Baptist biblical counselor.\n"
+    "- Speak clearly, compassionately, and with reverence for truth.\n"
+    "\nHARD RULES:\n"
+    "- Quote ONLY the King James Version (KJV). Do not use any other translation.\n"
+    "- If Scripture is silent, say so and apply general biblical principles (KJV-based).\n"
+    "- You may optionally include ONE brief insight if it truly fits from:\n"
+    "   • Charles Spurgeon\n"
+    "   • John Bunyan\n"
+    "   • Jonathan Edwards\n"
+    "   • George Whitefield\n"
+    "   • D. L. Moody\n"
+    "   • J. C. Ryle\n"
+    "   • A. W. Pink\n"
+    "   • C. S. Lewis (Christian works only; use cautiously as copyright may still apply)\n"
+    "- If no fitting insight exists, omit this section.\n"
+    "- Follow explicit user instructions (e.g., number of verses, omitting sections, or specific formatting) when provided, but adhere to the default format below if no specific instructions are given.\n"
+    "\nFORMAT (strict, unless user instructs otherwise):\n"
+    "- Do NOT use *, **, _, ~, or any Markdown formatting symbols anywhere in your response.\n"
+    "- Write in SHORT paragraphs of 1–3 sentences each.\n"
+    "- Insert a BLANK LINE between paragraphs (two newlines: '\\n\\n').\n"
+    "- Each Bible verse MUST be presented with the reference and verse text on the same line, formatted like this:\n"
+    "  Psalm 73:3 — \"For I was envious at the foolish, when I saw the prosperity of the wicked.\"\n"
+    "- Use exactly these sections, in this order, unless user specifies otherwise:\n"
+    "- Bullet points must use the bullet character (•) only, not *, -, or any other symbol.\n"
+    "  1) BIBLE VERSE (KJV): one or two relevant verses (default). Each verse on its own line.\n"
+    "  2) Numbered sections (2–4). Each section should have a clear heading written in plain text (for example in ALL CAPS or Title Case) followed by bullet points (•) for key insights. Do NOT use Markdown bold.\n"
+    "  3) CLASSIC CHRISTIAN INSIGHT (optional): one short line, with attribution.\n"
+    "  4) SUMMARY: one short paragraph that ties it together.\n"
+)
+
+
+class ChatInput(BaseModel):
+    message: str
+
+
+class ChatOutput(BaseModel):
+    reply: str
+
+
+def _get_client() -> OpenAI:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise AuthenticationError("Missing OPENAI_API_KEY", response=None, body=None)
+    return OpenAI(api_key=api_key)
+
+
+def strip_markdown(text: str) -> str:
+    """
+    Best-effort cleanup so no Markdown-style asterisks or emphasis
+    make it into the mobile app. Also converts leading * bullets to •.
+    """
+    if not text:
+        return text
+
+    # Convert bullet lines starting with * to •
+    text = re.sub(r"^\s*\*+\s+", "• ", text, flags=re.MULTILINE)
+
+    # Remove bold/italic markers like **TEXT**, *TEXT*, _TEXT_, ~~TEXT~~
+    text = re.sub(r"\*{1,3}([^*\n]+)\*{1,3}", r"\1", text)
+    text = re.sub(r"_{1,3}([^_\n]+)_{1,3}", r"\1", text)
+    text = re.sub(r"~{1,3}([^~\n]+)~{1,3}", r"\1", text)
+
+    # As an extra safety, strip any stray asterisk characters
+    text = text.replace("*", "")
+
+    return text
+
+
+@router.post("/chat", response_model=ChatOutput)
+def mobile_chat(body: ChatInput):
+    """
+    Simple chat endpoint used by the mobile app.
+    """
+    try:
+        client = _get_client()
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": body.message},
+        ]
+
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.3,
+        )
+
+        raw_text = (resp.choices[0].message.content or "").strip()
+        clean_text = strip_markdown(raw_text)
+
+        return ChatOutput(reply=clean_text)
+
+    except AuthenticationError as e:
+        raise HTTPException(status_code=401, detail=f"OpenAI auth error: {e}")
+    except RateLimitError:
+        raise HTTPException(status_code=429, detail="OpenAI rate limit; retry")
+    except APIConnectionError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI network error: {e}")
+    except APIStatusError as e:
+        raise HTTPException(status_code=e.status_code, detail=f"OpenAI API error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+"""
+ideas endpoint for mobile app: generates 3 conversation starter ideas in a strict JSON format, with a prompt that encourages variety and relevance to Christian biblical guidance. Includes robust error handling and a fallback response if the AI output cannot be parsed as JSON.
+"""
+
+import json
+from pydantic import BaseModel
+from typing import List
+
+class IdeaItem(BaseModel):
+    title: str
+    text: str
+
+class IdeasOutput(BaseModel):
+    ideas: List[IdeaItem]
+
+IDEAS_PROMPT = (
+    "Generate exactly 3 unique, thoughtful conversation starters for a Christian seeking biblical guidance. "
+    "Each should be a question or request that invites deeper biblical exploration.\n\n"
+    "Examples of good starters:\n"
+    "- 'Like a mustard seed' + 'why is this significant'\n"
+    "- 'Suggest godly activities' + 'for the weekend with friends'\n"
+    "- 'Provide three bible verses' + 'to say before a job interview'\n\n"
+    "Return ONLY valid JSON in this exact format, no other text:\n"
+    '{"ideas": [{"title": "Short Topic", "text": "brief continuation"}, ...]}\n\n'
+    "Make them varied: one about a verse/passage, one practical life application, one about prayer or faith."
+)
+
+@router.get("/ideas", response_model=IdeasOutput)
+def get_message_ideas():
+    """
+    Generate AI-powered conversation starter ideas for the mobile app.
+    """
+    try:
+        client = _get_client()
+        
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that generates JSON responses only."},
+                {"role": "user", "content": IDEAS_PROMPT}
+            ],
+            temperature=0.8,
+            max_tokens=300,
+        )
+        
+        raw_text = (resp.choices[0].message.content or "").strip()
+        
+        # Try to parse the JSON response
+        try:
+            # Handle potential markdown code blocks
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("```")[1]
+                if raw_text.startswith("json"):
+                    raw_text = raw_text[4:]
+            
+            data = json.loads(raw_text)
+            ideas = [IdeaItem(title=i["title"], text=i["text"]) for i in data.get("ideas", [])]
+            
+            if len(ideas) < 3:
+                raise ValueError("Not enough ideas generated")
+                
+            return IdeasOutput(ideas=ideas[:3])
+            
+        except (json.JSONDecodeError, KeyError, ValueError):
+            # Return fallback ideas if parsing fails
+            return IdeasOutput(ideas=[
+                IdeaItem(title="What does Scripture say", text="about finding peace in difficult times"),
+                IdeaItem(title="Explain the meaning of", text="being the salt of the earth"),
+                IdeaItem(title="Give me a verse", text="for starting a new chapter in life"),
+            ])
+
+    except AuthenticationError as e:
+        raise HTTPException(status_code=401, detail=f"OpenAI auth error: {e}")
+    except RateLimitError:
+        raise HTTPException(status_code=429, detail="OpenAI rate limit; retry")
+    except APIConnectionError as e:
+        raise HTTPException(status_code=502, detail=f"OpenAI network error: {e}")
+    except APIStatusError as e:
+        raise HTTPException(status_code=e.status_code, detail=f"OpenAI API error: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+"""
+reading-plan endpoint for mobile app: generates a personalized Bible reading plan based on a user-provided topic/request. The prompt instructs the AI to create a structured plan with 7-30 daily readings, each with a specific focus. The response is expected in a strict JSON format, and the code includes error handling to manage potential issues with AI output or API errors.
+"""
+
+import json
+from pydantic import BaseModel
+from typing import List
+
+class ReadingDay(BaseModel):
+    day: int
+    reading: str
+    description: str
+
+class ReadingPlanOutput(BaseModel):
+    title: str
+    description: str
+    duration: str
+    readings: List[ReadingDay]
+
+READING_PLAN_PROMPT = """Generate a personalized Bible reading plan based on the user's request.
+The plan should have 7-30 daily readings.
+
+User request: {topic}
+
+Return ONLY valid JSON in this exact format:
+{{
+  "title": "Plan Title",
+  "description": "Brief description",
+  "duration": "X days",
+  "readings": [
+    {{"day": 1, "reading": "Book Chapter:Verse", "description": "Brief focus for this day"}},
+    ...
+  ]
+}}
+
+Make the readings progressive and meaningful for spiritual growth."""
+
+class ReadingPlanInput(BaseModel):
+    topic: str
+
+@router.post("/reading-plan", response_model=ReadingPlanOutput)
+def generate_reading_plan(body: ReadingPlanInput):
+    """
+    Generate a personalized AI reading plan based on a topic/request.
+    """
+    try:
+        client = _get_client()
+        
+        prompt = READING_PLAN_PROMPT.format(topic=body.topic)
+        
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful Bible study assistant that creates reading plans."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7,
+            max_tokens=1500,
+        )
+        
+        raw_text = (resp.choices[0].message.content or "").strip()
+        
+        # Handle potential markdown code blocks
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("```")[1]
+            if raw_text.startswith("json"):
+                raw_text = raw_text[4:]
+        
+        data = json.loads(raw_text)
+        
+        readings = [
+            ReadingDay(
+                day=r["day"],
+                reading=r["reading"],
+                description=r.get("description", "")
+            )
+            for r in data.get("readings", [])
+        ]
+        
+        return ReadingPlanOutput(
+            title=data.get("title", "Custom Reading Plan"),
+            description=data.get("description", ""),
+            duration=data.get("duration", f"{len(readings)} days"),
+            readings=readings
+        )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating plan: {e}")
