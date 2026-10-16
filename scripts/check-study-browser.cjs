@@ -15,7 +15,7 @@ async function main() {
   const action = label => page.getByText(label, { exact: true }).click();
   const verseButton = (ref) => page.getByRole('button', { name: `${ref}. Verse actions`, exact: true });
   await page.goto(base);
-  await page.getByText('Continue without account', { exact: true }).click();
+  await page.getByRole('button', { name: 'Start exploring. Continue without an account.', exact: true }).click();
   await page.getByText('Continue reading', { exact: true }).waitFor({ timeout: 60000 });
   console.log('PASS guest welcome -> Today');
   assert.ok(await page.getByText('Verse of the Day', { exact: true }).count());
@@ -76,7 +76,7 @@ async function main() {
   await page.getByText('Test explanation: read the surrounding passage.', { exact: true }).waitFor();
   assert.equal(chatRequests, 2);
   console.log('PASS actual verse draft, editable, no auto-focus/send; connection failure and retry (stubbed AI)');
-  await page.getByText('GospelAI', { exact: true }).first().click();
+  await page.getByRole('button', { name: 'GospelAI, return to Today', exact: true }).click();
   await page.getByText('Continue reading', { exact: true }).waitFor();
   console.log('PASS chat header returns Today without loop');
   await go('/notes');

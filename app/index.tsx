@@ -1,47 +1,64 @@
 import { useOAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  Alert,
+  Animated,
+  Image,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { welcomeStyles as styles } from '@/components/welcome/styles';
+import { useWelcomeMotion } from '@/hooks/useWelcomeMotion';
 
 WebBrowser.maybeCompleteAuthSession();
 
 const FEATURES = [
   {
-    icon: 'chatbubble-ellipses' as const,
-    iconColor: '#20AB6E',
-    title: 'AI-Powered Chat',
-    desc: 'Ask anything about scripture and faith',
+    icon: 'chatbubble-ellipses-outline' as const,
+    iconColor: '#71D9A4',
+    title: 'Ask and explore',
+    desc: 'Bring your questions to AI chat.',
   },
   {
-    icon: 'book' as const,
-    iconColor: '#c8a951',
-    title: 'Full KJV Bible',
-    desc: 'Read, search and explore all 31,000+ verses',
+    icon: 'book-outline' as const,
+    iconColor: '#E7C978',
+    title: 'Read Scripture',
+    desc: 'Browse and search the KJV Bible.',
   },
   {
-    icon: 'sunny' as const,
-    iconColor: '#c8a951',
-    title: 'Verse of the Day',
-    desc: 'Start each day with a curated scripture',
+    icon: 'sunny-outline' as const,
+    iconColor: '#E7C978',
+    title: 'A daily passage',
+    desc: 'Begin with a moment in the Word.',
   },
   {
-    icon: 'journal' as const,
-    iconColor: '#3b82f6',
-    title: 'Notes & Prayers',
-    desc: 'Save what moves you, write your prayers',
+    icon: 'journal-outline' as const,
+    iconColor: '#A8C6AE',
+    title: 'Keep personal notes',
+    desc: 'Write reflections and prayers.',
   },
 ];
 
+const WELCOME_ROUTE = '/(auth)/(drawer)/today' as const;
+
 export default function Index() {
-  const { bottom, top } = useSafeAreaInsets();
+  const { bottom, left, right, top } = useSafeAreaInsets();
+  const { width, fontScale } = useWindowDimensions();
   const router = useRouter();
+  const { entrance, emeraldStyle, goldStyle, heroEntrance, scriptureEntrance } =
+    useWelcomeMotion(FEATURES.length);
 
   const google = useOAuth({ strategy: 'oauth_google' });
   const apple = useOAuth({ strategy: 'oauth_apple' });
-
   const redirectUrl = makeRedirectUri({
     scheme: 'gospelai',
     path: 'oauth-native-callback',
@@ -53,7 +70,7 @@ export default function Index() {
       const sid = createdSessionId || signIn?.createdSessionId || signUp?.createdSessionId;
       if (sid) {
         await setActive?.({ session: sid });
-        router.replace('/(auth)/(drawer)/today');
+        router.replace(WELCOME_ROUTE);
         return;
       }
       Alert.alert('Authentication', 'Additional steps are required to complete sign in.');
@@ -67,185 +84,177 @@ export default function Index() {
     }
   }
 
-  const ACTION_AREA_HEIGHT = 260 + bottom;
+  const wide = width >= 600 && fontScale < 1.5;
+  const stackActions = width < 360 || fontScale >= 1.5;
+  const contentWidth = Math.min(width - left - right, 680);
 
   return (
-    <View style={[styles.root, { backgroundColor: '#0b0b10' }]}>
+    <View style={styles.root}>
+      <View
+        pointerEvents="none"
+        accessible={false}
+        importantForAccessibility="no-hide-descendants"
+        style={StyleSheet.absoluteFill}
+      >
+        <Animated.View
+          testID="welcome-light-emerald"
+          style={[styles.lightOrb, styles.emeraldOrb, emeraldStyle]}
+        >
+          <View pointerEvents="none" style={[styles.glowLayer, styles.emeraldGlowOuter]} />
+          <View pointerEvents="none" style={[styles.glowLayer, styles.emeraldGlowMiddle]} />
+          <View pointerEvents="none" style={[styles.glowLayer, styles.emeraldGlowCore]} />
+        </Animated.View>
+        <Animated.View
+          testID="welcome-light-gold"
+          style={[styles.lightOrb, styles.goldOrb, goldStyle]}
+        >
+          <View pointerEvents="none" style={[styles.glowLayer, styles.goldGlowOuter]} />
+          <View pointerEvents="none" style={[styles.glowLayer, styles.goldGlowMiddle]} />
+          <View pointerEvents="none" style={[styles.glowLayer, styles.goldGlowCore]} />
+        </Animated.View>
+        <View style={styles.horizonGlow} />
+      </View>
+
       <ScrollView
+        style={styles.scroll}
         contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: top + 24, paddingBottom: ACTION_AREA_HEIGHT + 16 },
+          styles.scrollContent,
+          {
+            paddingTop: top + (wide ? 34 : 22),
+            paddingBottom: Math.max(bottom, 20) + 24,
+            paddingLeft: Math.max(left, 20),
+            paddingRight: Math.max(right, 20),
+          },
         ]}
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="never"
       >
-        <View style={styles.hero}>
-          <Image
-            source={require('@/assets/images/logo-white.png')}
-            style={styles.logo}
-          />
-          <Text style={styles.appName}>GospelAI</Text>
-          <Text style={styles.subtitle}>Where Scripture meets AI</Text>
-        </View>
-
-        <View style={styles.cards}>
-          {FEATURES.map((f) => (
-            <View key={f.title} style={styles.card}>
-              <View style={[styles.iconWrap, { backgroundColor: f.iconColor + '1a' }]}>
-                <Ionicons name={f.icon} size={22} color={f.iconColor} />
-              </View>
-              <View style={styles.cardText}>
-                <Text style={styles.cardTitle}>{f.title}</Text>
-                <Text style={styles.cardDesc}>{f.desc}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-
-        <Text style={styles.quote}>
-          "Thy word is a lamp unto my feet, and a light unto my path"{'\n'}
-          — Psalm 119:105
-        </Text>
-      </ScrollView>
-
-      <View style={[styles.actions, { paddingBottom: bottom + 16 }]}>
-        <TouchableOpacity
-          style={styles.btnPrimary}
-          onPress={() => router.replace('/(auth)/(drawer)/today')}
-        >
-          <Ionicons name="chatbubble-ellipses-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.btnPrimaryText}>Continue without account</Text>
-        </TouchableOpacity>
-
-        <View style={styles.btnRow}>
-          <Link href={{ pathname: '/login', params: { type: 'login' } }} asChild>
-            <TouchableOpacity style={styles.btnOutline}>
-              <Text style={styles.btnOutlineText}>Sign In</Text>
-            </TouchableOpacity>
-          </Link>
-          <Link href={{ pathname: '/login', params: { type: 'register' } }} asChild>
-            <TouchableOpacity style={styles.btnGreen}>
-              <Text style={styles.btnGreenText}>Create Account</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-
-        <View style={styles.oauthRow}>
-          {Platform.OS !== 'web' && (
-            <TouchableOpacity
-              style={styles.oauthBtn}
-              onPress={() => doOAuth(apple.startOAuthFlow)}
-            >
-              <Ionicons name="logo-apple" size={16} color="#fff" style={{ marginRight: 6 }} />
-              <Text style={styles.oauthText}>Apple</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.oauthBtn}
-            onPress={() => doOAuth(google.startOAuthFlow)}
+        <View style={[styles.column, { maxWidth: contentWidth }]}>
+          <Animated.View
+            testID="welcome-entrance"
+            style={[
+              styles.hero,
+              { transform: [{ translateY: heroEntrance }] },
+              wide && styles.wideHero,
+            ]}
           >
-            <Ionicons name="logo-google" size={16} color="#fff" style={{ marginRight: 6 }} />
-            <Text style={styles.oauthText}>Google</Text>
-          </TouchableOpacity>
+            <Image
+              source={require('@/assets/images/logo-white.png')}
+              style={styles.logo}
+              accessible
+              accessibilityLabel="GospelAI"
+            />
+            <Text style={styles.eyebrow}>A QUIETER WAY INTO THE WORD</Text>
+            <Text style={styles.headline}>Come as you are.{'\n'}Begin with Scripture.</Text>
+            <Text style={styles.intro}>
+              Make room for a little wonder, one passage and one honest question at a time.
+            </Text>
+          </Animated.View>
+
+          <Animated.View
+            testID="welcome-entrance"
+            style={[
+              styles.scriptureCard,
+              { transform: [{ translateY: scriptureEntrance }] },
+            ]}
+          >
+            <View style={styles.scriptureTopline}>
+              <View style={styles.scriptureRule} />
+              <Text style={styles.scriptureLabel}>A WORD FOR THE WAY</Text>
+              <View style={styles.scriptureRule} />
+            </View>
+            <Text style={styles.scripture}>
+              “Thy word is a lamp unto my feet, and a light unto my path.”
+            </Text>
+            <Text style={styles.citation}>PSALM 119:105</Text>
+            <View pointerEvents="none" style={styles.cardCorner} />
+          </Animated.View>
+
+          <View style={styles.featuresHeading}>
+            <Text style={styles.sectionLabel}>A GOOD PLACE TO START</Text>
+            <Text style={styles.sectionNote}>Explore at your own pace.</Text>
+          </View>
+          <View style={[styles.features, wide && styles.featuresWide]}>
+            {FEATURES.map((feature, index) => (
+              <Animated.View
+                key={feature.title}
+                testID="welcome-entrance"
+                style={[
+                  styles.featureCard,
+                  wide && styles.featureCardWide,
+                  { transform: [{ translateY: entrance[index] }] },
+                ]}
+              >
+                <View style={[styles.iconWrap, { backgroundColor: `${feature.iconColor}17` }]}>
+                  <Ionicons name={feature.icon} size={20} color={feature.iconColor} />
+                </View>
+                <View style={styles.featureCopy}>
+                  <Text style={styles.featureTitle}>{feature.title}</Text>
+                  <Text style={styles.featureDescription}>{feature.desc}</Text>
+                </View>
+              </Animated.View>
+            ))}
+          </View>
+
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Start exploring. Continue without an account."
+              onPress={() => router.replace(WELCOME_ROUTE)}
+              style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
+            >
+              <Text style={styles.primaryButtonText}>Start exploring</Text>
+              <Ionicons name="arrow-forward" size={18} color="#173A2C" />
+            </Pressable>
+            <Text style={styles.guestNote}>
+              Continue without an account. You can explore today’s study as a guest.
+            </Text>
+
+            <View style={[styles.accountActions, stackActions && styles.stackedActions]}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Sign In"
+                onPress={() => router.push({ pathname: '/login', params: { type: 'login' } })}
+                style={({ pressed }) => [styles.signInButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.signInText}>Sign In</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Create Account"
+                onPress={() => router.push({ pathname: '/login', params: { type: 'register' } })}
+                style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.createText}>Create Account</Text>
+              </Pressable>
+            </View>
+
+            <View style={styles.oauthRow}>
+              {Platform.OS !== 'web' && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Continue with Apple"
+                  onPress={() => doOAuth(apple.startOAuthFlow)}
+                  style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
+                >
+                  <Ionicons name="logo-apple" size={17} color="#F1F0E8" />
+                  <Text style={styles.oauthText}>Apple</Text>
+                </Pressable>
+              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Google"
+                onPress={() => doOAuth(google.startOAuthFlow)}
+                style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
+              >
+                <Ionicons name="logo-google" size={16} color="#F1F0E8" />
+                <Text style={styles.oauthText}>Google</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.footerNote}>A welcoming space to read, reflect, and ask.</Text>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  root: { flex: 1 },
-  scroll: { paddingHorizontal: 20 },
-
-  hero: { alignItems: 'center', marginBottom: 32 },
-  logo: { width: 80, height: 80, borderRadius: 20, marginBottom: 14 },
-  appName: { fontSize: 34, fontWeight: '800', color: '#fff', letterSpacing: 0.5 },
-  subtitle: { fontSize: 15, color: '#9ca3af', marginTop: 6 },
-
-  cards: { gap: 12, marginBottom: 28 },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#111217',
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: '#232633',
-    gap: 14,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardText: { flex: 1 },
-  cardTitle: { fontSize: 15, fontWeight: '700', color: '#f3f4f6', marginBottom: 2 },
-  cardDesc: { fontSize: 13, color: '#9ca3af' },
-
-  quote: {
-    textAlign: 'center',
-    fontSize: 13,
-    fontStyle: 'italic',
-    color: '#c8a951',
-    lineHeight: 20,
-    marginHorizontal: 8,
-  },
-
-  actions: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#0d0e14',
-    borderTopWidth: 1,
-    borderTopColor: '#1b1e29',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    gap: 10,
-  },
-  btnPrimary: {
-    flexDirection: 'row',
-    backgroundColor: '#111217',
-    borderRadius: 14,
-    paddingVertical: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#232633',
-  },
-  btnPrimaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  btnRow: { flexDirection: 'row', gap: 10 },
-  btnOutline: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#3a3f52',
-  },
-  btnOutlineText: { color: '#f3f4f6', fontSize: 15, fontWeight: '600' },
-  btnGreen: {
-    flex: 1,
-    borderRadius: 12,
-    paddingVertical: 13,
-    alignItems: 'center',
-    backgroundColor: '#20AB6E',
-  },
-  btnGreenText: { color: '#fff', fontSize: 15, fontWeight: '700' },
-
-  oauthRow: { flexDirection: 'row', gap: 10 },
-  oauthBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    backgroundColor: '#1a1d27',
-    borderRadius: 12,
-    paddingVertical: 11,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#2a2e40',
-  },
-  oauthText: { color: '#f3f4f6', fontSize: 14, fontWeight: '600' },
-});

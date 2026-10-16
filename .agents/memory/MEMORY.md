@@ -4,3 +4,4 @@
 - [SQLite provider updates](expo-sqlite-provider.md) — Expo’s provider memo ignores children; subscribe to route context inside it to avoid stale screens.
 - [Christian insight scope](christian-insight-scope.md) — user-selected name; keep Bible links translation-independent and leave translation expansion for later.
 - [Native/web accessibility](native-web-accessibility.md) — selection props and icon-inclusive button names need separate browser verification.
+- [Welcome motion verification](welcome-motion-verification.md) — test reduced motion at cold launch as well as live changes; wait for Expo’s client tree in browser checks.
