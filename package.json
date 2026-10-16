@@ -14,7 +14,7 @@
     "test:study:browser": "node scripts/check-study-browser.cjs"
   },
   "dependencies": {
-    "@clerk/clerk-expo": "^2.15.0",
+    "@clerk/clerk-expo": "^2.20.1",
     "@expo/metro-runtime": "~6.1.2",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -26,7 +26,8 @@
     "@shopify/flash-list": "2.0.2",
     "@zeego/context-menu": "^0.0.2-alpha.28",
     "@zeego/menu": "^0.0.2-alpha.28",
-    "expo": "~54.0.10",
+    "babel-preset-expo": "~54.0.12",
+    "expo": "~54.0.37",
     "expo-auth-session": "~7.0.8",
     "expo-blur": "~15.0.7",
     "expo-clipboard": "~8.0.7",
@@ -65,6 +66,10 @@
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.15.0",
     "react-native-worklets": "0.5.1"
+  },
+  "overrides": {
+    "tar": "^7.5.22",
+    "shell-quote": "^1.12.0"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
