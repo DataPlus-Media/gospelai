@@ -1,18 +1,21 @@
 // app/(auth)/layout.tsx
-import React from 'react';
+import React, { Suspense } from 'react';
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import { TouchableOpacity } from 'react-native';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 
 import { SQLiteProvider } from 'expo-sqlite';
 import { migrateDbIfNeeded } from '@/utils/Database';
+import LocalDatabaseBoundary from '@/components/LocalDatabaseBoundary';
 
 export default function AuthLayout() {
   const router = useRouter();
 
   return (
-    <SQLiteProvider databaseName="chat.db" onInit={migrateDbIfNeeded}>
+    <LocalDatabaseBoundary>
+    <Suspense fallback={<View style={{ flex: 1, backgroundColor: '#0b0b10', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#20AB6E" /><Text style={{ color: '#fff', margin: 16 }}>Opening your local study…</Text></View>}>
+    <SQLiteProvider databaseName="chat.db" onInit={migrateDbIfNeeded} useSuspense>
       <Stack
         screenOptions={{
           headerShadowVisible: false,
@@ -63,5 +66,7 @@ export default function AuthLayout() {
         */}
       </Stack>
     </SQLiteProvider>
+    </Suspense>
+    </LocalDatabaseBoundary>
   );
 }

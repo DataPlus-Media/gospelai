@@ -4,22 +4,23 @@ import { useFonts } from 'expo-font';
 import { Slot, SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect } from 'react';
-import { TouchableOpacity } from 'react-native';
+import { Platform, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { entryRedirect } from '@/utils/navigation';
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 const tokenCache = {
   async getToken(key: string) {
     try {
-      return SecureStore.getItemAsync(key);
+      return Platform.OS === 'web' ? null : await SecureStore.getItemAsync(key);
     } catch {
       return null;
     }
   },
   async saveToken(key: string, value: string) {
     try {
-      return SecureStore.setItemAsync(key, value);
+      if (Platform.OS !== 'web') await SecureStore.setItemAsync(key, value);
     } catch {
       return;
     }
@@ -46,24 +47,10 @@ const InitialLayout = () => {
   }, [loaded]);
 
   useEffect(() => {
-    if (!isLoaded) return;
-
-    const first = segments[0];
-    const inAppGroup = first === '(auth)';
-    const inLogin = first === 'login';
-    const onIndex = segments.length === 0 || first === undefined || first === 'index';
-
-    if (isSignedIn) {
-      if (!inAppGroup) {
-        router.replace('/(auth)/(drawer)/(chat)/new');
-      }
-    } else {
-      if (inAppGroup) {
-      } else if (!onIndex && !inLogin) {
-        router.replace('/');
-      }
-    }
-  }, [isLoaded, isSignedIn, segments]);
+    const first: string | undefined = (segments as string[])[0];
+    const destination = entryRedirect(isLoaded, isSignedIn, first);
+    if (destination) router.replace(destination);
+  }, [isLoaded, isSignedIn, segments, router]);
 
   if (!loaded || !isLoaded) {
     return <Slot />;

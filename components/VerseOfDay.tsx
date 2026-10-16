@@ -1,10 +1,11 @@
 import { openBibleDb } from '@/utils/bibleDb';
 import { getTodaysVerse, VotdEntry } from '@/utils/verseOfDay';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActionSheetIOS,
+  AppState,
   Alert,
   Platform,
   Pressable,
@@ -87,14 +88,24 @@ function safeGetTodaysVerse(): VotdEntry {
 
 export default function VerseOfDay() {
   const router = useRouter();
-  const entryRef = useRef<VotdEntry>(safeGetTodaysVerse());
-  const entry = entryRef.current;
+  const [entry, setEntry] = useState<VotdEntry>(safeGetTodaysVerse);
+  const refreshDay = useCallback(() => {
+    const next = safeGetTodaysVerse();
+    setEntry(current => current.ref === next.ref ? current : next);
+  }, []);
+  useFocusEffect(useCallback(() => { refreshDay(); }, [refreshDay]));
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') refreshDay(); });
+    return () => subscription.remove();
+  }, [refreshDay]);
 
   const [text, setText] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
+    setText('');
     (async () => {
       try {
         const db = await openBibleDb();
@@ -126,7 +137,7 @@ export default function VerseOfDay() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [entry]);
 
   const verseText = text || FALLBACK_TEXTS[entry.ref] || '';
 
@@ -184,7 +195,7 @@ export default function VerseOfDay() {
           <View style={[styles.skLine, { width: '70%' }]} />
         </View>
       ) : (
-        <Text style={styles.verseText}>"{verseText}"</Text>
+        <Text style={styles.verseText}>{`"${verseText}"`}</Text>
       )}
 
       <Text style={styles.ref}>{entry.ref} · KJV</Text>

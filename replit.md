@@ -16,7 +16,7 @@ A React Native / Expo app with web support, built for Christian faith — Bible 
 ```
 app/                    # Expo Router file-based routes
   _layout.tsx           # Root layout with Clerk auth
-  (auth)/               # Auth-protected routes
+  (auth)/               # Study routes (guest access is intentional)
     (drawer)/           # Drawer navigation
     (modal)/            # Modal screens
   index.tsx             # Landing page for non-signed-in users (feature showcase + sign-in/register)
@@ -52,14 +52,15 @@ npm run web   # Start Expo web dev server on port 5000
 
 ## Features
 
-- **Notes**: Local SQLite notes table (DB version 2) with `addNote`/`getNotes`/`deleteNote` helpers. Notes can be saved from AI chat messages (long-press) or Bible verses (long-press). Accessible via Notes screen in the drawer. Sources tracked as "chat" or "bible" with optional reference text.
+- **Local storage**: DB version 3 adds study tables to the existing `chat.db` without replacing chats/messages/notes. Notes retain `addNote`/`getNotes`/`deleteNote` helpers and can be saved from chat or Bible verse actions.
 - **Copy to clipboard**: Long-press on AI chat bubbles or Bible verses to copy text via `expo-clipboard`.
 - **Full Bible Search**: Search icon in Bible screen header opens a full-screen search modal. Queries the KJV SQLite DB across all 31,000+ verses with 300ms debounce. Tapping a result navigates directly to that verse and highlights it.
 - **Verse of the Day**: `utils/verseOfDay.ts` (52 curated verses, cycles daily). `components/VerseOfDay.tsx` displays a gold-accented card on the home/chat screen. Loads verse text from KJV SQLite on native, falls back to hardcoded KJV texts on web. Share button uses `Share.share()` for text sharing.
-- **Shared Bible DB util**: `utils/bibleDb.ts` exports `openBibleDb()` used by both `Bible.tsx` and `VerseOfDay.tsx`.
-- **Landing page**: `app/index.tsx` — marketing-style page for non-signed-in users with feature cards, scripture quote, and sign-in/register/OAuth buttons. "Continue without account" gives free access. Routing in `_layout.tsx` redirects signed-in users to chat, keeps signed-out users on landing page.
+- **Daily study**: Today connects daily KJV scripture, saved reading position, seven bundled reading-plan passages, chat and library shortcuts. Bible supports local bookmarks/highlights, exact saved-verse opening, copy/notes and an editable verse-to-chat draft. Plan completion and reset are explicit. Study state stays on the device.
+- **Shared Bible DB util**: Native `utils/bibleDb.ts` opens the bundled SQLite file; `utils/bibleDb.web.ts` deserializes the bundled asset without native filesystem calls. Web SQLite needs cross-origin isolation headers, supplied by Metro in development and required on a future static host.
+- **Landing page**: `app/index.tsx` preserves free guest welcome and sign-in/register/OAuth buttons. Continue opens Today; signed-in users enter Today.
 - **Support screen**: `components/Support.tsx` (native IAP) + `components/Support.web.tsx` (web fallback). Platform-specific file resolution prevents expo-iap crash on web.
-- **Header home button**: "GospelAI" header in chat is tappable — navigates signed-out users to landing page, signed-in users to new chat.
+- **Header home button**: The GospelAI chat title returns both guests and signed-in users to Today. Chat drafts do not autofocus or auto-send; failures have a retry action.
 - **Drawer auth footer**: Drawer footer conditionally shows user profile (signed in) or "Sign In" / "Create Account" buttons (signed out).
 
 ## Deployment
@@ -67,3 +68,7 @@ npm run web   # Start Expo web dev server on port 5000
 - Configured as **static** deployment
 - Build: `npx expo export --platform web`
 - Output: `dist/` directory
+
+## Study verification
+
+See `docs/daily-study-verification.md` for repeatable checks and explicit native/signed-in verification limits. `npm run test:study` tests migrations and study behavior using SQLite. Browser checks are separate from native-device checks.

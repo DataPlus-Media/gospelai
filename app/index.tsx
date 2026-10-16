@@ -53,7 +53,7 @@ export default function Index() {
       const sid = createdSessionId || signIn?.createdSessionId || signUp?.createdSessionId;
       if (sid) {
         await setActive?.({ session: sid });
-        router.replace('/(auth)/(drawer)/(chat)/new');
+        router.replace('/(auth)/(drawer)/today');
         return;
       }
       Alert.alert('Authentication', 'Additional steps are required to complete sign in.');
@@ -110,7 +110,7 @@ export default function Index() {
       <View style={[styles.actions, { paddingBottom: bottom + 16 }]}>
         <TouchableOpacity
           style={styles.btnPrimary}
-          onPress={() => router.replace('/(auth)/(drawer)/(chat)/new')}
+          onPress={() => router.replace('/(auth)/(drawer)/today')}
         >
           <Ionicons name="chatbubble-ellipses-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
           <Text style={styles.btnPrimaryText}>Continue without account</Text>

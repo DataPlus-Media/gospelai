@@ -267,10 +267,13 @@ export default function Layout() {
 
   return (
     <Drawer
+      initialRouteName="today"
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={({ navigation }) => ({
         headerLeft: () => (
           <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel="Open navigation"
             onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
             style={{ marginLeft: 16 }}
           >
@@ -295,11 +298,13 @@ export default function Layout() {
         },
       })}
     >
+      <Drawer.Screen name="today" options={{ title: 'Today', drawerIcon: () => <Ionicons name="sunny-outline" size={24} color="#c8a951" /> }} />
+      <Drawer.Screen name="saved" options={{ title: 'Saved verses', drawerIcon: () => <Ionicons name="bookmark-outline" size={24} color="#c8a951" /> }} />
       <Drawer.Screen
         name="(chat)/new"
         getId={() => Math.random().toString()}
         options={{
-          title: 'GospelAI',
+          title: 'Chat',
           drawerIcon: () => (
             <View style={[styles.item, { backgroundColor: '#000000' }]}>
               <Image
@@ -347,7 +352,7 @@ export default function Layout() {
         listeners={{
           drawerItemPress: (e) => {
             e.preventDefault();
-            router.navigate('/(auth)/bible');
+            router.navigate('/(auth)/(drawer)/bible');
           },
         }}
       />

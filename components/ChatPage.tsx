@@ -9,7 +9,6 @@ import { defaultStyles } from '@/constants/Styles';
 import { addChat, addMessage, getMessages } from '@/utils/Database';
 import { Message, Role } from '@/utils/Interfaces';
 
-import { useAuth } from '@clerk/clerk-expo';
 import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -17,7 +16,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import Colors from '@/constants/Colors';
 import Constants from 'expo-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 // ---- call your own backend (no client key) ----
 const RAW_API_BASE =
@@ -51,25 +50,35 @@ async function fetchIdeas(): Promise<Idea[]> {
 }
 
 async function askServerChat(message: string, history: ChatTurn[]) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  try {
   const res = await fetch(`${API_BASE}/api/chat`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-app-secret': APP_SECRET },
     body: JSON.stringify({ message, history }),
+    signal: controller.signal,
   });
   if (!res.ok) throw new Error((await res.text().catch(() => '')) || `HTTP ${res.status}`);
   const data = await res.json();
-  return String(data.reply ?? '');
+  const reply = String(data.reply ?? '').trim();
+  if (!reply) throw new Error('Empty response');
+  return reply;
+  } finally { clearTimeout(timeout); }
 }
 
 const ChatPage = () => {
   const db = useSQLiteContext();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, draft, draftId } = useLocalSearchParams<{ id: string; draft?: string; draftId?: string }>();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [pending, setPending] = useState(false);
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [ideasLoading, setIdeasLoading] = useState(false);
+  const [chatError, setChatError] = useState('');
+  const [failedTurn, setFailedTurn] = useState<{ text: string; history: ChatTurn[]; chatId: number } | null>(null);
+  const busy = useRef(false);
 
   const loadIdeas = useCallback(async () => {
     setIdeasLoading(true);
@@ -94,43 +103,56 @@ const ChatPage = () => {
   // 🔧 IMPORTANT: sync when the route `id` changes and load messages
   useEffect(() => {
     if (!db) return;
-
+    let cancelled = false;
+    setChatError('');
+    setFailedTurn(null);
     if (id) {
       setChatId(id);
-      getMessages(db, parseInt(id, 10)).then(setMessages);
+      getMessages(db, parseInt(id, 10)).then(rows => { if (!cancelled) setMessages(rows); })
+        .catch(() => { if (!cancelled) setChatError('Could not load this conversation. Reopen it to retry.'); });
     } else {
       setChatId(undefined);
       setMessages([]);
       loadIdeas();
     }
-  }, [id, db, loadIdeas]);
+    return () => { cancelled = true; };
+  }, [id, draftId, db, loadIdeas]);
+
+  const requestReply = async (turn: { text: string; history: ChatTurn[]; chatId: number }) => {
+    try {
+      const reply = await askServerChat(turn.text, turn.history);
+      await addMessage(db, turn.chatId, { content: reply, role: Role.Bot });
+      setMessages(prev => [...prev.filter(m => !(m.role === Role.Bot && m.content === '')), { role: Role.Bot, content: reply }]);
+      setFailedTurn(null);
+      setChatError('');
+    } catch {
+      setMessages(prev => prev.filter(m => !(m.role === Role.Bot && m.content === '')));
+      setFailedTurn(turn);
+      setChatError('GospelAI could not finish this response. Check your connection and retry. Your message is saved on this device.');
+    }
+  };
 
   const getCompletion = async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
-
+    if (!trimmed || busy.current || failedTurn) return false;
+    busy.current = true;
+    setPending(true);
+    setChatError('');
+    try {
+    let currentId = chatIdRef.current ? Number(chatIdRef.current) : undefined;
     if (!chatIdRef.current) {
       // first message of a brand new chat
       const res = await addChat(db, trimmed);
       const newId = String(res.lastInsertRowId);
       setChatId(newId);
-      await addMessage(db, parseInt(newId, 10), { content: trimmed, role: Role.User });
-      setMessages([
-        { role: Role.User, content: trimmed },
-        { role: Role.Bot, content: '' },
-      ]);
-    } else {
-      // existing chat
+      currentId = Number(newId);
+    }
+      await addMessage(db, currentId!, { content: trimmed, role: Role.User });
       setMessages((prev) => [
         ...prev,
         { role: Role.User, content: trimmed },
         { role: Role.Bot, content: '' },
       ]);
-      await addMessage(db, parseInt(chatIdRef.current, 10), {
-        content: trimmed,
-        role: Role.User,
-      });
-    }
 
     const history: ChatTurn[] = [
       ...messages.map(
@@ -143,36 +165,13 @@ const ChatPage = () => {
       { role: 'user', content: trimmed },
     ];
 
-    setPending(true);
-    try {
-      const reply = await askServerChat(trimmed, history);
-      setMessages((prev) => {
-        const next = prev.slice();
-        const i = next.length - 1;
-        if (i >= 0 && next[i].role === Role.Bot && next[i].content === '') {
-          next[i] = { ...next[i], content: reply };
-        }
-        return next;
-      });
-      if (chatIdRef.current) {
-        await addMessage(db, parseInt(chatIdRef.current, 10), {
-          content: reply,
-          role: Role.Bot,
-        });
-      }
-    } catch (err: any) {
-      setMessages((prev) => {
-        const next = prev.slice();
-        const i = next.length - 1;
-        if (i >= 0 && next[i].role === Role.Bot && next[i].content === '') {
-          next[i] = {
-            ...next[i],
-            content: 'Error: ' + (err?.message || 'request failed'),
-          };
-        }
-        return next;
-      });
+      await requestReply({ text: trimmed, history, chatId: currentId! });
+      return true;
+    } catch {
+      setChatError('Could not save your message on this device. Please try sending again.');
+      return false;
     } finally {
+      busy.current = false;
       setPending(false);
     }
   };
@@ -182,8 +181,6 @@ const ChatPage = () => {
     router.push('/(auth)/(drawer)/(chat)/new');
   };
 
-  const { isSignedIn } = useAuth();
-
   return (
     <View style={defaultStyles.pageContainer}>
       <Stack.Screen
@@ -191,11 +188,7 @@ const ChatPage = () => {
           headerTitle: () => (
             <HeaderDropDown
               title="GospelAI"
-              onPress={() =>
-                isSignedIn
-                  ? router.replace('/(auth)/(drawer)/(chat)/new')
-                  : router.replace('/')
-              }
+              onPress={() => router.replace('/(auth)/(drawer)/today')}
             />
           ),
           headerStyle: { backgroundColor: Colors.header_bg },
@@ -203,6 +196,9 @@ const ChatPage = () => {
           headerShadowVisible: false,
         }}
       />
+      <Text style={{ color: '#b8bcc7', backgroundColor: '#0b0b10', padding: 12, fontSize: 12 }}>
+        AI-generated explanations, not Bible text. AI requires an internet connection. Review verse drafts, then tap Send.
+      </Text>
 
       <View style={styles.page}>
         {messages.length === 0 ? (
@@ -253,12 +249,24 @@ const ChatPage = () => {
       >
         {messages.length === 0 && (
           <MessageIdeas
-            onSelectCard={getCompletion}
+            onSelectCard={(text) => { if (!pending && !failedTurn) void getCompletion(text); }}
             ideas={ideas}
             loading={ideasLoading}
           />
         )}
-        <MessageInput onShouldSend={getCompletion} onNewChat={handleNewChat} />
+        {!!chatError && <View style={{ padding: 14, backgroundColor: '#171922' }}>
+          <Text accessibilityRole="alert" style={{ color: '#ffa6a6', lineHeight: 20 }}>{chatError}</Text>
+          {!!failedTurn && <View style={{ flexDirection: 'row', gap: 24 }}>
+            <Pressable accessibilityRole="button" disabled={pending} style={{ paddingVertical: 12 }} onPress={async () => {
+              if (!failedTurn || busy.current) return;
+              busy.current = true; setPending(true); setChatError('');
+              setMessages(prev => [...prev, { role: Role.Bot, content: '' }]);
+              try { await requestReply(failedTurn); } finally { busy.current = false; setPending(false); }
+            }}><Text style={{ color: '#57d99e' }}>{pending ? 'Retrying…' : 'Retry response'}</Text></Pressable>
+            <Pressable accessibilityRole="button" disabled={pending} style={{ paddingVertical: 12 }} onPress={() => { setFailedTurn(null); setChatError(''); }}><Text style={{ color: '#b8bcc7' }}>Dismiss</Text></Pressable>
+          </View>}
+        </View>}
+        <MessageInput onShouldSend={getCompletion} onNewChat={handleNewChat} draft={draft} draftId={draftId} disabled={pending || !!failedTurn} />
       </KeyboardAvoidingView>
     </View>
   );

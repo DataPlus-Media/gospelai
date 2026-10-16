@@ -1,0 +1,2 @@
+- [Daily study scope](daily-study-scope.md) — preserve free guest use and local-only study; Bible Standard is inspiration, not a source or integration.
+- [Metro browser profiles](metro-browser-profiles.md) — exclude runtime browser profiles; temporary Chromium directories can crash the source watcher.

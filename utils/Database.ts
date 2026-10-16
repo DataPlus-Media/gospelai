@@ -1,6 +1,5 @@
 import { Message, Role } from '@/utils/Interfaces';
 import { type SQLiteDatabase } from 'expo-sqlite';
-import * as FileSystem from 'expo-file-system';
 
 export interface Note {
   id: number;
@@ -11,7 +10,7 @@ export interface Note {
 }
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 2;
+  const DATABASE_VERSION = 3;
   let result = await db.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
 
   let currentDbVersion = result?.user_version ?? 0;
@@ -20,7 +19,7 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
     return;
   }
   if (currentDbVersion === 0) {
-    const result = await db.execAsync(`
+    await db.execAsync(`
 PRAGMA journal_mode = 'wal';
 CREATE TABLE chats (
   id INTEGER PRIMARY KEY NOT NULL, 
@@ -53,7 +52,26 @@ CREATE TABLE IF NOT EXISTS notes (
     currentDbVersion = 2;
   }
 
-  await db.execAsync(`PRAGMA user_version = ${DATABASE_VERSION}`);
+  if (currentDbVersion === 2) {
+    await db.withTransactionAsync(async () => {
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS reading_position (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          book TEXT NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS saved_verses (
+          book TEXT NOT NULL, chapter INTEGER NOT NULL, verse INTEGER NOT NULL,
+          text TEXT NOT NULL, kind TEXT NOT NULL CHECK (kind IN ('bookmark','highlight')),
+          PRIMARY KEY (book, chapter, verse, kind)
+        );
+        CREATE TABLE IF NOT EXISTS reading_plan (
+          id INTEGER PRIMARY KEY CHECK (id = 1), started INTEGER NOT NULL DEFAULT 0
+        );
+        CREATE TABLE IF NOT EXISTS plan_completions (day INTEGER PRIMARY KEY CHECK (day BETWEEN 0 AND 6));
+        PRAGMA user_version = 3;
+      `);
+    });
+  }
 }
 
 export const addChat = async (db: SQLiteDatabase, title: string) => {
@@ -65,7 +83,7 @@ export const getChats = async (db: SQLiteDatabase) => {
 };
 
 export const getMessages = async (db: SQLiteDatabase, chatId: number): Promise<Message[]> => {
-  return (await db.getAllAsync<Message>('SELECT * FROM messages WHERE chat_id = ?', chatId)).map(
+  return (await db.getAllAsync<Message>('SELECT * FROM messages WHERE chat_id = ? ORDER BY id', chatId)).map(
     (message) => ({
       ...message,
       role: '' + message.role === 'bot' ? Role.Bot : Role.User,

@@ -1,7 +1,7 @@
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from 'react-native-gesture-handler';
 import Animated, {
@@ -16,13 +16,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 const ATouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export type Props = {
-  onShouldSend: (message: string) => void;
+  onShouldSend: (message: string) => Promise<boolean>;
   onNewChat?: () => void; // new optional callback
+  draft?: string;
+  draftId?: string;
+  disabled?: boolean;
 };
 
 
-const MessageInput = ({ onShouldSend, onNewChat }: Props) => {
+const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Props) => {
   const [message, setMessage] = useState('');
+  useEffect(() => { setMessage(draft || ''); }, [draft, draftId]);
   const { bottom } = useSafeAreaInsets();
   const expanded = useSharedValue(0);
   const inputRef = useRef<TextInput>(null);
@@ -51,12 +55,13 @@ const MessageInput = ({ onShouldSend, onNewChat }: Props) => {
     setMessage(text);
   };
 
-  const onSend = () => {
+  const sending = useRef(false);
+  const onSend = async () => {
     const text = message.replace(/\s*\n+\s*/g, ' ').trim();
-    if (!text) return;
-
-    onShouldSend(text);
-    setMessage('');
+    if (!text || disabled || sending.current) return;
+    sending.current = true;
+    try { if (await onShouldSend(text)) setMessage(''); }
+    finally { sending.current = false; }
   };
 
   return (
@@ -70,6 +75,7 @@ const MessageInput = ({ onShouldSend, onNewChat }: Props) => {
         <Animated.View style={[styles.buttonView, buttonViewStyle]}>
           <TouchableOpacity
             style={styles.newChatBtn}
+            disabled={disabled}
             onPress={() => {
               collapseItems();
               onNewChat?.();
@@ -83,6 +89,9 @@ const MessageInput = ({ onShouldSend, onNewChat }: Props) => {
         <TextInput
           ref={inputRef}
           placeholder="Message GospelAI"
+          accessibilityLabel="Message GospelAI. Editable draft"
+          autoFocus={false}
+          editable={!disabled}
           style={styles.messageInput}
           onFocus={collapseItems}
           onChangeText={onChangeText}
@@ -91,7 +100,7 @@ const MessageInput = ({ onShouldSend, onNewChat }: Props) => {
         />
 
         {message.length > 0 ? (
-          <TouchableOpacity onPress={onSend}>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send message" disabled={disabled} onPress={onSend} style={{ padding: 10, opacity: disabled ? 0.4 : 1 }}>
             <Ionicons name="arrow-up-circle" size={24} color={Colors.header_txt} />
           </TouchableOpacity>
         ) : (

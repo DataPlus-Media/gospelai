@@ -1,9 +1,9 @@
 import * as Clipboard from 'expo-clipboard';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
 import { useSQLiteContext } from 'expo-sqlite';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -25,6 +25,7 @@ import { BOOKS, BOOK_ID_TO_NAME, BOOK_NAME_TO_ID } from '@/constants/bibleBooks'
 import Colors from '@/constants/Colors';
 import { addNote } from '@/utils/Database';
 import { openBibleDb } from '@/utils/bibleDb';
+import { completePlanDay, getSavedVerses, getStudySummary, READING_PLAN, savePosition, SavedVerse, toggleSavedVerse, verseDraft } from '@/utils/study';
 
 type VerseRow = { verse: number; text: string };
 type SearchResult = { book_id: number; chapter: number; verse: number; text: string };
@@ -53,9 +54,52 @@ function parseSimpleRef(refRaw: string | undefined): {
 }
 
 export default function BibleScreen() {
-  const { ref: refParam } = useLocalSearchParams<{ ref?: string }>();
+  const { ref: refParam, jump, planDay } = useLocalSearchParams<{ ref?: string; jump?: string; planDay?: string }>();
   const appDb = useSQLiteContext();
-  const navigation = useNavigation();
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [saved, setSaved] = useState<SavedVerse[]>([]);
+  const [actionVerse, setActionVerse] = useState<VerseRow | null>(null);
+  const [notice, setNotice] = useState('');
+  const [completedDays, setCompletedDays] = useState<number[]>([]);
+  const [retry, setRetry] = useState(0);
+  const planIndex = planDay === undefined ? -1 : Number(planDay);
+  const planEntry = Number.isInteger(planIndex) ? READING_PLAN[planIndex] : undefined;
+  const pendingTarget = useRef<number | null>(null);
+  const visibleMeta = useRef<{ book: string; chapter: number } | null>(null);
+  const lastVisible = useRef('');
+  const positionQueue = useRef(Promise.resolve());
+  const persistPosition = (book: string, ch: number, verse: number) => {
+    positionQueue.current = positionQueue.current.then(() => savePosition(appDb, { book, chapter: ch, verse }))
+      .catch(() => setNotice('Could not save reading position. Tap a verse to try again.'));
+  };
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: VerseRow }[] }) => {
+    const meta = visibleMeta.current;
+    if (!meta || !viewableItems.length) return;
+    const target = pendingTarget.current;
+    if (target && !viewableItems.some(v => v.item.verse === target)) return;
+    const verse = target || viewableItems[0].item.verse;
+    pendingTarget.current = null;
+    const key = `${meta.book}-${meta.chapter}-${verse}`;
+    if (lastVisible.current === key) return;
+    lastVisible.current = key;
+    persistPosition(meta.book, meta.chapter, verse);
+  }).current;
+  useFocusEffect(useCallback(() => {
+    getSavedVerses(appDb).then(setSaved).catch(() => setNotice('Could not load saved verses. Reopen Bible to retry.'));
+    getStudySummary(appDb).then(s => setCompletedDays(s.plan.completed)).catch(() => setNotice('Could not load reading progress.'));
+  }, [appDb]));
+  async function saveMark(kind: SavedVerse['kind']) {
+    if (!actionVerse) return;
+    const item: SavedVerse = { book: bookName, chapter, ...actionVerse, kind };
+    const remove = saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === kind);
+    try {
+      await toggleSavedVerse(appDb, item, remove);
+      setSaved(await getSavedVerses(appDb));
+      setNotice(`${kind === 'bookmark' ? 'Bookmark' : 'Highlight'} ${remove ? 'removed' : 'saved'}.`);
+      setActionVerse(null);
+    } catch { setNotice('Could not save this change. Please try again.'); }
+  }
 
   // ===== Full Bible Search =====
   const [searchOpen, setSearchOpen] = useState(false);
@@ -117,6 +161,8 @@ export default function BibleScreen() {
       setChapter(result.chapter);
       setChapterInput(String(result.chapter));
       setHighlightVerse(result.verse);
+      pendingTarget.current = result.verse;
+      setQuery('');
     }
     closeSearch();
   };
@@ -131,6 +177,7 @@ export default function BibleScreen() {
     const reference = `${bookName} ${chapter}:${verseNum}`;
     try {
       await addNote(appDb, text, 'bible', reference);
+      setNotice('Verse saved to notes.');
       Alert.alert('Saved', 'Verse saved to notes.');
     } catch {
       Alert.alert('Error', 'Failed to save note.');
@@ -138,15 +185,9 @@ export default function BibleScreen() {
   };
 
   const onVerseLongPress = (verseNum: number, text: string) => {
-    Alert.alert('Verse Options', undefined, [
-      { text: 'Copy Verse', onPress: () => handleCopyVerse(verseNum, text) },
-      { text: 'Save to Notes', onPress: () => handleSaveVerse(verseNum, text) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    persistPosition(bookName, chapter, verseNum);
+    setActionVerse({ verse: verseNum, text });
   };
-
-  // Version dropdown (fixed to KJV for now)
-  const [version, setVersion] = useState<'kjv'>('kjv');
 
   // DB + loading
   const [db, setDb] = useState<SQLite.SQLiteDatabase | null>(null);
@@ -157,6 +198,7 @@ export default function BibleScreen() {
   const [bookName, setBookName] = useState<string>('Genesis');
   const [chapter, setChapter] = useState<number>(1);
   const [chapterInput, setChapterInput] = useState<string>('1'); // 🔹 input text for chapter
+  const activePlan = planEntry && refParam === planEntry.reference && parseSimpleRef(planEntry.reference).book === bookName && parseSimpleRef(planEntry.reference).chapter === chapter;
 
   // Highlighted verse (when navigated via ?ref=)
   const [highlightVerse, setHighlightVerse] = useState<number | null>(null);
@@ -170,6 +212,7 @@ export default function BibleScreen() {
 
   // flatlist ref to scroll to verse
   const listRef = useRef<FlatList<VerseRow>>(null);
+  const headerHeight = useRef(0);
 
   // ===== Books & Chapters modal (searchable) =====
   const [libOpen, setLibOpen] = useState(false);
@@ -190,6 +233,9 @@ export default function BibleScreen() {
   };
 
   const applyRef = (bname: string, ch: number) => {
+    visibleMeta.current = null;
+    pendingTarget.current = null;
+    setHighlightVerse(null);
     setBookName(bname);
     setChapter(ch);
     setChapterInput(String(ch)); // 🔹 keep the input synced
@@ -212,7 +258,26 @@ export default function BibleScreen() {
         setLoadingDb(false);
       }
     })();
-  }, []);
+  }, [retry]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStudySummary(appDb).then(({ position }) => {
+      if (cancelled) return;
+      const parsed = parseSimpleRef(refParam);
+      const p = parsed.book && parsed.chapter
+        ? { book: parsed.book, chapter: parsed.chapter, verse: parsed.verse || 1 }
+        : position;
+      if (p) {
+        setBookName(p.book); setChapter(p.chapter); setChapterInput(String(p.chapter));
+        setHighlightVerse(p.verse); pendingTarget.current = p.verse;
+      }
+      setReady(true);
+    }).catch(() => setError('Could not restore reading position. Reopen Bible to retry.'));
+    return () => { cancelled = true; };
+    // Only hydrate once. Explicit navigation is handled below after hydration.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appDb]);
 
   // Clamp chapter when book changes, and sync the input
   useEffect(() => {
@@ -232,19 +297,24 @@ export default function BibleScreen() {
 
   // If a ?ref= is provided, jump to it (book + chapter), and remember verse to highlight.
   useEffect(() => {
+    if (!ready) return;
     const { book, chapter: ch, verse } = parseSimpleRef(refParam);
     if (book && ch) {
+      visibleMeta.current = null;
+      setQuery('');
       setBookName(book);
       setChapter(ch);
       setChapterInput(String(ch)); // 🔹 sync input with deep link
       setHighlightVerse(Number.isFinite(verse as number) ? (verse as number) : null);
+      pendingTarget.current = verse || 1;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refParam]);
+  }, [refParam, jump, ready]);
 
   // Load verses on ref change
   useEffect(() => {
-    if (!db) return;
+    if (!db || !ready) return;
+    let cancelled = false;
+    visibleMeta.current = null;
     (async () => {
       try {
         setLoadingVerses(true);
@@ -261,26 +331,31 @@ export default function BibleScreen() {
             [bookId, chapter]
           );
         }
+        if (cancelled) return;
         setRows(out);
+        visibleMeta.current = { book: bookName, chapter };
+        persistPosition(bookName, chapter, pendingTarget.current || 1);
         setError('');
       } catch (e: any) {
+        if (cancelled) return;
         console.error(e);
         setRows([]);
         setError(e?.message || 'Failed to load verses.');
       } finally {
-        setLoadingVerses(false);
+        if (!cancelled) setLoadingVerses(false);
       }
     })();
-  }, [db, bookName, chapter]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [db, ready, bookName, chapter, refParam, jump]);
 
   // After verses load, scroll to the highlighted verse (if any)
   useEffect(() => {
     if (!highlightVerse || rows.length === 0) return;
     const index = rows.findIndex((r) => r.verse === highlightVerse);
     if (index >= 0) {
-      // index + 1 because ListHeaderComponent occupies index 0
       requestAnimationFrame(() => {
-        listRef.current?.scrollToIndex({ index: index + 1, animated: true });
+        listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0, viewOffset: headerHeight.current + 8 });
       });
     }
   }, [rows, highlightVerse]);
@@ -293,6 +368,18 @@ export default function BibleScreen() {
 
   return (
     <View style={styles.page}>
+      <View style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 4 }}>
+        <Text style={{ color: '#b8bcc7' }}>King James Version · Bible text · available offline on device</Text>
+        <Text style={{ color: '#b8bcc7' }}>Tap a verse for bookmark, highlight, notes or chat.</Text>
+        {!!notice && <Text accessibilityLiveRegion="polite" style={{ color: '#c8a951' }}>{notice}</Text>}
+        {activePlan && <TouchableOpacity style={{ paddingVertical: 12 }} disabled={completedDays.includes(planIndex)}
+          onPress={async () => {
+            try { await completePlanDay(appDb, planIndex); setCompletedDays([...completedDays, planIndex]); setNotice('Plan reading completed. Return to Today for the next day.'); }
+            catch { setNotice('Could not complete this reading. Please try again.'); }
+          }}>
+          <Text style={{ color: '#57d99e', fontWeight: '700' }}>{completedDays.includes(planIndex) ? 'Reading completed' : `Mark day ${planIndex + 1} complete · ${planEntry?.reference}`}</Text>
+        </TouchableOpacity>}
+      </View>
       <Stack.Screen
         options={{
           headerTitle: () => <HeaderDropDown title="Bible" />,
@@ -311,12 +398,20 @@ export default function BibleScreen() {
       <FlatList
         ref={listRef}
         data={filtered}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 50, minimumViewTime: 250 }}
+        onScrollToIndexFailed={({ index, averageItemLength }) => {
+          listRef.current?.scrollToOffset({ offset: Math.max(0, averageItemLength * index), animated: false });
+          setTimeout(() => {
+            if (index < rows.length) listRef.current?.scrollToIndex({ index, animated: false, viewPosition: 0, viewOffset: headerHeight.current + 8 });
+          }, 150);
+        }}
         keyExtractor={(item) => String(item.verse)}
         keyboardShouldPersistTaps="handled"
         stickyHeaderIndices={[0]}
         contentContainerStyle={{ paddingBottom: 18 }}
         ListHeaderComponent={
-          <>
+          <View style={{ backgroundColor: '#0f1016' }} onLayout={event => { headerHeight.current = event.nativeEvent.layout.height; }}>
             {/* Controls */}
             <View style={styles.controls}>
               {/* Book (opens searchable picker) */}
@@ -345,6 +440,9 @@ export default function BibleScreen() {
                       const meta = BOOKS.find((b) => b.name === bookName);
                       const maxCh = meta?.chapters ?? n;
                       const clamped = Math.min(n, maxCh);
+                      visibleMeta.current = null;
+                      pendingTarget.current = null;
+                      setHighlightVerse(null);
                       setChapter(clamped);
                     }
                   }}
@@ -353,7 +451,7 @@ export default function BibleScreen() {
               </View>
 
               {/* In-chapter search */}
-              <View style={[styles.field, { flex: 1 }]}>
+              <View style={styles.chapterSearch}>
                 <Text style={styles.label}>Find in chapter</Text>
                 <TextInput
                   value={query}
@@ -368,18 +466,22 @@ export default function BibleScreen() {
             <Text style={[styles.heading, { paddingHorizontal: 14 }]}>
               {bookName} {chapter}
             </Text>
-          </>
+          </View>
         }
         renderItem={({ item }) => {
           const isHit = item.verse === highlightVerse;
           return (
             <Pressable
               style={{ paddingHorizontal: 14 }}
+              accessibilityRole="button"
+              accessibilityLabel={`${bookName} ${chapter}:${item.verse}. Verse actions`}
+              onPress={() => onVerseLongPress(item.verse, item.text)}
               onLongPress={() => onVerseLongPress(item.verse, item.text)}
             >
-              <View style={[styles.verseCard, isHit && styles.verseCardHit]}>
+              <View style={[styles.verseCard, saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'highlight') && { backgroundColor: '#3a3018' }, isHit && styles.verseCardHit]}>
                 <Text style={[styles.verseNum, isHit && styles.verseNumHit]}>{item.verse}</Text>
                 <Text style={[styles.verseText, isHit && styles.verseTextHit]}>{item.text}</Text>
+                {saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'bookmark') && <Ionicons name="bookmark" size={18} color="#c8a951" />}
               </View>
             </Pressable>
           );
@@ -392,24 +494,37 @@ export default function BibleScreen() {
             </View>
           ) : null
         }
-        onScrollBeginDrag={() => {
-          // if the user scrolls manually, remove the highlight after a moment
-          if (highlightVerse) setTimeout(() => setHighlightVerse(null), 800);
-        }}
-        getItemLayout={(_, index) => ({
-          length: 64, // approximate row height
-          offset: 64 * index,
-          index,
-        })}
       />
+      <Modal visible={!!actionVerse} transparent animationType="fade" onRequestClose={() => setActionVerse(null)}>
+        <View style={{ flex: 1, backgroundColor: '#000b', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: '#111217', borderRadius: 16, padding: 20 }}>
+            <Text style={{ color: '#c8a951', fontSize: 18, fontWeight: '700' }}>{bookName} {chapter}:{actionVerse?.verse} · KJV</Text>
+            {(['bookmark', 'highlight'] as const).map(kind => {
+              const exists = saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === actionVerse?.verse && s.kind === kind);
+              return <TouchableOpacity key={kind} onPress={() => saveMark(kind)} style={{ paddingVertical: 14 }}><Text style={{ color: '#fff' }}>{exists ? 'Remove' : 'Add'} {kind}</Text></TouchableOpacity>;
+            })}
+            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => {
+              if (!actionVerse) return;
+              const draft = verseDraft(`${bookName} ${chapter}:${actionVerse.verse}`, actionVerse.text);
+              setActionVerse(null);
+              router.push({ pathname: '/(auth)/(drawer)/(chat)/new', params: { draft, draftId: String(Date.now()) } });
+            }}><Text style={{ color: '#57d99e' }}>Ask GospelAI · edit draft first</Text></TouchableOpacity>
+            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={async () => {
+              if (!actionVerse) return;
+              try { await handleCopyVerse(actionVerse.verse, actionVerse.text); setNotice('Verse copied.'); setActionVerse(null); }
+              catch { setNotice('Could not copy verse. Please try again.'); }
+            }}><Text style={{ color: '#fff' }}>Copy verse</Text></TouchableOpacity>
+            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={async () => { if (actionVerse) await handleSaveVerse(actionVerse.verse, actionVerse.text); setActionVerse(null); }}><Text style={{ color: '#fff' }}>Save to notes</Text></TouchableOpacity>
+            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => setActionVerse(null)}><Text style={{ color: '#b8bcc7' }}>Close</Text></TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Non-blocking error box */}
       {!!error && !loadingDb && !loadingVerses && (
         <View style={styles.errorBox}>
           <Text style={styles.dimText}>{error}</Text>
-          <Text style={[styles.dimText, { marginTop: 6 }]}>
-            Ensure the bundled DB exists at <Text style={styles.code}>assets/bible/kjv.sqlite</Text>.
-          </Text>
+          <TouchableOpacity onPress={() => setRetry(r => r + 1)}><Text style={{ color: '#57d99e', padding: 12 }}>Retry loading Bible</Text></TouchableOpacity>
         </View>
       )}
 
@@ -583,10 +698,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#171923', // .bible-controls border
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'flex-end',
   },
-  field: { width: 170 },
-  fieldSmall: { width: 100 },
+  field: { flex: 1, minWidth: 140 },
+  fieldSmall: { width: 84 },
+  chapterSearch: { width: '100%' },
   label: {
     fontSize: 12,
     color: '#b8bcc7', // --ink-dim

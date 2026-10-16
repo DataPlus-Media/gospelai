@@ -2,7 +2,13 @@ import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as SQLite from 'expo-sqlite';
 
-export async function openBibleDb(): Promise<SQLite.SQLiteDatabase> {
+let opening: Promise<SQLite.SQLiteDatabase> | undefined;
+export function openBibleDb(): Promise<SQLite.SQLiteDatabase> {
+  if (!opening) opening = copyAndOpen().catch(error => { opening = undefined; throw error; });
+  return opening;
+}
+
+async function copyAndOpen(): Promise<SQLite.SQLiteDatabase> {
   const sqliteDir = `${FileSystem.documentDirectory ?? ''}SQLite`;
   const dbPath = `${sqliteDir}/kjv.sqlite`;
 
