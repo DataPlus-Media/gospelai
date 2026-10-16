@@ -17,7 +17,7 @@ function load(path) {
 }
 const python = `
 import sqlite3,json,sys
-db=sqlite3.connect(':memory:',isolation_level=None)
+db=sqlite3.connect(sys.argv[1],isolation_level=None)
 db.row_factory=sqlite3.Row
 for line in sys.stdin:
  try:
@@ -36,8 +36,8 @@ for line in sys.stdin:
   print(json.dumps({'result':result}),flush=True)
  except Exception as e: print(json.dumps({'error':str(e)}),flush=True)
 `;
-function database() {
-  const process = spawn('python', ['-u', '-c', python]);
+function database(filename = ':memory:') {
+  const process = spawn('python', ['-u', '-c', python, filename]);
   const pending = [];
   readline.createInterface({ input: process.stdout }).on('line', line => {
     const { resolve, reject } = pending.shift();
@@ -140,4 +140,5 @@ async function main() {
   assert.ok(study.verseDraft('John 3:16', 'Actual KJV text').includes('John 3:16 (KJV):\n\n"Actual KJV text"'));
   console.log('PASS verse draft uses supplied KJV text and reference');
 }
-main().catch(e => { console.error(e); process.exitCode = 1; });
+module.exports = { load, database };
+if (require.main === module) main().catch(e => { console.error(e); process.exitCode = 1; });

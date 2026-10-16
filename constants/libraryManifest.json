@@ -1,0 +1,14 @@
+{
+  "henry-whole-bible": {
+    "revision": "ccel-mhc2-1",
+    "bytes": 39487522,
+    "sha256": "40377491e6d69a41dafdba96d8bdb634e312ee63050005d2fecd07323a1bf847",
+    "sections": 1262
+  },
+  "spurgeon-morning-evening": {
+    "revision": "ccel-morn-eve-1",
+    "bytes": 1544618,
+    "sha256": "a560bd734f1ed524815fd17dbd2337bd02c56d82ba2b54e516be03dbd149c509",
+    "sections": 732
+  }
+}

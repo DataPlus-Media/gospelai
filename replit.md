@@ -61,12 +61,13 @@ npm run web   # Start Expo web dev server on port 5000
 - **Landing page**: `app/index.tsx` preserves free guest welcome and sign-in/register/OAuth buttons. Continue opens Today; signed-in users enter Today.
 - **Support screen**: `components/Support.tsx` (native IAP) + `components/Support.web.tsx` (web fallback). Platform-specific file resolution prevents expo-iap crash on web.
 - **Header home button**: The GospelAI chat title returns both guests and signed-in users to Today. Chat drafts do not autofocus or auto-send; failures have a retry action.
+- **Christian insight**: Guest-accessible Christian author books, linked from the drawer/menu, Today and the Bible page (chapter or selected verse). Canonical references keep links independent of future translations. Contains verified full Henry and Morning and Evening editions; Gill, Treasury of David and All of Grace show edition-rights blockers. Downloaded text and positions use a separate `library.db`; notes remain in `chat.db`. See `docs/authors-library.md` for provenance, App Storage setup and native-release configuration. Production static builds use `npm run build:web` to retrieve packages from App Storage; development uses `npm run library:import`.
 - **Drawer auth footer**: Drawer footer conditionally shows user profile (signed in) or "Sign In" / "Create Account" buttons (signed out).
 
 ## Deployment
 
 - Configured as **static** deployment
-- Build: `npx expo export --platform web`
+- Build: `npm run build:web` (verified library packages from App Storage, then Expo export)
 - Output: `dist/` directory
 
 ## Study verification

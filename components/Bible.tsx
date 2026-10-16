@@ -370,7 +370,16 @@ export default function BibleScreen() {
     <View style={styles.page}>
       <View style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 4 }}>
         <Text style={{ color: '#b8bcc7' }}>King James Version · Bible text · available offline on device</Text>
-        <Text style={{ color: '#b8bcc7' }}>Tap a verse for bookmark, highlight, notes or chat.</Text>
+        <Text style={{ color: '#b8bcc7' }}>Tap a verse for bookmark, highlight, notes, Christian insight or chat.</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open Christian insight for ${bookName} ${chapter}`}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 12 }}
+          onPress={() => router.push({ pathname: '/(auth)/(drawer)/library', params: {
+            book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), jump: String(Date.now()),
+          } })}>
+          <Ionicons name="library-outline" size={19} color="#c8a951" />
+          <Text style={{ color: '#c8a951', fontWeight: '700' }}>Christian insight</Text>
+          <Ionicons name="arrow-forward" size={16} color="#c8a951" />
+        </TouchableOpacity>
         {!!notice && <Text accessibilityLiveRegion="polite" style={{ color: '#c8a951' }}>{notice}</Text>}
         {activePlan && <TouchableOpacity style={{ paddingVertical: 12 }} disabled={completedDays.includes(planIndex)}
           onPress={async () => {
@@ -503,6 +512,15 @@ export default function BibleScreen() {
               const exists = saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === actionVerse?.verse && s.kind === kind);
               return <TouchableOpacity key={kind} onPress={() => saveMark(kind)} style={{ paddingVertical: 14 }}><Text style={{ color: '#fff' }}>{exists ? 'Remove' : 'Add'} {kind}</Text></TouchableOpacity>;
             })}
+            <TouchableOpacity accessibilityRole="button" style={{ paddingVertical: 14 }} onPress={() => {
+              if (!actionVerse) return;
+              const verse = actionVerse.verse;
+              setActionVerse(null);
+              router.push({ pathname: '/(auth)/(drawer)/library', params: {
+                book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), verse: String(verse),
+                jump: String(Date.now()),
+              } });
+            }}><Text style={{ color: '#c8a951' }}>Christian insight · this verse</Text></TouchableOpacity>
             <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => {
               if (!actionVerse) return;
               const draft = verseDraft(`${bookName} ${chapter}:${actionVerse.verse}`, actionVerse.text);

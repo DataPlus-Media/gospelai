@@ -11,12 +11,14 @@ config.resolver.blockList = [
 ];
 // expo-sqlite's web worker requires cross-origin isolation.
 const enhanceMiddleware = config.server.enhanceMiddleware;
+
+const libraryMiddleware = require('./scripts/library-dev-middleware.cjs');
 config.server.enhanceMiddleware = (middleware, server) => {
   const handler = enhanceMiddleware ? enhanceMiddleware(middleware, server) : middleware;
   return (req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
     res.setHeader('Cross-Origin-Embedder-Policy', 'credentialless');
-    handler(req, res, next);
+    libraryMiddleware(req, res, () => handler(req, res, next));
   };
 };
 

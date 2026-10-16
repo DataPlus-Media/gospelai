@@ -1,0 +1,30 @@
+name: Dependency portability
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - package.json
+      - package-lock.json
+      - .npmrc
+      - scripts/check-release-lock.cjs
+      - .github/workflows/dependency-portability.yml
+  push:
+    paths:
+      - package.json
+      - package-lock.json
+      - .npmrc
+      - scripts/check-release-lock.cjs
+      - .github/workflows/dependency-portability.yml
+permissions:
+  contents: read
+jobs:
+  public-registry-install:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - run: node scripts/check-release-lock.cjs --install

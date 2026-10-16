@@ -1,0 +1,141 @@
+import type { SQLiteDatabase } from 'expo-sqlite';
+import type {
+  InstalledWork, LibraryHit, LibraryPackage, LibraryWork,
+  ReadingPosition, SectionSummary,
+} from './libraryTypes';
+
+// Kept separate from personal notes, chats and Bible progress. Work removal
+// deliberately retains reading positions and every personal note.
+export async function initLibrary(db: SQLiteDatabase) {
+  await db.execAsync(`
+    CREATE TABLE IF NOT EXISTS library_downloads (
+      work_id TEXT PRIMARY KEY, revision TEXT NOT NULL, bytes INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS library_sections (
+      work_id TEXT NOT NULL, id TEXT NOT NULL, ordinal INTEGER NOT NULL,
+      title TEXT NOT NULL, source_url TEXT NOT NULL, attribution TEXT NOT NULL,
+      book INTEGER, chapter INTEGER, verse_start INTEGER, verse_end INTEGER,
+      PRIMARY KEY(work_id,id)
+    );
+    CREATE INDEX IF NOT EXISTS library_scripture ON library_sections(book,chapter);
+    CREATE TABLE IF NOT EXISTS library_paragraphs (
+      work_id TEXT NOT NULL, section_id TEXT NOT NULL, paragraph INTEGER NOT NULL,
+      text TEXT NOT NULL, PRIMARY KEY(work_id,section_id,paragraph)
+    );
+    CREATE TABLE IF NOT EXISTS library_positions (
+      work_id TEXT PRIMARY KEY, section_id TEXT NOT NULL, paragraph INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS library_notices (
+      work_id TEXT PRIMARY KEY, notices TEXT NOT NULL
+    );
+  `);
+}
+
+export function validatePackage(value: unknown, work: LibraryWork): LibraryPackage {
+  const p = value as LibraryPackage;
+  if (!work.package || work.blocker || !p || p.schema !== 1 || p.workId !== work.id ||
+    p.revision !== work.package.revision || !Array.isArray(p.notices) ||
+    !p.notices.length || !p.notices.every(n => typeof n === 'string') ||
+    !Array.isArray(p.sections) || p.sections.length !== work.package.sections) {
+    throw new Error('This download does not match the verified edition. Please retry.');
+  }
+  const ids = new Set<string>();
+  for (const section of p.sections) {
+    const m = section.scripture;
+    if (!section || typeof section.id !== 'string' || !section.id || ids.has(section.id) ||
+      typeof section.title !== 'string' || !section.title ||
+      typeof section.attribution !== 'string' || !section.attribution ||
+      typeof section.sourceUrl !== 'string' || !section.sourceUrl.startsWith('https://') ||
+      !Array.isArray(section.paragraphs) || !section.paragraphs.length ||
+      !section.paragraphs.every(t => typeof t === 'string' && t.trim().length > 0) ||
+      (m && (!Number.isInteger(m.book) || m.book < 1 || m.book > 66 ||
+        !Number.isInteger(m.chapter) || m.chapter < 1 ||
+        ((m.verseStart === undefined) !== (m.verseEnd === undefined)) ||
+        (m.verseStart !== undefined && (!Number.isInteger(m.verseStart) || m.verseStart < 1 ||
+          !Number.isInteger(m.verseEnd) || m.verseEnd! < m.verseStart))))) {
+      throw new Error('The downloaded text is incomplete or has invalid passage mappings.');
+    }
+    ids.add(section.id);
+  }
+  return p;
+}
+
+export async function installedWorks(db: SQLiteDatabase) {
+  return db.getAllAsync<InstalledWork>('SELECT * FROM library_downloads');
+}
+
+export async function installWork(db: SQLiteDatabase, work: LibraryWork, value: unknown,
+  onProgress: (fraction: number) => void = () => {}) {
+  const p = validatePackage(value, work);
+  // A single transaction means interrupted imports never appear as ready.
+  await db.withTransactionAsync(async () => {
+    await db.runAsync('DELETE FROM library_paragraphs WHERE work_id=?', work.id);
+    await db.runAsync('DELETE FROM library_sections WHERE work_id=?', work.id);
+    for (let ordinal = 0; ordinal < p.sections.length; ordinal++) {
+      const s = p.sections[ordinal], m = s.scripture;
+      await db.runAsync(`INSERT INTO library_sections
+        (work_id,id,ordinal,title,source_url,attribution,book,chapter,verse_start,verse_end)
+        VALUES (?,?,?,?,?,?,?,?,?,?)`, work.id, s.id, ordinal, s.title, s.sourceUrl,
+      s.attribution, m?.book ?? null, m?.chapter ?? null, m?.verseStart ?? null, m?.verseEnd ?? null);
+      for (let i = 0; i < s.paragraphs.length; i++) {
+        await db.runAsync('INSERT INTO library_paragraphs VALUES (?,?,?,?)', work.id, s.id, i, s.paragraphs[i]);
+      }
+      if (ordinal % 10 === 0) onProgress((ordinal + 1) / p.sections.length);
+    }
+    await db.runAsync('INSERT OR REPLACE INTO library_notices VALUES (?,?)', work.id, JSON.stringify(p.notices));
+    await db.runAsync('INSERT OR REPLACE INTO library_downloads VALUES (?,?,?)',
+      work.id, p.revision, work.package!.bytes);
+  });
+  onProgress(1);
+}
+
+export async function removeWork(db: SQLiteDatabase, workId: string) {
+  await db.withTransactionAsync(async () => {
+    for (const table of ['library_paragraphs', 'library_sections', 'library_notices', 'library_downloads']) {
+      await db.runAsync(`DELETE FROM ${table} WHERE work_id=?`, workId);
+    }
+  });
+}
+
+export async function sectionsForWork(db: SQLiteDatabase, id: string) {
+  return db.getAllAsync<SectionSummary>('SELECT id,title,ordinal FROM library_sections WHERE work_id=? ORDER BY ordinal', id);
+}
+export async function readSection(db: SQLiteDatabase, workId: string, sectionId: string) {
+  const meta = await db.getFirstAsync<{ title: string; source_url: string; attribution: string }>(
+    'SELECT title,source_url,attribution FROM library_sections WHERE work_id=? AND id=?', workId, sectionId);
+  if (!meta) throw new Error('This section is not downloaded. Return to the work and download it again.');
+  const paragraphs = await db.getAllAsync<{ paragraph: number; text: string }>(
+    'SELECT paragraph,text FROM library_paragraphs WHERE work_id=? AND section_id=? ORDER BY paragraph', workId, sectionId);
+  return { ...meta, paragraphs };
+}
+export async function getLibraryPosition(db: SQLiteDatabase, id: string) {
+  return db.getFirstAsync<ReadingPosition>('SELECT section_id,paragraph FROM library_positions WHERE work_id=?', id);
+}
+export async function saveLibraryPosition(db: SQLiteDatabase, id: string, sectionId: string, paragraph: number) {
+  await db.runAsync('INSERT OR REPLACE INTO library_positions VALUES (?,?,?)', id, sectionId, paragraph);
+}
+export async function workNotices(db: SQLiteDatabase, id: string): Promise<string[]> {
+  const row = await db.getFirstAsync<{ notices: string }>('SELECT notices FROM library_notices WHERE work_id=?', id);
+  return row ? JSON.parse(row.notices) : [];
+}
+
+export async function searchLibrary(db: SQLiteDatabase, term: string, workIds: string[]) {
+  if (!term.trim() || !workIds.length) return [];
+  const escaped = term.trim().replace(/[\\%_]/g, c => `\\${c}`);
+  return db.getAllAsync<LibraryHit>(`
+    SELECT p.work_id,p.section_id,p.paragraph,p.text,s.title
+    FROM library_paragraphs p
+    JOIN library_sections s ON s.work_id=p.work_id AND s.id=p.section_id
+    JOIN library_downloads d ON d.work_id=p.work_id
+    WHERE p.work_id IN (${workIds.map(() => '?').join(',')}) AND p.text LIKE ? ESCAPE '\\'
+    ORDER BY p.work_id,s.ordinal,p.paragraph LIMIT 100`, ...workIds, `%${escaped}%`);
+}
+export async function commentaryForPassage(db: SQLiteDatabase, book: number, chapter: number, verse?: number) {
+  return db.getAllAsync<{
+    work_id: string; id: string; title: string; verse_start: number | null; verse_end: number | null;
+  }>(`SELECT s.work_id,s.id,s.title,s.verse_start,s.verse_end FROM library_sections s
+    JOIN library_downloads d ON d.work_id=s.work_id
+    WHERE s.book=? AND s.chapter=? AND
+      (? IS NULL OR s.verse_start IS NULL OR (? BETWEEN s.verse_start AND s.verse_end))
+    ORDER BY s.work_id,s.ordinal`, book, chapter, verse ?? null, verse ?? null);
+}

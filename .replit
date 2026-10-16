@@ -39,8 +39,13 @@ externalPort = 3000
 
 [deployment]
 deploymentTarget = "static"
-build = ["npx", "expo", "export", "--platform", "web"]
+build = ["npm", "run", "build:web"]
 publicDir = "dist"
+
+[userenv]
+
+[userenv.shared]
+LIBRARY_STORAGE_BUCKET_ID = "replit-objstore-39f35c6c-d21a-483a-b502-9a71688abd63"
 
 [postMerge]
 path = "scripts/post-merge.sh"

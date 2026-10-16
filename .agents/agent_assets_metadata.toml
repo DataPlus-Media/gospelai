@@ -1,0 +1,44 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Z4dze8G41njBxbNtXaylm"
+uri = "file://assets/images/icon.png"
+type = "image"
+title = "Updated GospelAI logo"
+description = "Refreshed ivory Bible-and-cross emblem on charcoal, prepared as an opaque 1024 × 1024 app icon."
+logical_id = "a0ad734c-b89e-4e47-a485-a997fb1f396c"
+content_hash = "sha256:f433590cd92b399f67e61595d1bd4e53b4cddbf458982461eb7351556053bac6"
+size = 137849
+mtime_ms = 1792171456428
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/a0ad734c-b89e-4e47-a485-a997fb1f396c/f0fd52cf-10a6-4c8e-9c30-ae828c2d0d49"
+storage_version_token = "1792171601953398"
+content_type = "image/png"
+
+[[outputs]]
+id = "km9HA5qUjrbEAWSllUzlx"
+uri = "file://assets/images/bible.png"
+type = "image"
+title = "Updated Bible image"
+description = "Burgundy leather Bible with gold lettering, optimized and applied to the app’s Bible navigation."
+logical_id = "3b6d714e-a6bd-4668-ae29-a4c771693941"
+content_hash = "sha256:d324d39c93a405d6cf61c753062d94e0638a5a4880e948983f5327ee8ed91da9"
+size = 330722
+mtime_ms = 1792171458040
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/3b6d714e-a6bd-4668-ae29-a4c771693941/a097a8c3-2c7d-4c56-a3e5-810f56d1f9ec"
+storage_version_token = "1792171602715305"
+content_type = "image/png"
+
+[[outputs]]
+id = "J3IYzTXwPt9dna6Nuk0Km"
+uri = "file://generated-artifacts/drawer/phone.png"
+type = "image"
+title = "Refreshed GospelAI drawer"
+description = "Grouped study navigation, updated branding, burgundy-and-gold page selection, local conversations and a clear New chat action."
+logical_id = "a844f44e-63cc-46d6-b0ef-16ade4ce4bc9"
+content_hash = "sha256:3829ec6ffe2c6dcf0060b407a14a056e0a31c082dcdb601d8cdf58ca0ee13736"
+size = 50874
+mtime_ms = 1792172561736
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/a844f44e-63cc-46d6-b0ef-16ade4ce4bc9/640e17eb-930d-4417-9679-d48b98567410"
+storage_version_token = "1792172602853432"
+content_type = "image/png"
