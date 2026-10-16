@@ -38,3 +38,4 @@ yarn-error.*
 
 app-example
 /generated-artifacts/
+/public/library-packages/

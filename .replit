@@ -45,3 +45,6 @@ publicDir = "dist"
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 240000
+
+[objectStorage]
+defaultBucketID = "replit-objstore-39f35c6c-d21a-483a-b502-9a71688abd63"
