@@ -5,3 +5,4 @@
 - [Authors insight scope](christian-insight-scope.md) — renamed from Christian insight; reference layout with current colours; preserve source accuracy and translation-independent links.
 - [Native/web accessibility](native-web-accessibility.md) — selection props and icon-inclusive button names need separate browser verification.
 - [Welcome motion verification](welcome-motion-verification.md) — test reduced motion at cold launch as well as live changes; wait for Expo’s client tree in browser checks.
+- [Git merge readiness](git-merge-readiness.md) — verify remote ancestry after a local merge commit; staged resolutions and clean checkpoints alone did not finish the pull.
