@@ -12,8 +12,8 @@ More Bible translations are planned later, not part of this work. Keep the conne
 
 **How to apply:** Match commentary using canonical Bible references rather than the wording or identity of a Bible translation. Do not add translations as part of the authors-library work.
 
-Preserve the Christian insight concept and visual layout shown in `attached_assets/image_1792222030171.png`: dark presentation, scripture card with translation label, Author Insights / Compare / Ask AI controls, and stacked author cards.
+Keep the visual design already created for Christian insight. Use `attached_assets/image_1792222030171.png` only as a structural reference: scripture and translation first, Author Insights / Compare / Ask AI controls next, then stacked author cards.
 
-**Why:** The user said, “This is the context the idea we have I like and don't want to change.”
+**Why:** The user clarified, “I like the one youve created the image I provided is just how I want the structure to be.”
 
-**How to apply:** Treat this image as the approved visual reference, not an invitation to explore replacement layouts. The surrounding ChatGPT interface is not part of GospelAI. Keep real source availability and attribution accurate without changing the approved concept.
+**How to apply:** Preserve the created design's styling rather than copying the screenshot's styling. Follow the screenshot's content order and control grouping. The surrounding ChatGPT interface is not part of GospelAI. Keep source availability and attribution accurate.
