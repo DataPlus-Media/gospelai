@@ -1,5 +1,6 @@
 import { BOOKS } from '@/constants/bibleBooks';
 import { openBibleDb } from '@/utils/bibleDb';
+import { bibleStorageBookId } from '@/utils/bibleBookIds';
 import type { LibraryWork, PassageMatch } from './libraryTypes';
 
 export type SelectedScripture = { reference: string; text: string; translation: string };
@@ -21,7 +22,8 @@ export async function loadSelectedScripture(book: number, chapter: number, verse
     throw new Error('This scripture reference is not valid. Select a passage in the Bible and try again.');
   }
   const db = await openBibleDb();
-  const params = verse === undefined ? [book, chapter] : [book, chapter, verse];
+  const storageBook = await bibleStorageBookId(db, book);
+  const params = verse === undefined ? [storageBook, chapter] : [storageBook, chapter, verse];
   const where = `book_id = ? AND chapter = ?${verse === undefined ? '' : ' AND verse = ?'} ORDER BY verse`;
   let rows: { verse: number; text: string }[];
   try {

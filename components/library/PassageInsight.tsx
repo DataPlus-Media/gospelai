@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import type { SQLiteDatabase } from 'expo-sqlite';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -13,11 +13,13 @@ import {
   View,
 } from 'react-native';
 import { LIBRARY_WORKS } from '@/constants/libraryWorks';
+import { BOOKS } from '@/constants/bibleBooks';
 import {
   commentaryForPassage,
   installedWorks,
   readSection,
   workNotices,
+  workAvailability,
 } from '@/utils/library';
 import type { InstalledWork, LibraryWork, PassageMatch } from '@/utils/libraryTypes';
 import { coverageLabel, loadSelectedScripture, sourceDraft } from '@/utils/insight';
@@ -58,6 +60,7 @@ export default function PassageInsight({
   const [scriptureError, setScriptureError] = useState<string | null>(null);
   const [rows, setRows] = useState<PassageMatch[]>([]);
   const [installed, setInstalled] = useState<InstalledWork[]>([]);
+  const [availability, setAvailability] = useState<Awaited<ReturnType<typeof workAvailability>>>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadedSources, setLoadedSources] = useState<Record<string, LoadedSource>>({});
@@ -71,6 +74,7 @@ export default function PassageInsight({
   const mounted = useRef(true);
   const requestToken = useRef(0);
   const detailTokens = useRef<Record<string, number>>({});
+  const detailSequence = useRef(0);
 
   useEffect(() => {
     mounted.current = true;
@@ -81,18 +85,28 @@ export default function PassageInsight({
     const token = ++requestToken.current;
     setLoading(true);
     setLoadError(null);
+    setRows([]);
+    setAvailability([]);
+    detailTokens.current = {};
+    setLoadedSources({});
+    setSourceErrors({});
+    setSourceLoading({});
+    setExpanded({});
+    setSelectedKeys([]);
     try {
-      const [matches, downloads] = await Promise.all([
+      const [matches, downloads, status] = await Promise.all([
         commentaryForPassage(db, book, chapter, verse),
         installedWorks(db),
+        workAvailability(db, LIBRARY_WORKS),
       ]);
       if (mounted.current && token === requestToken.current) {
-        const downloaded = new Set(downloads.map(item => item.work_id));
+        const downloaded = new Set(status.filter(item => item.state === 'ready').map(item => item.work_id));
         setRows(matches.filter(row => {
           const work = workFor(row.work_id);
           return work?.kind === 'commentary' && !work.blocker && downloaded.has(row.work_id);
         }));
         setInstalled(downloads);
+        setAvailability(status);
       }
     } catch (error) {
       if (mounted.current && token === requestToken.current) {
@@ -103,9 +117,10 @@ export default function PassageInsight({
     }
   }, [db, book, chapter, verse]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     void loadPassage();
-  }, [loadPassage]);
+    return () => { requestToken.current++; };
+  }, [loadPassage]));
 
   useEffect(() => {
     let active = true;
@@ -128,18 +143,22 @@ export default function PassageInsight({
     const states: { work: LibraryWork; state: CatalogState }[] = [];
     for (const work of LIBRARY_WORKS) {
       if (work.kind !== 'commentary') continue;
-      if (work.blocker) states.push({ work, state: 'rights' });
-      else if (!installedIds.has(work.id)) states.push({ work, state: 'download' });
+      const status = availability.find(item => item.work_id === work.id)?.state;
+      if (!status) continue;
+      if (status !== 'ready') states.push({ work, state: status });
       else if (!matchesByWork.has(work.id)) states.push({ work, state: 'unmapped' });
     }
     return states;
-  }, [installedIds, matchesByWork]);
+  }, [availability, matchesByWork]);
+  const chapterLabel = BOOKS.find(item => item.id === book && chapter >= 1 && chapter <= item.chapters)
+    ? `${BOOKS.find(item => item.id === book)!.name} ${chapter}` : undefined;
+  const availableDownload = catalogStates.some(item => item.state === 'download' && item.work.id === 'henry-whole-bible' && chapterLabel);
   const devotionals = useMemo(() => LIBRARY_WORKS.filter(work => work.kind === 'devotional'), []);
 
   const loadSource = useCallback(async (row: PassageMatch) => {
     const key = rowKey(row);
     if (loadedSources[key] || sourceLoading[key]) return;
-    const token = (detailTokens.current[key] ?? 0) + 1;
+    const token = ++detailSequence.current;
     detailTokens.current[key] = token;
     setSourceLoading(current => ({ ...current, [key]: true }));
     setSourceErrors(current => ({ ...current, [key]: '' }));
@@ -263,7 +282,7 @@ export default function PassageInsight({
             <Text style={styles.sectionEyebrow}>READ THE RECORD</Text>
             <Text style={styles.sectionTitle}>Author insights</Text>
           </View>
-          {loading ? <ActivityIndicator color={C.green} /> : <Text style={styles.count}>{rows.length} {rows.length === 1 ? 'match' : 'matches'}</Text>}
+          {loading ? <ActivityIndicator color={C.green} /> : !loadError && <Text style={styles.count}>{availableDownload ? 'Download available' : catalogStates.some(item => item.state === 'incomplete') ? 'Repair required' : `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}`}</Text>}
         </View>
         <Text style={styles.intro}>
           Historical commentary is shown only where a downloaded source names this passage. These are the writers’ preserved words, not generated opinions.
@@ -278,10 +297,10 @@ export default function PassageInsight({
           </View>
         ) : null}
 
-        {!loading && rows.length === 0 && !loadError ? (
+        {!loading && rows.length === 0 && !loadError && !availableDownload ? (
           <View style={styles.emptyPanel}>
             <View style={styles.emptyMark}><Ionicons name="document-text-outline" size={19} color={C.gold} /></View>
-            <Text style={styles.emptyTitle}>No downloaded commentary maps to this passage</Text>
+            <Text style={styles.emptyTitle}>{catalogStates.some(item => item.state === 'incomplete') ? 'A commentary download needs repair' : 'No verified commentary mapping for this passage'}</Text>
             <Text style={styles.emptyCopy}>The catalog states below distinguish unavailable downloads, editions that cannot be redistributed, and downloaded works with no verified mapping here.</Text>
           </View>
         ) : null}
@@ -359,7 +378,7 @@ export default function PassageInsight({
           );
         })}
 
-        {mode === 'compare' && <View style={styles.compareSection}>
+        {!loading && !loadError && mode === 'compare' && <View style={styles.compareSection}>
           <View style={styles.compareHeading}>
             <View>
               <Text style={styles.sectionEyebrow}>SIDE BY SIDE</Text>
@@ -430,13 +449,15 @@ export default function PassageInsight({
           </View>
         </View>}
 
-        {catalogStates.length > 0 ? (
+        {!loading && !loadError && catalogStates.length > 0 ? (
           <View style={styles.catalogSection}>
             <Text style={styles.sectionEyebrow}>CATALOG STATUS</Text>
             <Text style={styles.sectionTitle}>Other commentary</Text>
             <Text style={styles.catalogIntro}>Works not shown as passage matches are not silently treated as commentary for this verse.</Text>
             {catalogStates.map(({ work, state }) => (
-              <PassageCatalogRow key={work.id} work={work} state={state} onOpen={() => onOpenWork(work.id)} />
+              <PassageCatalogRow key={work.id} work={work} state={state}
+                chapterLabel={work.id === 'henry-whole-bible' ? chapterLabel : undefined}
+                onOpen={() => onOpenWork(work.id)} />
             ))}
           </View>
         ) : null}

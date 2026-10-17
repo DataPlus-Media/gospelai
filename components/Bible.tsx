@@ -25,6 +25,7 @@ import { BOOKS, BOOK_ID_TO_NAME, BOOK_NAME_TO_ID } from '@/constants/bibleBooks'
 import Colors from '@/constants/Colors';
 import { addNote } from '@/utils/Database';
 import { openBibleDb } from '@/utils/bibleDb';
+import { bibleStorageBookId } from '@/utils/bibleBookIds';
 import { completePlanDay, getSavedVerses, getStudySummary, READING_PLAN, savePosition, SavedVerse, toggleSavedVerse, verseDraft } from '@/utils/study';
 
 type VerseRow = { verse: number; text: string };
@@ -131,12 +132,12 @@ export default function BibleScreen() {
       let results: SearchResult[] = [];
       try {
         results = await db.getAllAsync<SearchResult>(
-          'SELECT book_id, chapter, verse, text FROM verse WHERE text LIKE ? LIMIT 100',
+          'SELECT b.book_reference_id AS book_id,v.chapter,v.verse,v.text FROM verse v JOIN book b ON b.id=v.book_id WHERE b.id<=66 AND v.text LIKE ? LIMIT 100',
           [`%${term}%`]
         );
       } catch {
         results = await db.getAllAsync<SearchResult>(
-          'SELECT book_id, chapter, verse, text FROM verses WHERE text LIKE ? LIMIT 100',
+          'SELECT b.book_reference_id AS book_id,v.chapter,v.verse,v.text FROM verses v JOIN book b ON b.id=v.book_id WHERE b.id<=66 AND v.text LIKE ? LIMIT 100',
           [`%${term}%`]
         );
       }
@@ -318,7 +319,7 @@ export default function BibleScreen() {
     (async () => {
       try {
         setLoadingVerses(true);
-        const bookId = BOOK_NAME_TO_ID[bookName];
+        const bookId = await bibleStorageBookId(db, BOOK_NAME_TO_ID[bookName]);
         let out: VerseRow[] = [];
         try {
           out = await db.getAllAsync<VerseRow>(

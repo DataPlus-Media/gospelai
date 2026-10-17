@@ -1,17 +1,25 @@
 const assert = require('node:assert/strict');
 const { load, database } = require('./check-study.cjs');
-const library = load('utils/library.ts');
+const library = load('utils/library.ts', { '@/constants/bibleBooks': load('constants/bibleBooks.ts') });
 const bible = database('assets/bible/kjv.sqlite');
-const books = [{ id: 43, name: 'John', chapters: 21 }];
+const books = load('constants/bibleBooks.ts').BOOKS;
+const bookIds = load('utils/bibleBookIds.ts');
 const insight = load('utils/insight.ts', {
   '@/constants/bibleBooks': { BOOKS: books },
   '@/utils/bibleDb': { openBibleDb: async () => bible },
+  '@/utils/bibleBookIds': bookIds,
 });
 
 async function main() {
   const db = database();
   try {
     const scripture = await insight.loadSelectedScripture(43, 3, 16);
+    const john18 = await insight.loadSelectedScripture(43, 3, 18);
+    assert.match(john18.text, /^He that believeth on him is not condemned/);
+    assert.match((await insight.loadSelectedScripture(44, 17, 1)).text, /Amphipolis and Apollonia/);
+    assert.match((await insight.loadSelectedScripture(45, 1, 1)).text, /^Paul, a servant of Jesus Christ/);
+    assert.equal(await bookIds.bibleStorageBookId(bible, 44), 45);
+    assert.equal(await bookIds.bibleStorageBookId(bible, 45), 44);
     assert.equal(scripture.reference, 'John 3:16');
     assert.equal(scripture.translation, 'King James Version (KJV)');
     assert.match(scripture.text, /^For God so loved the world/);

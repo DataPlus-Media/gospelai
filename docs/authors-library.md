@@ -101,6 +101,40 @@ For a **native release build**, set `EXPO_PUBLIC_LIBRARY_BASE_URL` to the HTTPS 
 
 ## Verification
 
+### Verse-availability diagnosis and regression checks
+
+John 3:18 on a fresh library returns no *downloaded* rows. With the complete
+verified Henry package installed, the same lookup returns `b43-c003`, the
+original John 3 section with null verse boundaries (whole-chapter coverage).
+No John book-ID, inclusive-range, or imported chapter mismatch was reproduced.
+The reported screenshot by itself cannot establish that browser’s download
+status. The old blanket empty message obscured the distinction between a
+download not present and a passage not covered.
+
+The passage now advertises Henry’s verified chapter coverage before download,
+with the full-work 37.7 MB size and offline benefit. The author-row action opens
+edition details; only the explicit download button fetches the complete work.
+Successful installation returns automatically to the unchanged Bible passage.
+Passage results reload on focus/return and verse changes. Download health checks
+verify markers, revision, size, section counts, readable sections, notices and
+all Henry chapter mappings. Incomplete source installs can be replaced without
+removing notes or reading positions. Storage failures have their own retry state
+and never become a no-coverage result.
+
+The full canonical check also exposed a separate real mismatch: the bundled
+Bible’s `book.id` values for Acts and Romans do not equal their canonical
+`book_reference_id` values. Bible reading/search and insight Scripture loading
+now translate at the Bible-storage boundary; library mappings and saved
+canonical references are not rewritten. Regression checks verify Acts 17:1 and
+Romans 1:1 text, as well as every Henry chapter at its first/last Bible verse.
+
+The browser regression starts from Bible verse actions for John 3:18 on a fresh
+device, exercises failed download/retry and automatic return, details/reader
+return, storage-read failure/retry, removal/reinstall, damaged-source repair,
+verse changes, and reopening downloaded original text offline inside the running
+app. SQLite tests additionally close and reopen the Henry database and confirm
+the stored original paragraph matches the verified package.
+
 - `npm run test:study`: existing guest routing, migration preservation, notes, Bible progress, bookmarks, highlights and reading-plan tests.
 - `npm run test:library`: real complete-package checksums and coverage; import/retry/rollback; literal scoped search and exact passage opening; disk-close/reopen offline persistence; chapter versus verse-range semantics; independent removal and note preservation.
 - `node scripts/check-library-browser.cjs`: isolated guest browser journey against the running development app. Requires Chromium (or `CHROMIUM_PATH`). Uses real imported editions, with one deliberately failed request to verify Retry.

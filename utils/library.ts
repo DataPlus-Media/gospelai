@@ -1,4 +1,5 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
+import { BOOKS } from '@/constants/bibleBooks';
 import type {
   InstalledWork, LibraryHit, LibraryPackage, LibraryWork,
   ReadingPosition, SectionSummary, PassageMatch,
@@ -62,6 +63,44 @@ export function validatePackage(value: unknown, work: LibraryWork): LibraryPacka
 
 export async function installedWorks(db: SQLiteDatabase) {
   return db.getAllAsync<InstalledWork>('SELECT * FROM library_downloads');
+}
+
+// A ready marker alone is not evidence that the local edition is readable.
+// Check source tables only; repair must never remove personal content/positions.
+export async function workAvailability(db: SQLiteDatabase, works: LibraryWork[]) {
+  const downloads = await installedWorks(db);
+  const sections = await db.getAllAsync<{ work_id: string; total: number; empty: number }>(`
+    SELECT s.work_id,COUNT(*) AS total,
+      SUM(CASE WHEN NOT EXISTS (
+        SELECT 1 FROM library_paragraphs p
+        WHERE p.work_id=s.work_id AND p.section_id=s.id AND LENGTH(TRIM(p.text))>0
+      ) THEN 1 ELSE 0 END) AS empty
+    FROM library_sections s GROUP BY s.work_id`);
+  const notices = await db.getAllAsync<{ work_id: string; notices: string }>('SELECT * FROM library_notices');
+  const henryMappings = await db.getAllAsync<{ book: number; chapter: number }>(`
+    SELECT book,chapter FROM library_sections WHERE work_id='henry-whole-bible'
+      AND book IS NOT NULL AND verse_start IS NULL AND verse_end IS NULL`);
+  const mapped = new Set(henryMappings.map(row => `${row.book}:${row.chapter}`));
+  const henryComplete = BOOKS.every(book =>
+    Array.from({ length: book.chapters }, (_, index) => `${book.id}:${index + 1}`).every(key => mapped.has(key)));
+  return works.map(work => {
+    const marker = downloads.find(row => row.work_id === work.id);
+    const content = sections.find(row => row.work_id === work.id);
+    const notice = notices.find(row => row.work_id === work.id);
+    let validNotices = false;
+    if (notice) {
+      try {
+        const parsed: unknown = JSON.parse(notice.notices);
+        validNotices = Array.isArray(parsed) && parsed.length > 0 && parsed.every(n => typeof n === 'string');
+      } catch { /* An invalid local notice is an incomplete install, not no coverage. */ }
+    }
+    const complete = !!work.package && !!marker &&
+      marker.revision === work.package.revision && marker.bytes === work.package.bytes &&
+      content?.total === work.package.sections && !content.empty && validNotices &&
+      (work.id !== 'henry-whole-bible' || henryComplete);
+    return { work_id: work.id, state: work.blocker ? 'rights' as const : complete ? 'ready' as const
+      : marker || content || notice ? 'incomplete' as const : 'download' as const };
+  });
 }
 
 export async function installWork(db: SQLiteDatabase, work: LibraryWork, value: unknown,

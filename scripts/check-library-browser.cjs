@@ -108,7 +108,7 @@ async function main() {
     await click('Remove download'); await click('Remove');
     await text('Download for offline use').waitFor();
     await go('/library?book=43&chapter=3&verse=16&jump=empty');
-    await page.getByText('No downloaded commentary maps to this passage', { exact: true }).waitFor();
+    await page.getByText('Available chapter commentary · download required', { exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log('PASS removal confirmation, personal note retained, independent downloads, explicit commentary empty state, no browser errors');
   } catch (error) {

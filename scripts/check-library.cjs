@@ -4,7 +4,7 @@ const { tmpdir } = require('node:os');
 const { join } = require('node:path');
 const { createHash } = require('node:crypto');
 const { load, database } = require('./check-study.cjs');
-const api = load('utils/library.ts');
+const api = load('utils/library.ts', { '@/constants/bibleBooks': load('constants/bibleBooks.ts') });
 const manifest = require('../constants/libraryManifest.json');
 const source = id => JSON.parse(readFileSync(`generated-artifacts/library/${id}.json`, 'utf8'));
 const work = id => ({ id, package: manifest[id] });
@@ -15,6 +15,7 @@ async function main() {
   try {
     await api.initLibrary(db);
     await api.initLibrary(db);
+    assert.equal((await api.workAvailability(db, [work('henry-whole-bible')]))[0].state, 'download');
     for (const [id, m] of Object.entries(manifest)) {
       const bytes = readFileSync(`generated-artifacts/library/${id}.json`);
       assert.equal(bytes.length, m.bytes);
@@ -75,10 +76,59 @@ async function main() {
     console.log('PASS interrupted import rolls back atomically; retry does not duplicate sections');
 
     await api.installWork(db, work(henry.workId), henry);
-    const matches = await api.commentaryForPassage(db, 43, 3, 16);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'ready');
+    const matches = await api.commentaryForPassage(db, 43, 3, 18);
     assert.equal(matches.length, 1);
     assert.equal(matches[0].id, 'b43-c003');
     assert.equal(matches[0].verse_start, null);
+    const books = load('constants/bibleBooks.ts').BOOKS;
+    let checked = 0;
+    const bibleDb = database('assets/bible/kjv.sqlite');
+    try {
+      const chapterEnds = await bibleDb.getAllAsync('SELECT b.book_reference_id AS book_id,v.chapter,MAX(v.verse) AS last FROM verse v JOIN book b ON b.id=v.book_id WHERE b.id<=66 GROUP BY b.book_reference_id,v.chapter');
+      for (const book of books) {
+        for (let chapter = 1; chapter <= book.chapters; chapter++) {
+          const end = chapterEnds.find(row => row.book_id === book.id && row.chapter === chapter);
+          assert.ok(end, `${book.name} ${chapter} exists in bundled Bible`);
+          for (const verse of [1, end.last]) {
+            const found = await api.commentaryForPassage(db, book.id, chapter, verse);
+            assert.equal(found.length, 1, `${book.name} ${chapter}:${verse}`);
+            assert.equal(found[0].id, `b${String(book.id).padStart(2, '0')}-c${String(chapter).padStart(3, '0')}`);
+            assert.equal(found[0].verse_start, null);
+            assert.equal(found[0].verse_end, null);
+          }
+          checked++;
+        }
+      }
+      assert.equal(checked, 1189);
+    } finally { bibleDb.close(); }
+    console.log('PASS all 1189 canonical Henry chapter mappings at first/last Bible verses and John 3:18');
+    await api.saveLibraryPosition(db, henry.workId, 'b43-c003', 2);
+    await db.runAsync(`DELETE FROM library_paragraphs WHERE work_id=? AND section_id='b43-c003'`, henry.workId);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'incomplete');
+    await api.installWork(db, work(henry.workId), henry);
+    assert.equal((await api.getLibraryPosition(db, henry.workId)).paragraph, 2);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'ready');
+    await db.runAsync(`UPDATE library_sections SET book=NULL WHERE work_id=? AND id='b43-c003'`, henry.workId);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'incomplete', 'lost chapter mapping is repairable, not no coverage');
+    await db.runAsync(`UPDATE library_sections SET book=43 WHERE work_id=? AND id='b43-c003'`, henry.workId);
+    await db.runAsync(`UPDATE library_downloads SET revision='damaged' WHERE work_id=?`, henry.workId);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'incomplete');
+    await db.runAsync(`DELETE FROM library_downloads WHERE work_id=?`, henry.workId);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'incomplete', 'orphaned source rows need repair');
+    await api.installWork(db, work(henry.workId), henry);
+    assert.equal((await api.workAvailability(db, [{ ...work('blocked'), blocker: 'Rights unresolved' }]))[0].state, 'rights');
+    const realGetAll = db.getAllAsync;
+    db.getAllAsync = async () => { throw new Error('storage unavailable'); };
+    await assert.rejects(api.workAvailability(db, [work(henry.workId)]), /storage unavailable/);
+    db.getAllAsync = realGetAll;
+    console.log('PASS missing text, mismatched markers, orphaned installs, storage failures and safe repair retaining position');
+    db.close(); db = database(join(dir, 'library.sqlite'));
+    assert.equal((await api.commentaryForPassage(db, 43, 3, 18))[0].id, 'b43-c003');
+    assert.equal((await api.readSection(db, henry.workId, 'b43-c003')).paragraphs[0].text,
+      henry.sections.find(s => s.id === 'b43-c003').paragraphs[0]);
+    assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'ready');
+    console.log('PASS Henry persists across database close/reopen and reads original John 3 offline');
     // Exercise precise verse-range semantics without altering the source package.
     await db.runAsync(`INSERT INTO library_sections VALUES ('henry-whole-bible','test-verse-range',9999,'Test mapping','','Test',43,3,16,18)`);
     assert.equal((await api.commentaryForPassage(db, 43, 3, 15)).length, 1);

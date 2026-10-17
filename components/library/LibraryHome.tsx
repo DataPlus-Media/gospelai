@@ -7,7 +7,7 @@ import {
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { LIBRARY_AUTHORS, LIBRARY_WORKS } from '@/constants/libraryWorks';
-import { getLibraryPosition, installedWorks, removeWork, searchLibrary, workNotices } from '@/utils/library';
+import { getLibraryPosition, installedWorks, removeWork, searchLibrary, workNotices, workAvailability } from '@/utils/library';
 import type { InstalledWork, LibraryHit, LibraryWork } from '@/utils/libraryTypes';
 import LibraryReader from '@/components/library/LibraryReader';
 import LibraryWorkCard from '@/components/library/LibraryWorkCard';
@@ -34,6 +34,7 @@ export default function LibraryHome({
   const [selectedTitleId, setSelectedTitleId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [installed, setInstalled] = useState<InstalledWork[]>([]);
+  const [availability, setAvailability] = useState<Awaited<ReturnType<typeof workAvailability>>>([]);
   const [hits, setHits] = useState<LibraryHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
@@ -79,8 +80,11 @@ export default function LibraryHome({
 
   const refreshInstalled = useCallback(async () => {
     try {
-      const result = await installedWorks(db);
-      if (mountedRef.current) { setInstalled(result); setPageError(null); }
+      const [result, status] = await Promise.all([installedWorks(db), workAvailability(db, LIBRARY_WORKS)]);
+      if (mountedRef.current) {
+        setInstalled(result.filter(row => status.some(item => item.work_id === row.work_id && item.state === 'ready')));
+        setAvailability(status); setPageError(null);
+      }
     } catch (e) {
       if (mountedRef.current) setPageError(e instanceof Error ? e.message : 'Downloaded books could not be loaded. Please retry.');
     }
@@ -99,8 +103,8 @@ export default function LibraryHome({
     }
   }, [db]);
   useEffect(() => {
-    if (selectedWork && !isReading) void openDetail(selectedWork);
-  }, [selectedWork, isReading, openDetail]);
+    if (selectedWork && !isReading) { void openDetail(selectedWork); void refreshInstalled(); }
+  }, [selectedWork, isReading, openDetail, refreshInstalled]);
 
   // A monotonically increasing request token prevents an older search from replacing a newer query.
   const searchToken = React.useRef(0);
@@ -144,6 +148,9 @@ export default function LibraryHome({
       await refreshInstalled();
       const [notices, position] = await Promise.all([workNotices(db, work.id), getLibraryPosition(db, work.id)]);
       if (mountedRef.current) { setDetailNotices(notices); setDetailPosition(position); }
+      if (mountedRef.current && params.book && params.chapter) {
+        setParams({ work: undefined, section: undefined, paragraph: undefined });
+      }
     } catch (e) {
       if (mountedRef.current) setWorkError(e instanceof Error ? e.message : 'The download could not be completed. Please retry.');
     } finally {
@@ -181,11 +188,12 @@ export default function LibraryHome({
 
   if (selectedWork) {
     const isInstalled = installedIds.has(selectedWork.id);
+    const needsRepair = availability.some(item => item.work_id === selectedWork.id && item.state === 'incomplete');
     const title = selectedWork.title;
     return (
       <View style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Pressable onPress={() => setParams({ work: undefined, section: undefined, paragraph: undefined })} style={styles.backLink}><Ionicons name="arrow-back" size={17} color={C.green} /><Text style={styles.backText}>Christian insight</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={params.book ? 'Return to selected passage' : 'Back to Christian insight'} onPress={() => setParams({ work: undefined, section: undefined, paragraph: undefined })} style={styles.backLink}><Ionicons name="arrow-back" size={17} color={C.green} /><Text style={styles.backText}>{params.book ? 'Return to selected passage' : 'Christian insight'}</Text></Pressable>
           <Text style={styles.eyebrow}>{selectedWork.author.toUpperCase()} · {selectedWork.kind.toUpperCase()}</Text>
           <Text style={styles.detailTitle}>{title}</Text>
           <View style={styles.sourcePanel}>
@@ -197,6 +205,9 @@ export default function LibraryHome({
             {selectedWork.package ? <Text style={styles.packageMeta}>Verified package · {selectedWork.package.sections} sections · {formatBytes(selectedWork.package.bytes)}</Text> : null}
           </View>
           {selectedWork.blocker ? <View style={styles.blocker}><Ionicons name="lock-closed-outline" size={18} color="#D5A78C" /><Text style={styles.blockerText}>{selectedWork.blocker}</Text><Text style={styles.blockerFoot}>This work cannot be downloaded in the app at this time.</Text></View> : null}
+          {needsRepair ? <View style={styles.errorPanel}><Text style={styles.errorText}>Incomplete download. Repair downloads and replaces this work’s source text only. Your notes and reading position are kept.</Text></View> : null}
+          {!isInstalled && selectedWork.package && !selectedWork.blocker ? <Text style={styles.deviceNote}>Full work download · {formatBytes(selectedWork.package.bytes)}. After installation, the original text is available offline on this device.{params.book ? ' You will return to your selected passage automatically.' : ''}</Text> : null}
+          {pageError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{pageError}</Text><Pressable accessibilityRole="button" onPress={() => void refreshInstalled()}><Text style={styles.linkText}>Retry loading downloads</Text></Pressable></View> : null}
           {workError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{workError}</Text><Pressable onPress={() => selectedWork.package && !isInstalled ? void beginDownload(selectedWork) : void openDetail(selectedWork)} style={styles.retryLink}><Text style={styles.linkText}>Retry</Text></Pressable></View> : null}
           {downloadProgress ? <View style={styles.progressPanel}><Text style={styles.progressLabel}>{downloadProgress.phase === 'installing' ? 'Installing on this device' : 'Downloading verified text'}</Text><View style={styles.track}><View style={[styles.fill, { width: `${Math.round((downloadProgress.fraction ?? 0) * 100)}%` }]} /></View><Text style={styles.progressMeta}>{downloadProgress.fraction === null ? `${formatBytes(downloadProgress.received)} received` : `${Math.round(downloadProgress.fraction * 100)}%`}{downloadProgress.total > 0 ? ` · ${formatBytes(downloadProgress.total)}` : ''}</Text></View> : null}
           {isInstalled ? (
@@ -208,7 +219,7 @@ export default function LibraryHome({
             </>
           ) : selectedWork.package && !selectedWork.blocker ? (
             <Pressable accessibilityRole="button" disabled={downloadBusy} onPress={() => void beginDownload(selectedWork)} style={[styles.primaryButton, downloadBusy && styles.disabled]}>
-              {downloadBusy ? <ActivityIndicator size="small" color="#10231B" /> : <><Ionicons name="download-outline" size={18} color="#10231B" /><Text style={styles.primaryText}>Download for offline use</Text></>}
+              {downloadBusy ? <ActivityIndicator size="small" color="#10231B" /> : <><Ionicons name="download-outline" size={18} color="#10231B" /><Text style={styles.primaryText}>{needsRepair ? 'Repair download' : 'Download for offline use'}</Text></>}
             </Pressable>
           ) : null}
           <Text style={styles.deviceNote}>Library text is stored locally. Removing a work never deletes notes or reading position.</Text>
