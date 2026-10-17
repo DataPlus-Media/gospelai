@@ -28,7 +28,7 @@ async function main() {
   try {
     await page.goto(base + '/bible?ref=John%203%3A18&jump=fresh-insight');
     await button('John 3:18. Verse actions').click();
-    await text('Christian insight · this verse').click();
+    await text('Authors insight · this verse').click();
     await text('John 3:18').waitFor();
     await text('Available chapter commentary · download required').waitFor();
     await mkdir('generated-artifacts/insight-browser', { recursive: true });
@@ -37,6 +37,13 @@ async function main() {
     assert.equal(await text('0 matches').count(), 0);
     assert.equal(await page.locator('body').evaluate(el => el.scrollWidth > window.innerWidth), false);
     assert.equal(await text('Rights blocked').count(), 2);
+    await button('Ask AI about selected scripture').click();
+    const scriptureDraft = page.getByRole('textbox', { name: 'Message GospelAI. Editable draft', exact: true });
+    await scriptureDraft.waitFor();
+    assert.match(await scriptureDraft.inputValue(), /SCRIPTURE · John 3:18 · King James Version/);
+    assert.match(await scriptureDraft.inputValue(), /Help me understand John 3:18/);
+    assert.equal(await page.getByText('Source draft:', { exact: false }).count(), 0);
+    await navigate('/library?book=43&chapter=3&verse=18&jump=fresh-insight');
     await button('Compare sources').click();
     await page.getByText('Only 0 downloaded commentary', { exact: false }).waitFor();
     let failOnce = true;
@@ -79,6 +86,7 @@ async function main() {
     await navigate('/library?book=43&chapter=3&verse=16&jump=real');
     await button('Read full source section: John 3').waitFor();
     await text('Whole chapter').waitFor();
+    await text('EXCERPT · DOWNLOADED SOURCE TEXT').waitFor();
     await button('Compare sources').click();
     await page.getByText('Only 1 downloaded commentary', { exact: false }).waitFor();
     await button('Author Insights').click();
@@ -190,7 +198,7 @@ async function main() {
     await context.setOffline(false);
     await navigate('/bible?ref=Acts%2017%3A1&jump=canonical-acts');
     await button('Acts 17:1. Verse actions').click();
-    await text('Christian insight · this verse').click();
+    await text('Authors insight · this verse').click();
     await button('Read full source section: Acts 17').waitFor();
     assert.match(await page.getByTestId('selected-scripture-text').innerText(), /Amphipolis and Apollonia/);
     await navigate('/library?book=43&chapter=4&jump=chapter');

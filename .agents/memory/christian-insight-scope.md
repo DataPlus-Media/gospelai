@@ -1,10 +1,12 @@
 ---
-name: Christian insight product decisions
-description: User-selected name and future translation boundary for the Christian authors feature.
+name: Authors insight product decisions
+description: User-selected name, reference layout and future translation boundary for the Christian authors feature.
 ---
-Call the Christian author books feature “Christian insight.”
+Call the Christian author books feature “Authors insight.”
 
-**Why:** The user explicitly selected this name.
+**Why:** The user explicitly renamed Christian insight to Authors insight.
+
+**How to apply:** Use Authors insight in visible navigation and headings; preserve internal identifiers and saved data.
 
 More Bible translations are planned later, not part of this work. Keep the connection between Bible reading and Christian insight independent of the translation.
 
@@ -12,9 +14,9 @@ More Bible translations are planned later, not part of this work. Keep the conne
 
 **How to apply:** Match commentary using canonical Bible references rather than the wording or identity of a Bible translation. Do not add translations as part of the authors-library work.
 
-Keep the visual design already created for Christian insight. Use `attached_assets/image_1792222030171.png` only as a structural reference: scripture and translation first, Author Insights / Compare / Ask AI controls next, then stacked author cards.
+Keep the current colour scheme for Authors insight. Follow the user's supplied layout: scripture and translation first, Author Insights / Compare / Ask AI controls next, then stacked author cards.
 
-**Why:** The user clarified, “I like the one youve created the image I provided is just how I want the structure to be.”
+**Why:** The user clarified, “I like the one youve created the image I provided is just how I want the structure to be,” then requested the revised layout while sticking with the current colour scheme.
 
 **How to apply:** Preserve the created design's styling rather than copying the screenshot's styling. Follow the screenshot's content order and control grouping. The surrounding ChatGPT interface is not part of GospelAI. Keep source availability and attribution accurate.
 For the first verse-study release, prioritize original downloaded author text and reader-controlled comparison, not generated author interpretations. The uploaded proposal's summaries are illustrative, never source quotations.

@@ -12,7 +12,7 @@ const keys = ['work', 'section', 'paragraph', 'book', 'chapter', 'verse', 'jump'
 export default function LibraryScreen() {
   const db = useSQLiteContext();
   return (
-    <Suspense fallback={<View style={styles.loading}><Text style={styles.loadingTitle}>Opening Christian insight…</Text><View style={styles.skeleton} /><View style={styles.skeletonShort} /></View>}>
+    <Suspense fallback={<View style={styles.loading}><Text style={styles.loadingTitle}>Opening Authors insight…</Text><View style={styles.skeleton} /><View style={styles.skeletonShort} /></View>}>
       <SQLiteProvider databaseName="library.db" onInit={initLibrary}>
         <LibraryRouteContent appDb={db} />
       </SQLiteProvider>

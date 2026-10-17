@@ -315,7 +315,7 @@ export default function TodayScreen() {
             <Shortcut icon="chatbubble-ellipses-outline" label="Chat" hint="Talk it through" onPress={() => router.push(ROUTES.chat)} />
             <Shortcut icon="document-text-outline" label="Notes" hint="Your reflections" onPress={() => router.push(ROUTES.notes)} />
             <Shortcut icon="bookmark-outline" label="Saved" hint="Keep close" onPress={() => router.push(ROUTES.saved)} />
-            <Shortcut icon="library-outline" label="Christian insight" hint="Study Christian authors" onPress={() => router.push(ROUTES.library)} />
+            <Shortcut icon="library-outline" label="Authors insight" hint="Study Christian authors" onPress={() => router.push(ROUTES.library)} />
           </View>
         </View>
 

@@ -75,6 +75,7 @@ export default function PassageInsight({
   const requestToken = useRef(0);
   const detailTokens = useRef<Record<string, number>>({});
   const detailSequence = useRef(0);
+  const previewAttempts = useRef(new Set<string>());
 
   useEffect(() => {
     mounted.current = true;
@@ -88,6 +89,7 @@ export default function PassageInsight({
     setRows([]);
     setAvailability([]);
     detailTokens.current = {};
+    previewAttempts.current.clear();
     setLoadedSources({});
     setSourceErrors({});
     setSourceLoading({});
@@ -184,6 +186,15 @@ export default function PassageInsight({
     }
   }, [db, loadedSources, sourceLoading]);
 
+  useEffect(() => {
+    rows.forEach(row => {
+      const key = rowKey(row);
+      if (previewAttempts.current.has(key)) return;
+      previewAttempts.current.add(key);
+      void loadSource(row);
+    });
+  }, [rows, loadSource]);
+
   const toggleCompare = (row: PassageMatch) => {
     setMode('compare');
     const key = rowKey(row);
@@ -217,6 +228,19 @@ export default function PassageInsight({
     });
   };
 
+  const beginScriptureDraft = () => {
+    if (!scripture) return;
+    const draft = [
+      `Help me understand ${scripture.reference}. Please distinguish your AI-generated explanation from Bible text and from any historical author's original words.`,
+      `SCRIPTURE · ${scripture.reference} · ${scripture.translation}\n${scripture.text}`,
+      'MY QUESTION (edit before sending):\nWhat is the meaning and context of this passage?',
+    ].join('\n\n');
+    router.push({
+      pathname: '/(auth)/(drawer)/(chat)/new',
+      params: { draft, draftId: String(Date.now()) },
+    });
+  };
+
   const openExternal = (url: string) => {
     void Linking.openURL(url).catch(() => setLinkError('Could not open the source link. External editions and rights pages require a connection and a browser. Downloaded text remains available offline.'));
   };
@@ -231,7 +255,7 @@ export default function PassageInsight({
         <View style={styles.topLine}>
           <View style={styles.headingBlock}>
             <Text style={styles.eyebrow}>GOSPELAI · HISTORICAL SOURCES</Text>
-            <Text style={styles.title}>Christian insight</Text>
+            <Text style={styles.title}>Authors insight</Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -268,19 +292,28 @@ export default function PassageInsight({
           ) : <View style={styles.skeleton}><View style={styles.skeletonLine} /><View style={[styles.skeletonLine, styles.skeletonShort]} /></View>}
         </View>
 
-        <View style={styles.cardActions}>
+        <View style={styles.modeTabs}>
           {(['authors', 'compare'] as const).map(value => <Pressable key={value}
             accessibilityRole="button" accessibilityLabel={value === 'authors' ? 'Author Insights' : 'Compare sources'}
             accessibilityState={{ selected: mode === value }} aria-pressed={mode === value}
-            onPress={() => setMode(value)} style={[styles.compareButton, mode === value && styles.compareButtonActive]}>
-            <Text style={[styles.compareText, mode === value && styles.compareTextActive]}>{value === 'authors' ? 'Author Insights' : 'Compare'}</Text>
+            onPress={() => setMode(value)} style={[styles.modeTab, mode === value && styles.modeTabActive]}>
+            <Text style={[styles.modeTabText, mode === value && styles.modeTabTextActive]}>{value === 'authors' ? 'Author Insights' : 'Compare'}</Text>
           </Pressable>)}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Ask AI about selected scripture"
+            disabled={!scripture}
+            onPress={beginScriptureDraft}
+            style={[styles.modeTab, !scripture && styles.disabledButton]}
+          >
+            <Text style={styles.modeTabText}>Ask AI</Text>
+          </Pressable>
         </View>
         {linkError && <Text accessibilityRole="alert" style={styles.errorText}>{linkError}</Text>}
         <View style={styles.sectionTitleRow}>
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.sectionEyebrow}>READ THE RECORD</Text>
-            <Text style={styles.sectionTitle}>Author insights</Text>
+            <Text style={styles.sectionTitle}>Commentaries on {scripture?.reference ?? 'selected passage'}</Text>
           </View>
           {loading ? <ActivityIndicator color={C.green} /> : !loadError && <Text style={styles.count}>{availableDownload ? 'Download available' : catalogStates.some(item => item.state === 'incomplete') ? 'Repair required' : `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}`}</Text>}
         </View>
@@ -316,13 +349,46 @@ export default function PassageInsight({
           return (
             <View key={key} style={[styles.sourceCard, isSelected && styles.sourceCardSelected]}>
               <View style={styles.sourceCardHead}>
-                <View style={styles.sourceIdentity}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${work.author} commentary`}
+                  accessibilityState={{ expanded: isExpanded }}
+                  onPress={() => {
+                    setExpanded(current => ({ ...current, [key]: !current[key] }));
+                    if (!loaded) void loadSource(row);
+                  }}
+                  style={styles.sourceIdentity}
+                >
                   <Text style={styles.authorName}>{work.author}</Text>
                   <Text selectable style={styles.workTitle}>{work.title}</Text>
-                </View>
+                </Pressable>
                 <View style={styles.coverageBadge}><Text style={styles.coverageText}>{coverageLabel(row)}</Text></View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${isExpanded ? 'Collapse' : 'Expand'} ${work.author} commentary`}
+                  accessibilityState={{ expanded: isExpanded }}
+                  onPress={() => {
+                    setExpanded(current => ({ ...current, [key]: !current[key] }));
+                    if (!loaded) void loadSource(row);
+                  }}
+                  style={styles.expandChevron}
+                >
+                  <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={C.gold} />
+                </Pressable>
               </View>
               <Text selectable style={styles.sectionName}>{row.title}</Text>
+              {mode === 'authors' && loaded?.content.paragraphs[0] ? (
+                <View style={styles.excerptBlock}>
+                  <Text selectable style={styles.sourceExcerpt}>
+                    {loaded.content.paragraphs[0].text.length > 420
+                      ? `${loaded.content.paragraphs[0].text.slice(0, 420).trimEnd()}…`
+                      : loaded.content.paragraphs[0].text}
+                  </Text>
+                  <Text style={styles.excerptSource}>EXCERPT · DOWNLOADED SOURCE TEXT</Text>
+                </View>
+              ) : mode === 'authors' && sourceLoading[key] ? (
+                <View style={styles.excerptSkeleton}><View style={styles.excerptSkeletonLine} /><View style={[styles.excerptSkeletonLine, styles.excerptSkeletonShort]} /></View>
+              ) : null}
               <View style={styles.cardActions}>
                 <Pressable
                   accessibilityRole="button"

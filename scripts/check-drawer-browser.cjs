@@ -52,7 +52,7 @@ async function main() {
     await page.goto(`${base}/today`, { waitUntil: 'networkidle' });
     await page.getByText('Continue reading', { exact: true }).waitFor();
     for (const [label, path] of [
-      ['Bible', '/bible'], ['Christian insight', '/library'], ['Saved verses', '/saved'],
+      ['Bible', '/bible'], ['Authors insight', '/library'], ['Saved verses', '/saved'],
       ['Notes', '/notes'], ['Support Us', '/support'], ['Today', '/today'],
     ]) await route(label, path);
     console.log('PASS grouped routes, current-page selection and drawer dismissal including Bible listener');

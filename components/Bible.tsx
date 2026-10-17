@@ -371,14 +371,14 @@ export default function BibleScreen() {
     <View style={styles.page}>
       <View style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 4 }}>
         <Text style={{ color: '#b8bcc7' }}>King James Version · Bible text · available offline on device</Text>
-        <Text style={{ color: '#b8bcc7' }}>Tap a verse for bookmark, highlight, notes, Christian insight or chat.</Text>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open Christian insight for ${bookName} ${chapter}`}
+        <Text style={{ color: '#b8bcc7' }}>Tap a verse for bookmark, highlight, notes, Authors insight or chat.</Text>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open Authors insight for ${bookName} ${chapter}`}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 12 }}
           onPress={() => router.push({ pathname: '/(auth)/(drawer)/library', params: {
             book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), jump: String(Date.now()),
           } })}>
           <Ionicons name="library-outline" size={19} color="#c8a951" />
-          <Text style={{ color: '#c8a951', fontWeight: '700' }}>Christian insight</Text>
+          <Text style={{ color: '#c8a951', fontWeight: '700' }}>Authors insight</Text>
           <Ionicons name="arrow-forward" size={16} color="#c8a951" />
         </TouchableOpacity>
         {!!notice && <Text accessibilityLiveRegion="polite" style={{ color: '#c8a951' }}>{notice}</Text>}
@@ -521,7 +521,7 @@ export default function BibleScreen() {
                 book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), verse: String(verse),
                 jump: String(Date.now()),
               } });
-            }}><Text style={{ color: '#c8a951' }}>Christian insight · this verse</Text></TouchableOpacity>
+            }}><Text style={{ color: '#c8a951' }}>Authors insight · this verse</Text></TouchableOpacity>
             <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => {
               if (!actionVerse) return;
               const draft = verseDraft(`${bookName} ${chapter}:${actionVerse.verse}`, actionVerse.text);

@@ -64,7 +64,7 @@ export default function Layout() {
       <Drawer.Screen
         name="library"
         options={{
-          title: 'Christian insight',
+          title: 'Authors insight',
           drawerIcon: () => <Ionicons name="library-outline" size={22} color={palette.gold} />,
         }}
       />

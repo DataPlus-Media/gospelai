@@ -2,6 +2,6 @@
 - [Metro browser profiles](metro-browser-profiles.md) — exclude runtime browser profiles; temporary Chromium directories can crash the source watcher.
 - [Clean dependency restores](clean-dependency-restores.md) — verify Expo configuration against clean installs, not packages incidentally hoisted by old installs.
 - [SQLite provider updates](expo-sqlite-provider.md) — Expo’s provider memo ignores children; subscribe to route context inside it to avoid stale screens.
-- [Christian insight scope](christian-insight-scope.md) — keep created styling; screenshot guides structure only; preserve name and translation-independent Bible links.
+- [Authors insight scope](christian-insight-scope.md) — renamed from Christian insight; reference layout with current colours; preserve source accuracy and translation-independent links.
 - [Native/web accessibility](native-web-accessibility.md) — selection props and icon-inclusive button names need separate browser verification.
 - [Welcome motion verification](welcome-motion-verification.md) — test reduced motion at cold launch as well as live changes; wait for Expo’s client tree in browser checks.

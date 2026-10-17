@@ -35,7 +35,7 @@ const navGroups = [
   {
     title: 'STUDY & REFLECT',
     routes: [
-      { name: 'library', label: 'Christian insight', icon: 'library-outline' as const },
+      { name: 'library', label: 'Authors insight', icon: 'library-outline' as const },
       { name: 'saved', label: 'Saved verses', icon: 'bookmark-outline' as const },
       { name: 'notes', label: 'Notes', icon: 'journal-outline' as const },
     ],

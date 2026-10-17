@@ -15,7 +15,7 @@ async function main() {
   page.on('pageerror', error => { errors.push(error.message); console.error('PAGE ERROR', error.message); });
   const text = value => page.getByText(value, { exact: true });
   const click = value => text(value).click();
-  const go = async path => { await page.goto(base + path); await text('Opening Christian insight…').waitFor({ state: 'hidden' }); };
+  const go = async path => { await page.goto(base + path); await text('Opening Authors insight…').waitFor({ state: 'hidden' }); };
   const openMorning = () => page.getByRole('button', { name: /^Morning and Evening, by Charles Spurgeon/ }).click();
   const backDetails = () => page.getByRole('button', { name: 'Back to work details', exact: true }).click();
   try {
@@ -81,11 +81,11 @@ async function main() {
     await click('Download for offline use');
     await text('Read this work').waitFor({ timeout: 240000 });
     await go('/bible?ref=John%203%3A16&jump=librarytest');
-    await page.getByRole('button', { name: 'Open Christian insight for John 3', exact: true }).click();
+    await page.getByRole('button', { name: 'Open Authors insight for John 3', exact: true }).click();
     await page.getByRole('button', { name: 'Open John 3 in the original reading view', exact: true }).waitFor();
     await go('/bible?ref=John%203%3A16&jump=libraryverse');
     await page.getByRole('button', { name: 'John 3:16. Verse actions', exact: true }).click();
-    await click('Christian insight · this verse');
+    await click('Authors insight · this verse');
     await page.getByText('Whole chapter', { exact: true }).first().waitFor();
     await page.getByRole('button', { name: 'Open John 3 in the original reading view', exact: true }).click();
     await text('John 3').filter({ visible: true }).waitFor();
@@ -93,7 +93,7 @@ async function main() {
     await page.getByRole('textbox', { name: 'Search table of contents' }).fill('Romans 1');
     await click('Romans 1');
     await page.getByText('Completed by John Evans', { exact: false }).waitFor();
-    console.log('PASS real full Henry download, visible Bible Christian insight button, verse link, chapter-level mapping and editorial attribution');
+    console.log('PASS real full Henry download, visible Authors insight button, verse link, chapter-level mapping and editorial attribution');
 
     await go('/library?work=spurgeon-morning-evening');
     await click('Remove download');

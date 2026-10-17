@@ -193,7 +193,7 @@ export default function LibraryHome({
     return (
       <View style={styles.screen}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Pressable accessibilityRole="button" accessibilityLabel={params.book ? 'Return to selected passage' : 'Back to Christian insight'} onPress={() => setParams({ work: undefined, section: undefined, paragraph: undefined })} style={styles.backLink}><Ionicons name="arrow-back" size={17} color={C.green} /><Text style={styles.backText}>{params.book ? 'Return to selected passage' : 'Christian insight'}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={params.book ? 'Return to selected passage' : 'Back to Authors insight'} onPress={() => setParams({ work: undefined, section: undefined, paragraph: undefined })} style={styles.backLink}><Ionicons name="arrow-back" size={17} color={C.green} /><Text style={styles.backText}>{params.book ? 'Return to selected passage' : 'Authors insight'}</Text></Pressable>
           <Text style={styles.eyebrow}>{selectedWork.author.toUpperCase()} · {selectedWork.kind.toUpperCase()}</Text>
           <Text style={styles.detailTitle}>{title}</Text>
           <View style={styles.sourcePanel}>
@@ -257,7 +257,7 @@ export default function LibraryHome({
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View>
-            <View style={styles.header}><View><Text style={styles.eyebrow}>GOSPELAI · HISTORICAL TEXTS</Text><Text style={styles.title}>Christian insight</Text></View><View style={styles.headerMark}><Ionicons name="library-outline" size={20} color={C.gold} /></View></View>
+            <View style={styles.header}><View><Text style={styles.eyebrow}>GOSPELAI · HISTORICAL TEXTS</Text><Text style={styles.title}>Authors insight</Text></View><View style={styles.headerMark}><Ionicons name="library-outline" size={20} color={C.gold} /></View></View>
             <Text style={styles.intro}>Read enduring Christian writing, preserved with its sources and history.</Text>
             <View style={styles.localBanner}><Ionicons name="phone-portrait-outline" size={16} color={C.green} /><Text style={styles.localText}>Guest access · downloads and reading progress stay on this device.</Text></View>
             <View style={styles.searchBox}><Ionicons name="search-outline" size={18} color="#92929B" /><TextInput value={query} onChangeText={setQuery} placeholder="Search downloaded text" placeholderTextColor="#777780" style={styles.searchInput} returnKeyType="search" accessibilityLabel="Search downloaded library text" />{query ? <Pressable onPress={() => setQuery('')} accessibilityLabel="Clear search"><Ionicons name="close-circle" size={18} color="#85858E" /></Pressable> : null}</View>
