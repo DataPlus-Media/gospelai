@@ -15,6 +15,6 @@ The browser flow checks welcome/free entry, Today, daily scripture, plan start/c
 - The root guard's signed-in entry decisions are covered by automated tests, but a real signed-in UI session was **not** verified. No user credentials were requested and auth was not bypassed.
 - No iOS/Android device or simulator was available. Native cold-start persistence, airplane-mode reading/saved items/plan progress, actual software-keyboard behavior, clipboard, and native authentication must still be checked on devices. Browser tests and successful native bundles are not evidence that these device checks passed.
 
-## Existing project-wide check issues
+## Project-wide type check
 
-`npx tsc --noEmit` exposes two pre-existing, unrelated errors: `hooks/useThemeColor.ts` imports a nonexistent named `Colors` export, and the unused `utils/Storage.ts` imports the absent `react-native-mmkv` package. The study implementation does not use that storage helper. These are not suppressed or represented as a passing project-wide type check.
+`npx tsc --noEmit` passes. The unused MMKV-based storage helper was removed rather than adding an undeclared native dependency; app data continues to use the existing SQLite, AsyncStorage and SecureStore paths.

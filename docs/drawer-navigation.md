@@ -17,4 +17,4 @@ Conversation options remain available through long press or the ellipsis. Browse
 
 `npm run test:drawer:browser` uses a fresh browser context and intercepted AI transport to create isolated test data. It verifies all drawer destinations, selected states, current-page dismissal, conversation search, rename persistence, cancel/confirm deletion, small-screen scrolling, tablet width and guest auth links. No existing user data or live AI calls are used.
 
-The browser journey, targeted lint, study regressions and static export passed. Project-wide TypeScript checking still reports the existing unrelated Colors import and missing MMKV module errors. Signed-in account rendering and native iOS/Android drawer gestures/action sheets have not been device-tested.
+The browser journey, targeted lint, study regressions, static export and project-wide TypeScript check pass. Signed-in account rendering and native iOS/Android drawer gestures/action sheets have not been device-tested.

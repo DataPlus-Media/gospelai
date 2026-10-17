@@ -141,10 +141,10 @@ the stored original paragraph matches the verified package.
 - `npm run test:insight`: real bundled KJV text and reference validation; inclusive start/end range boundaries, exact verse and chapter matches; absent/incomplete section failures; source draft provenance.
 - `npm run test:insight:browser`: actual Henry download; zero/single-source states; source/rights attribution; cancellable and editable AI handoff with no automatic send; source selection/removal/replacement/clear; narrow/wide panels; offline reading/comparison in the loaded app; verse-change reset; Romans contributor attribution. The two-source UI and devotional exclusion cases use explicitly named synthetic mappings **only in the isolated browser test database**. No such mappings, fabricated excerpts or extra editions ship. The AI response is stubbed; the existing external AI service was not used for verification.
 - Targeted ESLint checks cover the new TypeScript modules and screens.
-- Project-wide `tsc --noEmit` has existing unrelated failures in `hooks/useThemeColor.ts` (`Colors` export) and `utils/Storage.ts` (missing `react-native-mmkv`). They are not hidden or repaired as part of the library.
+- Project-wide `npx tsc --noEmit` passes. The theme-color helper uses the project's default palette export; an unused legacy MMKV wrapper was removed instead of adding an undeclared native dependency.
 
 ### Limits
 
 No iOS/Android device or simulator verification has been performed. Native download handling, interruption under OS backgrounding, cold-start offline reopening and low-storage behavior still need device checks. Browser offline verification means reopening downloaded text **inside the loaded app**; Expo’s development web server is not a service-worker/PWA and is not claimed to load its JavaScript from a cold offline browser refresh. Signed-in UI has not been verified.
 
-Verse comparison was verified on web, not in an App Store build or on Android. Rights clearance and native release verification remain separate pending work. Project-wide TypeScript still reports the two pre-existing errors listed above; targeted ESLint, study/library checks and the new insight checks pass.
+Verse comparison was verified on web, not in an App Store build or on Android. Rights clearance and native release verification remain separate pending work. Targeted ESLint, project-wide TypeScript, study/library checks and the new insight checks pass.
