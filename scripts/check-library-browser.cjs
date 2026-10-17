@@ -82,12 +82,12 @@ async function main() {
     await text('Read this work').waitFor({ timeout: 240000 });
     await go('/bible?ref=John%203%3A16&jump=librarytest');
     await page.getByRole('button', { name: 'Open Christian insight for John 3', exact: true }).click();
-    await page.getByRole('button', { name: 'Read John 3 in Christian insight by Matthew Henry', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Open John 3 in the original reading view', exact: true }).waitFor();
     await go('/bible?ref=John%203%3A16&jump=libraryverse');
     await page.getByRole('button', { name: 'John 3:16. Verse actions', exact: true }).click();
     await click('Christian insight · this verse');
-    await page.getByText('Chapter-level', { exact: false }).first().waitFor();
-    await page.getByRole('button', { name: 'Read John 3 in Christian insight by Matthew Henry', exact: true }).click();
+    await page.getByText('Whole chapter', { exact: true }).first().waitFor();
+    await page.getByRole('button', { name: 'Open John 3 in the original reading view', exact: true }).click();
     await text('John 3').filter({ visible: true }).waitFor();
     await page.getByRole('button', { name: 'Open table of contents', exact: true }).click();
     await page.getByRole('textbox', { name: 'Search table of contents' }).fill('Romans 1');
@@ -108,7 +108,7 @@ async function main() {
     await click('Remove download'); await click('Remove');
     await text('Download for offline use').waitFor();
     await go('/library?book=43&chapter=3&verse=16&jump=empty');
-    await page.getByText('No downloaded commentary covers this passage.', { exact: false }).waitFor();
+    await page.getByText('No downloaded commentary maps to this passage', { exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log('PASS removal confirmation, personal note retained, independent downloads, explicit commentary empty state, no browser errors');
   } catch (error) {

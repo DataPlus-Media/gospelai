@@ -41,6 +41,10 @@ export type LibraryWork = {
 export type InstalledWork = { work_id: string; revision: string; bytes: number };
 export type ReadingPosition = { section_id: string; paragraph: number };
 export type SectionSummary = { id: string; title: string; ordinal: number };
+export type PassageMatch = {
+  work_id: string; id: string; title: string;
+  verse_start: number | null; verse_end: number | null;
+};
 export type LibraryHit = {
   work_id: string; section_id: string; paragraph: number; title: string; text: string;
 };

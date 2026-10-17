@@ -5,13 +5,13 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const { spawn } = require('node:child_process');
 const readline = require('node:readline');
-function load(path) {
+function load(path, modules = {}) {
   const output = ts.transpileModule(fs.readFileSync(path, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 },
   }).outputText;
   const exports = {};
   vm.runInNewContext(output, {
-    exports, require: name => name.includes('Interfaces') ? { Role: { Bot: 1, User: 0 } } : require(name),
+    exports, require: name => modules[name] ?? (name.includes('Interfaces') ? { Role: { Bot: 1, User: 0 } } : require(name)),
   }, { filename: path });
   return exports;
 }

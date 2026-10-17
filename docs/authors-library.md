@@ -89,14 +89,28 @@ For a **native release build**, set `EXPO_PUBLIC_LIBRARY_BASE_URL` to the HTTPS 
 - Search is local, literal (SQL wildcard characters are escaped), scoped by author/title, and capped at 100 hits. Results contain exact stable section and paragraph positions.
 - Notes explicitly say `library` and include author/work/section/paragraph attribution. Source text is labeled historical, not AI-generated.
 
+## Verse-based source study
+
+- Bible verse actions open the existing library route with canonical book/chapter/verse identifiers. The insight header retrieves the actual text from the bundled Bible database and labels it **King James Version (KJV)**. Chapter entry remains chapter-level and shows the full chapter; source matching never relies on translation wording.
+- **Author Insights** opens the original downloaded section, preserving the contributor attribution, work, edition, section source link, rights link and installed edition notices. Coverage is explicitly **Whole chapter**, **Verse N**, or **Verses N–M**. Henry remains whole-chapter coverage: no smaller mappings were inferred or shipped.
+- **Compare** selects at most two downloaded commentary passages. Remove a selection to change it, or use Clear to reset both. Each panel retains the full original passage and provenance. Panels stack below 740px and sit side by side on wider layouts.
+- The cleared catalog currently provides only one commentary passage for a selected verse: Henry's chapter. The UI explains that this is insufficient for a two-source comparison. It does not insert Gill, Calvin, Spurgeon devotionals or the proposal's illustrative summaries to fill the gap.
+- Not downloaded, rights blocked, and downloaded-but-unmapped commentary are separate states with links to existing work details/download actions. *Morning and Evening* is explicitly separate devotional reading, has no verified verse mapping, and does not count as commentary. Source/rights web links require a connection; downloaded source text and comparison do not.
+- Changing the selected scripture remounts passage state and clears comparison/source results. Existing full-work reading routes, saved positions, notes, bookmarks, highlights and guest access are retained.
+- **Ask GospelAI about this source** is separate from source study. A cancellable disclosure opens an editable draft containing the selected scripture, translation, complete loaded section, precise coverage and attribution. Only Send submits the edited draft to the existing AI service. The screen does not generate/cache explanations or claim answers are original quotations or source-verified conclusions. AI requests require a connection.
+
 ## Verification
 
 - `npm run test:study`: existing guest routing, migration preservation, notes, Bible progress, bookmarks, highlights and reading-plan tests.
 - `npm run test:library`: real complete-package checksums and coverage; import/retry/rollback; literal scoped search and exact passage opening; disk-close/reopen offline persistence; chapter versus verse-range semantics; independent removal and note preservation.
 - `node scripts/check-library-browser.cjs`: isolated guest browser journey against the running development app. Requires Chromium (or `CHROMIUM_PATH`). Uses real imported editions, with one deliberately failed request to verify Retry.
+- `npm run test:insight`: real bundled KJV text and reference validation; inclusive start/end range boundaries, exact verse and chapter matches; absent/incomplete section failures; source draft provenance.
+- `npm run test:insight:browser`: actual Henry download; zero/single-source states; source/rights attribution; cancellable and editable AI handoff with no automatic send; source selection/removal/replacement/clear; narrow/wide panels; offline reading/comparison in the loaded app; verse-change reset; Romans contributor attribution. The two-source UI and devotional exclusion cases use explicitly named synthetic mappings **only in the isolated browser test database**. No such mappings, fabricated excerpts or extra editions ship. The AI response is stubbed; the existing external AI service was not used for verification.
 - Targeted ESLint checks cover the new TypeScript modules and screens.
 - Project-wide `tsc --noEmit` has existing unrelated failures in `hooks/useThemeColor.ts` (`Colors` export) and `utils/Storage.ts` (missing `react-native-mmkv`). They are not hidden or repaired as part of the library.
 
 ### Limits
 
 No iOS/Android device or simulator verification has been performed. Native download handling, interruption under OS backgrounding, cold-start offline reopening and low-storage behavior still need device checks. Browser offline verification means reopening downloaded text **inside the loaded app**; Expo’s development web server is not a service-worker/PWA and is not claimed to load its JavaScript from a cold offline browser refresh. Signed-in UI has not been verified.
+
+Verse comparison was verified on web, not in an App Store build or on Android. Rights clearance and native release verification remain separate pending work. Project-wide TypeScript still reports the two pre-existing errors listed above; targeted ESLint, study/library checks and the new insight checks pass.

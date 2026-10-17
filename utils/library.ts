@@ -1,7 +1,7 @@
 import type { SQLiteDatabase } from 'expo-sqlite';
 import type {
   InstalledWork, LibraryHit, LibraryPackage, LibraryWork,
-  ReadingPosition, SectionSummary,
+  ReadingPosition, SectionSummary, PassageMatch,
 } from './libraryTypes';
 
 // Kept separate from personal notes, chats and Bible progress. Work removal
@@ -106,6 +106,7 @@ export async function readSection(db: SQLiteDatabase, workId: string, sectionId:
   if (!meta) throw new Error('This section is not downloaded. Return to the work and download it again.');
   const paragraphs = await db.getAllAsync<{ paragraph: number; text: string }>(
     'SELECT paragraph,text FROM library_paragraphs WHERE work_id=? AND section_id=? ORDER BY paragraph', workId, sectionId);
+  if (!paragraphs.length) throw new Error('This downloaded section has no readable text. Return to the work details, remove the incomplete download and download it again.');
   return { ...meta, paragraphs };
 }
 export async function getLibraryPosition(db: SQLiteDatabase, id: string) {
@@ -131,9 +132,7 @@ export async function searchLibrary(db: SQLiteDatabase, term: string, workIds: s
     ORDER BY p.work_id,s.ordinal,p.paragraph LIMIT 100`, ...workIds, `%${escaped}%`);
 }
 export async function commentaryForPassage(db: SQLiteDatabase, book: number, chapter: number, verse?: number) {
-  return db.getAllAsync<{
-    work_id: string; id: string; title: string; verse_start: number | null; verse_end: number | null;
-  }>(`SELECT s.work_id,s.id,s.title,s.verse_start,s.verse_end FROM library_sections s
+  return db.getAllAsync<PassageMatch>(`SELECT s.work_id,s.id,s.title,s.verse_start,s.verse_end FROM library_sections s
     JOIN library_downloads d ON d.work_id=s.work_id
     WHERE s.book=? AND s.chapter=? AND
       (? IS NULL OR s.verse_start IS NULL OR (? BETWEEN s.verse_start AND s.verse_end))

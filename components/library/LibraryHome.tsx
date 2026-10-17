@@ -7,11 +7,12 @@ import {
   StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { LIBRARY_AUTHORS, LIBRARY_WORKS } from '@/constants/libraryWorks';
-import { commentaryForPassage, getLibraryPosition, installedWorks, removeWork, searchLibrary, workNotices } from '@/utils/library';
+import { getLibraryPosition, installedWorks, removeWork, searchLibrary, workNotices } from '@/utils/library';
 import type { InstalledWork, LibraryHit, LibraryWork } from '@/utils/libraryTypes';
 import LibraryReader from '@/components/library/LibraryReader';
 import LibraryWorkCard from '@/components/library/LibraryWorkCard';
 import { downloadWork } from '@/utils/libraryDownload';
+import PassageInsight from '@/components/library/PassageInsight';
 
 const C = { ink: '#F5F1E8', muted: '#9B9AA2', gold: '#D4B65F', green: '#80C59A', panel: '#121318', line: '#292A30' };
 type DownloadProgress = { phase: 'downloading' | 'installing'; fraction: number | null; received: number; total: number };
@@ -34,7 +35,6 @@ export default function LibraryHome({
   const [query, setQuery] = useState('');
   const [installed, setInstalled] = useState<InstalledWork[]>([]);
   const [hits, setHits] = useState<LibraryHit[]>([]);
-  const [passageRows, setPassageRows] = useState<{ work_id: string; id: string; title: string; verse_start: number | null; verse_end: number | null }[]>([]);
   const [loading, setLoading] = useState(false);
   const [pageError, setPageError] = useState<string | null>(null);
   const [detailNotices, setDetailNotices] = useState<string[]>([]);
@@ -44,10 +44,8 @@ export default function LibraryHome({
   const [workError, setWorkError] = useState<string | null>(null);
   const [removeVisible, setRemoveVisible] = useState(false);
   const [readerError, setReaderError] = useState<string | null>(null);
-  const [commentaryLoading, setCommentaryLoading] = useState(false);
   const mountedRef = useRef(true);
   const detailRequestRef = useRef(0);
-  const passageRequestRef = useRef(0);
   useEffect(() => {
     mountedRef.current = true;
     return () => { mountedRef.current = false; };
@@ -136,27 +134,6 @@ export default function LibraryHome({
     return () => { active = false; clearTimeout(timer); };
   }, [db, query, author, selectedTitleId, installedIds]);
 
-  const openPassageMatches = useCallback(async () => {
-    const request = ++passageRequestRef.current;
-    const book = Number(params.book), chapter = Number(params.chapter);
-    const verse = params.verse === undefined ? undefined : Number(params.verse);
-    if (!book || !chapter || (verse !== undefined && !verse) || !params.jump) {
-      if (mountedRef.current && request === passageRequestRef.current) setPassageRows([]);
-      return;
-    }
-    if (mountedRef.current) { setCommentaryLoading(true); setPageError(null); }
-    try {
-      const rows = await commentaryForPassage(db, book, chapter, verse);
-      const filtered = rows.filter(row => installedIds.has(row.work_id));
-      if (mountedRef.current && request === passageRequestRef.current) setPassageRows(filtered);
-    } catch (e) {
-      if (mountedRef.current && request === passageRequestRef.current) setPageError(e instanceof Error ? e.message : 'Commentary for this passage could not be loaded.');
-    } finally {
-      if (mountedRef.current && request === passageRequestRef.current) setCommentaryLoading(false);
-    }
-  }, [db, installedIds, params.book, params.chapter, params.verse, params.jump]);
-  useEffect(() => { void openPassageMatches(); }, [openPassageMatches]);
-
   const beginDownload = async (work: LibraryWork) => {
     setDownloadBusy(true); setWorkError(null); setDownloadProgress({ phase: 'downloading', fraction: 0, received: 0, total: work.package?.bytes ?? 0 });
     try {
@@ -192,9 +169,6 @@ export default function LibraryHome({
     setParams({ work: hit.work_id, section: hit.section_id, paragraph: String(hit.paragraph), book: undefined, chapter: undefined, verse: undefined, jump: undefined });
   };
 
-  const openPassageSection = (row: typeof passageRows[number]) => setParams({ work: row.work_id, section: row.id, paragraph: undefined, book: undefined, chapter: undefined, verse: undefined, jump: undefined });
-
-  const passageRequest = !!(params.book && params.chapter && params.jump);
   if (isReading && selectedWork) {
     return <LibraryReader
       key={`${selectedWork.id}:${params.section}:${params.paragraph ?? ''}`}
@@ -250,6 +224,17 @@ export default function LibraryHome({
     );
   }
 
+  if (params.book && params.chapter) {
+    return <PassageInsight
+      key={`${params.book}:${params.chapter}:${params.verse ?? ''}:${params.jump ?? ''}:${installed.map(w => w.work_id).sort().join(',')}`}
+      db={db} book={Number(params.book)} chapter={Number(params.chapter)}
+      verse={params.verse === undefined ? undefined : Number(params.verse)}
+      onOpenSection={row => setParams({ work: row.work_id, section: row.id, paragraph: undefined })}
+      onOpenWork={id => setParams({ work: id, section: undefined, paragraph: undefined })}
+      onClose={() => setParams({ book: undefined, chapter: undefined, verse: undefined, jump: undefined })}
+    />;
+  }
+
   return (
     <View style={styles.screen}>
       <FlatList
@@ -280,11 +265,6 @@ export default function LibraryHome({
             </ScrollView>
             {readerError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{readerError}</Text><Pressable onPress={() => setReaderError(null)}><Text style={styles.linkText}>Dismiss</Text></Pressable></View> : null}
             {pageError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{pageError}</Text><Pressable onPress={() => void refreshInstalled()}><Text style={styles.linkText}>Retry</Text></Pressable></View> : null}
-            {commentaryLoading ? <View style={styles.searchLoading}><ActivityIndicator color={C.green} /><Text style={styles.muted}>Finding downloaded commentary…</Text></View> : null}
-            {passageRows.length > 0 ? <View style={styles.results}><Text style={styles.sectionHeading}>DOWNLOADED COMMENTARY FOR THIS PASSAGE</Text>{passageRows.map(row => {
-              const work = LIBRARY_WORKS.find(item => item.id === row.work_id);
-              return <Pressable accessibilityRole="button" accessibilityLabel={`Read ${row.title} in Christian insight by ${work?.author}`} key={`${row.work_id}-${row.id}`} onPress={() => openPassageSection(row)} style={styles.resultRow}><Text style={styles.resultTitle}>{work?.author} · {work?.title}</Text><Text style={styles.resultMeta}>{row.title} · {row.verse_start == null ? 'Chapter-level coverage' : `Verse-range coverage: ${row.verse_start}–${row.verse_end}`}</Text></Pressable>;
-            })}</View> : null}
             {query.trim() ? <View style={styles.resultsHead}><Text style={styles.sectionHeading}>SEARCH RESULTS</Text>{loading ? <ActivityIndicator color={C.green} /> : <Text style={styles.resultCount}>{hits.length} found</Text>}</View> : <Text style={styles.sectionHeading}>BROWSE WORKS</Text>}
           </View>
         }
@@ -307,7 +287,6 @@ export default function LibraryHome({
         ) : <View style={styles.emptyState}><Text style={styles.emptyTitle}>No works for this author</Text><Text style={styles.emptyBody}>Choose another author or view all works.</Text></View>}
         ListFooterComponent={<View style={styles.footer}><Text style={styles.footerTitle}>Three writers · carefully sourced</Text><Text style={styles.footerCopy}>This library keeps historical editions distinct from modern commentary and generative text.</Text></View>}
       />
-      {passageRequest && !commentaryLoading && passageRows.length === 0 ? <View style={styles.passageEmpty}><Ionicons name="book-outline" size={17} color={C.gold} /><Text style={styles.passageEmptyText}>No downloaded commentary covers this passage. Browse the available works below and download a work that is offered for offline reading.</Text><Pressable onPress={() => setParams({ book: undefined, chapter: undefined, verse: undefined, jump: undefined })}><Text style={styles.linkText}>Dismiss</Text></Pressable></View> : null}
     </View>
   );
 }

@@ -70,7 +70,7 @@ async function askServerChat(message: string, history: ChatTurn[]) {
 const ChatPage = () => {
   const db = useSQLiteContext();
   const router = useRouter();
-  const { id, draft, draftId } = useLocalSearchParams<{ id: string; draft?: string; draftId?: string }>();
+  const { id, draft, draftId, sourceDraft } = useLocalSearchParams<{ id: string; draft?: string; draftId?: string; sourceDraft?: string }>();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [pending, setPending] = useState(false);
@@ -142,7 +142,7 @@ const ChatPage = () => {
     let currentId = chatIdRef.current ? Number(chatIdRef.current) : undefined;
     if (!chatIdRef.current) {
       // first message of a brand new chat
-      const res = await addChat(db, trimmed);
+      const res = await addChat(db, sourceDraft === '1' ? trimmed.split('\n')[0].slice(0, 160) : trimmed);
       const newId = String(res.lastInsertRowId);
       setChatId(newId);
       currentId = Number(newId);
@@ -199,6 +199,9 @@ const ChatPage = () => {
       <Text style={{ color: '#b8bcc7', backgroundColor: '#0b0b10', padding: 12, fontSize: 12 }}>
         AI-generated explanations, not Bible text. AI requires an internet connection. Review verse drafts, then tap Send.
       </Text>
+      {sourceDraft === '1' && <Text accessibilityRole="alert" style={{ color: '#D4B65F', backgroundColor: '#171710', padding: 12, fontSize: 12 }}>
+        Source draft: review and edit before tapping Send. Sending shares the scripture and source text in your message with the existing AI service. Its answer is AI-generated, not an original author quotation or a source-verified conclusion.
+      </Text>}
 
       <View style={styles.page}>
         {messages.length === 0 ? (
@@ -247,7 +250,7 @@ const ChatPage = () => {
         keyboardVerticalOffset={70}
         style={styles.kav}
       >
-        {messages.length === 0 && (
+        {messages.length === 0 && !draft && (
           <MessageIdeas
             onSelectCard={(text) => { if (!pending && !failedTurn) void getCompletion(text); }}
             ideas={ideas}
