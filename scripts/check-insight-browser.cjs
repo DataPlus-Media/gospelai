@@ -1,5 +1,5 @@
 // All synthetic mappings below exist only in an isolated browser test context.
-// They exercise future multi-source UI without inventing a shipped source edition.
+// They exercise comparison boundary cases beyond the shipped source mappings.
 const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const { mkdir } = require('node:fs/promises');

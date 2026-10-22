@@ -18,11 +18,14 @@ async function main() {
   const go = async path => { await page.goto(base + path); await text('Opening Authors insight…').waitFor({ state: 'hidden' }); };
   const openMorning = () => page.getByRole('button', { name: /^Morning and Evening, by Charles Spurgeon/ }).click();
   const backDetails = () => page.getByRole('button', { name: 'Back to work details', exact: true }).click();
+  const henryOriginal = () => page.getByRole('button', {
+    name: 'Open John 3 in the original reading view', exact: true, includeHidden: true,
+  });
   try {
     await go('/library');
     await page.getByRole('button', { name: 'Exposition of the Old and New Testaments, by John Gill' }).click();
     await text('EDITION / SOURCE').waitFor();
-    await text('SermonIndex MyBible module SI-GILL').waitFor();
+    await page.getByText('SermonIndex MyBible module SI-GILL', { exact: false }).waitFor();
     await text('Download for offline use').waitFor();
     await click('Download for offline use');
     await text('Read this work').waitFor({ timeout: 240000 });
@@ -33,14 +36,14 @@ async function main() {
     await page.getByRole('button', { name: 'Read full source section: John 3:18', exact: true }).waitFor();
     await text('Verse 18').waitFor();
     await page.getByRole('button', { name: 'Read full source section: John 3:18', exact: true }).click();
-    await text('He that believeth on him is not condemned').waitFor();
+    await page.getByText('He that believeth on him is not condemned', { exact: false }).first().waitFor();
     console.log('PASS complete Gill package downloads, opens offline reader and maps John 3:18 to its original verse section');
 
     await go('/library');
     await openMorning();
     await text('EDITION / SOURCE').waitFor();
     await text('Download for offline use').waitFor();
-    console.log('PASS guest library browsing, rights blocker, edition and source detail');
+    console.log('PASS guest library browsing, available download, edition and source detail');
 
     let failOnce = true;
     const packagePattern = '**/library-packages/ccel-morn-eve-1/spurgeon-morning-evening.json';
@@ -95,12 +98,14 @@ async function main() {
     await text('Read this work').waitFor({ timeout: 240000 });
     await go('/bible?ref=John%203%3A16&jump=librarytest');
     await page.getByRole('button', { name: 'Open Authors insight for John 3', exact: true }).click();
-    await page.getByRole('button', { name: 'Open John 3 in the original reading view', exact: true }).waitFor();
+    await henryOriginal().scrollIntoViewIfNeeded();
+    await henryOriginal().waitFor();
     await go('/bible?ref=John%203%3A16&jump=libraryverse');
     await page.getByRole('button', { name: 'John 3:16. Verse actions', exact: true }).click();
     await click('Authors insight · this verse');
+    await henryOriginal().scrollIntoViewIfNeeded();
     await page.getByText('Whole chapter', { exact: true }).first().waitFor();
-    await page.getByRole('button', { name: 'Open John 3 in the original reading view', exact: true }).click();
+    await henryOriginal().click();
     await text('John 3').filter({ visible: true }).waitFor();
     await page.getByRole('button', { name: 'Open table of contents', exact: true }).click();
     await page.getByRole('textbox', { name: 'Search table of contents' }).fill('Romans 1');

@@ -1,5 +1,7 @@
 # Authors insight
 
+> **Gill update verification:** Package integrity, verse mappings, offline database reads, rollback/retry, type checks and targeted lint checks pass. The real download and reader were exercised. The full browser regression is not yet passing: the selected-passage screen can remain loading after installation. Native iOS/Android verification remains required; this is not App Store build approval.
+
 The user-facing feature is named **Authors insight**, with a navigation-menu destination, a Today shortcut, a visible Bible-page button for the current chapter, and a selected-verse action. Its internal `/library` route is retained for stable links.
 
 The Bible connection uses canonical book/chapter/verse identifiers, not translation text. The chapter button does not assume verse 1; the verse action supplies an exact reference. Additional Bible translations are a future feature, not included here.
@@ -146,8 +148,8 @@ app. SQLite tests additionally close and reopen the Henry database and confirm
 the stored original paragraph matches the verified package.
 
 - `npm run test:study`: existing guest routing, migration preservation, notes, Bible progress, bookmarks, highlights and reading-plan tests.
-- `npm run test:library`: real complete-package checksums and coverage; import/retry/rollback; literal scoped search and exact passage opening; disk-close/reopen offline persistence; chapter versus verse-range semantics; independent removal and note preservation.
-- `node scripts/check-library-browser.cjs`: isolated guest browser journey against the running development app. Requires Chromium (or `CHROMIUM_PATH`). Uses real imported editions, with one deliberately failed request to verify Retry.
+- `npm run test:library`: real package checksums and coverage, including all Gill source sections, exact John 3:18 mapping and a chapter-introduction fallback; import/retry/rollback; literal scoped search and exact passage opening; disk-close/reopen offline persistence; chapter versus verse-range semantics; independent removal and note preservation.
+- `node scripts/check-library-browser.cjs`: isolated guest browser journey against the running development app. Requires Chromium (or `CHROMIUM_PATH`). Downloads the real Gill edition, opens its reader and original John 3:18 text, then exercises the other imported editions and a deliberately failed request to verify Retry.
 - `npm run test:insight`: real bundled KJV text and reference validation; inclusive start/end range boundaries, exact verse and chapter matches; absent/incomplete section failures; source draft provenance.
 - `npm run test:insight:browser`: actual Henry download; zero/single-source states; source/rights attribution; cancellable and editable AI handoff with no automatic send; source selection/removal/replacement/clear; narrow/wide panels; offline reading/comparison in the loaded app; verse-change reset; Romans contributor attribution. The two-source UI and devotional exclusion cases use explicitly named synthetic mappings **only in the isolated browser test database**. No such mappings, fabricated excerpts or extra editions ship. The AI response is stubbed; the existing external AI service was not used for verification.
 - Targeted ESLint checks cover the new TypeScript modules and screens.

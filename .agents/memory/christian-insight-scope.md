@@ -35,3 +35,9 @@ existing saved passages and conflict with the planned translation independence.
 
 **How to apply:** Treat a future Bible edition’s identifiers as storage details;
 preserve the same canonical contract for Bible routes, personal study and insight.
+
+The user approved the SermonIndex edition of John Gill’s whole-Bible commentary and asked that it not remain blocked.
+
+**Why:** After supplying the SermonIndex source, the user stated, “It's allowed don't keep it blocked.”
+
+**How to apply:** Treat that specific edition as approved for this project. Preserve its source attribution and honest passage coverage; do not extend this approval to unrelated editions.

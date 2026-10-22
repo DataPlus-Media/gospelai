@@ -85,6 +85,16 @@ sermonindex_book_codes = [
     "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
 ]
 assert len(sermonindex_book_codes) == len(books)
+# MyBible reserves numeric slots for books outside this 66-book canon. These
+# identifiers are not canonical book IDs multiplied by ten.
+mybible_book_numbers = [
+    10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160,
+    190, 220, 230, 240, 250, 260, 290, 300, 310, 330, 340, 350, 360, 370,
+    380, 390, 400, 410, 420, 430, 440, 450, 460, 470, 480, 490, 500, 510,
+    520, 530, 540, 550, 560, 570, 580, 590, 600, 610, 620, 630, 640, 650,
+    660, 670, 680, 690, 700, 710, 720, 730,
+]
+assert len(mybible_book_numbers) == len(books)
 contributors = {
     45: "John Evans", 46: "Simon Browne", 47: "Daniel Mayo", 48: "Joshua Bayes",
     49: "Samuel Rosewell", 50: "William Harris", 51: "William Harris",
@@ -211,8 +221,8 @@ def gill():
                 "SELECT DISTINCT book_number FROM commentaries ORDER BY book_number"
             )
         ]
-        if len(module_books) != len(books):
-            raise ValueError(f"Expected 66 Gill Bible books; found {len(module_books)}.")
+        if module_books != mybible_book_numbers:
+            raise ValueError("Gill module book identifiers differ from the verified 66-book mapping.")
         book_map = {
             number: (book[0], book[1], code)
             for number, book, code in zip(module_books, books, sermonindex_book_codes)

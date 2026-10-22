@@ -110,16 +110,38 @@ export async function installWork(db: SQLiteDatabase, work: LibraryWork, value: 
   await db.withTransactionAsync(async () => {
     await db.runAsync('DELETE FROM library_paragraphs WHERE work_id=?', work.id);
     await db.runAsync('DELETE FROM library_sections WHERE work_id=?', work.id);
-    for (let ordinal = 0; ordinal < p.sections.length; ordinal++) {
-      const s = p.sections[ordinal], m = s.scripture;
-      await db.runAsync(`INSERT INTO library_sections
-        (work_id,id,ordinal,title,source_url,attribution,book,chapter,verse_start,verse_end)
-        VALUES (?,?,?,?,?,?,?,?,?,?)`, work.id, s.id, ordinal, s.title, s.sourceUrl,
-      s.attribution, m?.book ?? null, m?.chapter ?? null, m?.verseStart ?? null, m?.verseEnd ?? null);
-      for (let i = 0; i < s.paragraphs.length; i++) {
-        await db.runAsync('INSERT INTO library_paragraphs VALUES (?,?,?,?)', work.id, s.id, i, s.paragraphs[i]);
+    type Values = (string | number | null)[][];
+    const writeBatch = async (
+      table: 'library_sections' | 'library_paragraphs', columns: string, rows: Values,
+    ) => {
+      if (!rows.length) return;
+      const placeholders = rows.map(row => `(${row.map(() => '?').join(',')})`).join(',');
+      await db.runAsync(`INSERT INTO ${table} (${columns}) VALUES ${placeholders}`, ...rows.flat());
+      rows.length = 0;
+    };
+    // Keep every statement below the conservative 999 SQLite bind limit, while
+    // avoiding tens of thousands of JS/native or web-worker round trips.
+    for (let offset = 0; offset < p.sections.length; offset += 40) {
+      const group = p.sections.slice(offset, offset + 40);
+      const sectionRows: Values = group.map((s, index) => [
+        work.id, s.id, offset + index, s.title, s.sourceUrl, s.attribution,
+        s.scripture?.book ?? null, s.scripture?.chapter ?? null,
+        s.scripture?.verseStart ?? null, s.scripture?.verseEnd ?? null,
+      ]);
+      await writeBatch('library_sections',
+        'work_id,id,ordinal,title,source_url,attribution,book,chapter,verse_start,verse_end',
+        sectionRows);
+      const paragraphRows: Values = [];
+      for (const s of group) {
+        for (let i = 0; i < s.paragraphs.length; i++) {
+          paragraphRows.push([work.id, s.id, i, s.paragraphs[i]]);
+          if (paragraphRows.length === 100) {
+            await writeBatch('library_paragraphs', 'work_id,section_id,paragraph,text', paragraphRows);
+          }
+        }
       }
-      if (ordinal % 10 === 0) onProgress((ordinal + 1) / p.sections.length);
+      await writeBatch('library_paragraphs', 'work_id,section_id,paragraph,text', paragraphRows);
+      onProgress((offset + group.length) / p.sections.length);
     }
     await db.runAsync('INSERT OR REPLACE INTO library_notices VALUES (?,?)', work.id, JSON.stringify(p.notices));
     await db.runAsync('INSERT OR REPLACE INTO library_downloads VALUES (?,?,?)',
@@ -170,6 +192,8 @@ export async function searchLibrary(db: SQLiteDatabase, term: string, workIds: s
     WHERE p.work_id IN (${workIds.map(() => '?').join(',')}) AND p.text LIKE ? ESCAPE '\\'
     ORDER BY p.work_id,s.ordinal,p.paragraph LIMIT 100`, ...workIds, `%${escaped}%`);
 }
+// An introduction is a fallback when no verse-specific source entry exists.
+// Full chapter commentaries (such as Henry) remain available alongside verses.
 export async function commentaryForPassage(db: SQLiteDatabase, book: number, chapter: number, verse?: number) {
   return db.getAllAsync<PassageMatch>(`SELECT s.work_id,s.id,s.title,s.verse_start,s.verse_end FROM library_sections s
     JOIN library_downloads d ON d.work_id=s.work_id

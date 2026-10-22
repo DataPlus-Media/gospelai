@@ -49,9 +49,9 @@ async function main() {
     }
     const matchIds = async verse => (await library.commentaryForPassage(db, 43, 3, verse)).map(r => r.id).sort();
     assert.deepEqual(await matchIds(13), ['chapter', 'chapter-intro']);
-    assert.deepEqual(await matchIds(14), ['chapter', 'chapter-intro', 'range']);
+    assert.deepEqual(await matchIds(14), ['chapter', 'range']);
     assert.deepEqual(await matchIds(16), ['chapter', 'range', 'verse']);
-    assert.deepEqual(await matchIds(21), ['chapter', 'chapter-intro', 'range']);
+    assert.deepEqual(await matchIds(21), ['chapter', 'range']);
     assert.deepEqual(await matchIds(22), ['chapter', 'chapter-intro']);
     assert.deepEqual(await matchIds(undefined), ['chapter', 'chapter-intro', 'range', 'verse']);
     assert.equal((await library.commentaryForPassage(db, 43, 4, 16)).length, 0);
