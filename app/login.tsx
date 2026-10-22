@@ -1,8 +1,11 @@
 // login.tsx
 
 import { defaultStyles } from '@/constants/Styles';
-import { useSignIn, useSignUp } from '@clerk/clerk-expo';
-import { useLocalSearchParams } from 'expo-router';
+import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { Ionicons } from '@expo/vector-icons';
+import { makeRedirectUri } from 'expo-auth-session';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -18,12 +21,17 @@ import {
   View,
 } from 'react-native';
 
+WebBrowser.maybeCompleteAuthSession();
+
 type Mode = 'auth' | 'reset';
 
 const Page = () => {
   const { type } = useLocalSearchParams<{ type: string }>();
+  const router = useRouter();
   const { signIn, isLoaded, setActive } = useSignIn();
   const { signUp, isLoaded: signUpLoaded, setActive: signupSetActive } = useSignUp();
+  const google = useOAuth({ strategy: 'oauth_google' });
+  const apple = useOAuth({ strategy: 'oauth_apple' });
 
   const [mode, setMode] = useState<Mode>('auth');
 
@@ -34,6 +42,39 @@ const Page = () => {
   // reset-password specific
   const [resetCode, setResetCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  const redirectUrl = makeRedirectUri({
+    scheme: 'gospelai',
+    path: 'oauth-native-callback',
+  });
+
+  const doOAuth = async (start: typeof google.startOAuthFlow) => {
+    setLoading(true);
+    try {
+      const { createdSessionId, setActive: setOAuthActive, signIn: oauthSignIn, signUp: oauthSignUp } =
+        await start({ redirectUrl });
+      const sessionId =
+        createdSessionId || oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
+
+      if (sessionId) {
+        await setOAuthActive?.({ session: sessionId });
+        router.replace('/(auth)/(drawer)/today');
+        return;
+      }
+
+      Alert.alert('Authentication', 'Additional steps are required to complete sign in.');
+    } catch (err: any) {
+      Alert.alert(
+        'Authentication',
+        err?.errors?.[0]?.longMessage ||
+          err?.errors?.[0]?.message ||
+          err?.message ||
+          'Sign in failed.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // refs so we can jump between fields
   const emailRef = useRef<TextInput | null>(null);
@@ -198,6 +239,9 @@ const Page = () => {
               <TouchableOpacity
                 style={[defaultStyles.btn, styles.btnPrimary]}
                 onPress={onSignInPress}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Login"
               >
                 <Text style={styles.btnPrimaryText}>Login</Text>
               </TouchableOpacity>
@@ -205,10 +249,44 @@ const Page = () => {
               <TouchableOpacity
                 style={[defaultStyles.btn, styles.btnPrimary]}
                 onPress={onSignUpPress}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Create account"
               >
                 <Text style={styles.btnPrimaryText}>Create account</Text>
               </TouchableOpacity>
             )}
+
+            <View style={styles.oauthDivider}>
+              <View style={styles.oauthRule} />
+              <Text style={styles.oauthDividerText}>OR CONTINUE WITH</Text>
+              <View style={styles.oauthRule} />
+            </View>
+
+            <View style={styles.oauthRow}>
+              {Platform.OS !== 'web' && (
+                <TouchableOpacity
+                  style={styles.oauthButton}
+                  onPress={() => doOAuth(apple.startOAuthFlow)}
+                  disabled={loading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Continue with Apple"
+                >
+                  <Ionicons name="logo-apple" size={18} color="#eef2f8" />
+                  <Text style={styles.oauthButtonText}>Apple</Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={styles.oauthButton}
+                onPress={() => doOAuth(google.startOAuthFlow)}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Google"
+              >
+                <Ionicons name="logo-google" size={16} color="#eef2f8" />
+                <Text style={styles.oauthButtonText}>Google</Text>
+              </TouchableOpacity>
+            </View>
           </>
         ) : (
           // ===== RESET PASSWORD MODE =====
@@ -330,6 +408,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     letterSpacing: 0.2,
+  },
+  oauthDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 12,
+    marginBottom: 10,
+  },
+  oauthRule: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#222a3e',
+  },
+  oauthDividerText: {
+    color: '#8b94a9',
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  oauthRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  oauthButton: {
+    flex: 1,
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#222a3e',
+    borderRadius: 14,
+    backgroundColor: '#101521',
+  },
+  oauthButtonText: {
+    color: '#eef2f8',
+    fontSize: 14,
+    fontWeight: '700',
   },
   secondaryBtn: {
     backgroundColor: '#101521',
