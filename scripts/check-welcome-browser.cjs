@@ -38,6 +38,7 @@ async function main() {
         }).map(el => el.textContent);
       });
       assert.deepEqual(outside, [], 'Buttons must not clip horizontally');
+      assert.equal(await button('Continue with Apple').isVisible(), true);
       assert.equal(await button('Continue with Google').isVisible(), true);
       assert.equal(await page.getByText('Continue without an account.', { exact: false }).isVisible(), true);
     };
@@ -49,6 +50,7 @@ async function main() {
       { width: 1440, height: 900 },
     ]) {
       await page.setViewportSize(viewport);
+      await page.waitForTimeout(200);
       await checkLayout();
       console.log(`PASS scrollable welcome ${viewport.width}x${viewport.height}`);
     }
@@ -127,18 +129,21 @@ async function main() {
       await page.goBack();
       await button(guestName).waitFor();
     }
-    assert.equal(await button('Continue with Apple').count(), 0);
+    await button('Continue with Apple').waitFor();
     // Verify OAuth handoff without signing in or exposing credentials.
-    let oauthStarted = false;
+    let oauthStartCount = 0;
     await context.route(/.*clerk.*\/client\/sign_ins.*/, async route => {
-      if (route.request().method() === 'POST') oauthStarted = true;
+      if (route.request().method() === 'POST') oauthStartCount += 1;
       await route.abort();
     });
     await button('Continue with Google').click();
-    await page.waitForFunction(() => true);
-    for (let attempt = 0; attempt < 50 && !oauthStarted; attempt++) await page.waitForTimeout(100);
-    assert.ok(oauthStarted, 'Google must start the existing Clerk OAuth flow');
-    console.log('PASS sign-in/register modes, web OAuth visibility and Google request handoff (aborted)');
+    for (let attempt = 0; attempt < 50 && oauthStartCount < 1; attempt++) await page.waitForTimeout(100);
+    assert.ok(oauthStartCount >= 1, 'Google must start the existing Clerk OAuth flow');
+    const beforeApple = oauthStartCount;
+    await button('Continue with Apple').click();
+    for (let attempt = 0; attempt < 50 && oauthStartCount <= beforeApple; attempt++) await page.waitForTimeout(100);
+    assert.ok(oauthStartCount > beforeApple, 'Apple must start the existing Clerk OAuth flow');
+    console.log('PASS sign-in/register modes, web Apple/Google visibility and OAuth request handoff (aborted)');
 
     await open();
     await page.emulateMedia({ reducedMotion: 'no-preference' });

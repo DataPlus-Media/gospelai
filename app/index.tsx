@@ -7,7 +7,6 @@ import {
   Alert,
   Animated,
   Image,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -230,24 +229,20 @@ export default function Index() {
             </View>
 
             <View style={styles.oauthRow}>
-              {Platform.OS !== 'web' && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Continue with Apple"
-                  onPress={() => doOAuth(apple.startOAuthFlow)}
-                  style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
-                >
-                  <Ionicons name="logo-apple" size={17} color="#F1F0E8" />
-                  <Text style={styles.oauthText}>Apple</Text>
-                </Pressable>
-              )}
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Apple"
+                onPress={() => doOAuth(apple.startOAuthFlow)}
+                style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.oauthText}>Apple</Text>
+              </Pressable>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
                 onPress={() => doOAuth(google.startOAuthFlow)}
                 style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
               >
-                <Ionicons name="logo-google" size={16} color="#F1F0E8" />
                 <Text style={styles.oauthText}>Google</Text>
               </Pressable>
             </View>
