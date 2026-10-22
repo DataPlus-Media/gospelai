@@ -41,14 +41,16 @@ async function main() {
       await open();
       await button('Sign in').click();
       await page.waitForURL(url => url.pathname === '/login' && url.searchParams.get('type') === 'login');
+      await button('Continue with Apple').waitFor();
       await button('Continue with Google').waitFor();
       await page.goto(`${base}/today`, { waitUntil: 'networkidle' });
       await open();
       await button('Create account').click();
       await page.waitForURL(url => url.pathname === '/login' && url.searchParams.get('type') === 'register');
+      await button('Continue with Apple').waitFor();
       await button('Continue with Google').waitFor();
       assert.deepEqual(errors, []);
-      console.log('PASS guest sign-in and registration routes show Google OAuth; no browser errors');
+      console.log('PASS guest sign-in and registration routes show Apple and Google OAuth; no browser errors');
       return;
     }
     await page.goto(`${base}/today`, { waitUntil: 'networkidle' });
@@ -134,14 +136,16 @@ async function main() {
 
     await button('Sign in').click();
     await page.waitForURL(url => url.pathname === '/login' && url.searchParams.get('type') === 'login');
+    await button('Continue with Apple').waitFor();
     await button('Continue with Google').waitFor();
     await page.goto(`${base}/today`, { waitUntil: 'networkidle' });
     await open();
     await button('Create account').click();
     await page.waitForURL(url => url.pathname === '/login' && url.searchParams.get('type') === 'register');
+    await button('Continue with Apple').waitFor();
     await button('Continue with Google').waitFor();
     assert.deepEqual(errors, []);
-    console.log('PASS guest sign-in and registration routes show Google OAuth; no browser errors');
+    console.log('PASS guest sign-in and registration routes show Apple and Google OAuth; no browser errors');
   } catch (error) {
     await mkdir('generated-artifacts/drawer', { recursive: true });
     await page.screenshot({ path: 'generated-artifacts/drawer/failure.png' });

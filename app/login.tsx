@@ -2,7 +2,6 @@
 
 import { defaultStyles } from '@/constants/Styles';
 import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
-import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -264,18 +263,15 @@ const Page = () => {
             </View>
 
             <View style={styles.oauthRow}>
-              {Platform.OS !== 'web' && (
-                <TouchableOpacity
-                  style={styles.oauthButton}
-                  onPress={() => doOAuth(apple.startOAuthFlow)}
-                  disabled={loading}
-                  accessibilityRole="button"
-                  accessibilityLabel="Continue with Apple"
-                >
-                  <Ionicons name="logo-apple" size={18} color="#eef2f8" />
-                  <Text style={styles.oauthButtonText}>Apple</Text>
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={styles.oauthButton}
+                onPress={() => doOAuth(apple.startOAuthFlow)}
+                disabled={loading}
+                accessibilityRole="button"
+                accessibilityLabel="Continue with Apple"
+              >
+                <Text style={styles.oauthButtonText}>Apple</Text>
+              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.oauthButton}
                 onPress={() => doOAuth(google.startOAuthFlow)}
@@ -283,7 +279,6 @@ const Page = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
               >
-                <Ionicons name="logo-google" size={16} color="#eef2f8" />
                 <Text style={styles.oauthButtonText}>Google</Text>
               </TouchableOpacity>
             </View>
