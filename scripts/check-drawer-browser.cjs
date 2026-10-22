@@ -57,6 +57,21 @@ async function main() {
     ]) await route(label, path);
     console.log('PASS grouped routes, current-page selection and drawer dismissal including Bible listener');
 
+    await page.goto(`${base}/bible`, { waitUntil: 'networkidle' });
+    await open();
+    await button('GospelAI home, go to Today').click();
+    await page.waitForURL(url => url.pathname === '/today');
+    await closed();
+
+    await open();
+    await button('Start a new conversation').click();
+    await closed();
+    await open();
+    await button('GospelAI home, go to Today').click();
+    await page.waitForURL(url => url.pathname === '/today');
+    await closed();
+    console.log('PASS GospelAI logo returns to Today from Bible and chat');
+
     await open();
     await button('Start a new conversation').click();
     await closed();

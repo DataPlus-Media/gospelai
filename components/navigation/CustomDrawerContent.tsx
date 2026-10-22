@@ -66,6 +66,7 @@ export default function CustomDrawerContent(props: any) {
   const [deleteChatTarget, setDeleteChatTarget] = useState<Chat | null>(null);
   const currentRoute = props.state.routes[props.state.index];
   const activeRoute = currentRoute?.name;
+  const todayRoute = props.state.routes.find((route: any) => route.name === 'today');
 
   const loadHistory = useCallback(async () => {
     const rows = (await getChats(db)) as Chat[];
@@ -160,6 +161,17 @@ export default function CustomDrawerContent(props: any) {
     props.navigation.dispatch(DrawerActions.closeDrawer());
   };
 
+  const goHome = () => {
+    if (todayRoute) {
+      navigateToRoute('today', todayRoute.key);
+      return;
+    }
+
+    Keyboard.dismiss();
+    router.replace('/(auth)/(drawer)/today');
+    props.navigation.dispatch(DrawerActions.closeDrawer());
+  };
+
   const openChat = (chat: Chat) => {
     Keyboard.dismiss();
     router.push(`/(auth)/(drawer)/(chat)/${chat.id}`);
@@ -175,7 +187,13 @@ export default function CustomDrawerContent(props: any) {
   return (
     <View style={[styles.drawer, { paddingTop: top }]}>
       <View style={styles.brandHeader}>
-        <View style={styles.brandLine}>
+        <Pressable
+          onPress={goHome}
+          accessibilityRole="button"
+          accessibilityLabel="GospelAI home, go to Today"
+          accessibilityHint="Returns to the Today screen and closes navigation"
+          style={({ pressed }) => [styles.brandLine, pressed && styles.pressed]}
+        >
           <View style={styles.logoFrame}>
             <Image source={require('@/assets/images/logo-white.png')} style={styles.brandLogo} />
           </View>
@@ -183,7 +201,7 @@ export default function CustomDrawerContent(props: any) {
             <Text style={styles.brandName}>GospelAI</Text>
             <Text style={styles.brandTagline}>SCRIPTURE · REFLECTION · WISDOM</Text>
           </View>
-        </View>
+        </Pressable>
         <View style={styles.brandRule}>
           <View style={styles.ruleLine} />
           <Ionicons name="sparkles" size={11} color={palette.gold} />
