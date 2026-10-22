@@ -174,6 +174,13 @@ export async function commentaryForPassage(db: SQLiteDatabase, book: number, cha
   return db.getAllAsync<PassageMatch>(`SELECT s.work_id,s.id,s.title,s.verse_start,s.verse_end FROM library_sections s
     JOIN library_downloads d ON d.work_id=s.work_id
     WHERE s.book=? AND s.chapter=? AND
-      (? IS NULL OR s.verse_start IS NULL OR (? BETWEEN s.verse_start AND s.verse_end))
-    ORDER BY s.work_id,s.ordinal`, book, chapter, verse ?? null, verse ?? null);
+      (? IS NULL OR
+       (s.verse_start IS NULL AND (
+         s.id NOT LIKE '%-intro' OR NOT EXISTS (
+           SELECT 1 FROM library_sections exact
+           WHERE exact.work_id=s.work_id AND exact.book=s.book AND exact.chapter=s.chapter
+             AND exact.verse_start IS NOT NULL AND ? BETWEEN exact.verse_start AND exact.verse_end
+         )
+       )) OR (? BETWEEN s.verse_start AND s.verse_end))
+    ORDER BY s.work_id,s.ordinal`, book, chapter, verse ?? null, verse ?? null, verse ?? null);
 }

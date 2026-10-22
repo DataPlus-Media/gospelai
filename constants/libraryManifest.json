@@ -5,6 +5,12 @@
     "sha256": "40377491e6d69a41dafdba96d8bdb634e312ee63050005d2fecd07323a1bf847",
     "sections": 1262
   },
+  "gill-exposition": {
+    "revision": "sermonindex-gill-mybible-1",
+    "bytes": 56562523,
+    "sha256": "489cd113b8ec5305c96a2f9dc816f9a43a9320e963d97c19ce69f0b122562820",
+    "sections": 32139
+  },
   "spurgeon-morning-evening": {
     "revision": "ccel-morn-eve-1",
     "bytes": 1544618,

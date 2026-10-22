@@ -7,6 +7,8 @@ import calendar
 import hashlib
 import json
 import re
+import shutil
+import sqlite3
 import urllib.request
 import zipfile
 from html.parser import HTMLParser
@@ -73,6 +75,16 @@ books = [
     )
 ]
 assert len(books) == 66
+sermonindex_book_codes = [
+    "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA",
+    "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO",
+    "ECC", "SOS", "ISA", "JER", "LAM", "EZK", "DAN", "HOS", "JOL", "AMO",
+    "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL", "MAT",
+    "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH", "PHP",
+    "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS", "1PE",
+    "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
+]
+assert len(sermonindex_book_codes) == len(books)
 contributors = {
     45: "John Evans", 46: "Simon Browne", 47: "Daniel Mayo", 48: "Joshua Bayes",
     49: "Samuel Rosewell", 50: "William Harris", 51: "William Harris",
@@ -171,9 +183,145 @@ def morning_evening():
     }
 
 
+def gill():
+    archive = fetch(
+        "https://www.sermonindex.net/modules/mybible/SI-GILL.commentaries.zip",
+        "gill-mybible.zip",
+    )
+    database_path = SOURCES / "gill-mybible.sqlite3"
+    if not database_path.exists():
+        with zipfile.ZipFile(archive) as z:
+            candidates = [name for name in z.namelist() if name.lower().endswith(".sqlite3")]
+            if len(candidates) != 1:
+                raise ValueError(f"Expected one MyBible SQLite module; found {len(candidates)}.")
+            with z.open(candidates[0]) as source, database_path.open("wb") as target:
+                shutil.copyfileobj(source, target)
+
+    db = sqlite3.connect(f"file:{database_path}?mode=ro", uri=True)
+    try:
+        info = dict(db.execute("SELECT name,value FROM info"))
+        if info.get("description") != "Gill's Exposition of the Entire Bible":
+            raise ValueError("Downloaded MyBible module is not the expected John Gill edition.")
+        details = info.get("detailed_info", "")
+        if "Public domain" not in details or "SermonIndex.net" not in details:
+            raise ValueError("The Gill module is missing its source and public-domain notice.")
+
+        module_books = [
+            row[0] for row in db.execute(
+                "SELECT DISTINCT book_number FROM commentaries ORDER BY book_number"
+            )
+        ]
+        if len(module_books) != len(books):
+            raise ValueError(f"Expected 66 Gill Bible books; found {len(module_books)}.")
+        book_map = {
+            number: (book[0], book[1], code)
+            for number, book, code in zip(module_books, books, sermonindex_book_codes)
+        }
+        sections = []
+        seen = set()
+        chapter_coverage = set()
+        verse_coverage = set()
+        cursor = db.execute(
+            """SELECT book_number,chapter_number_from,verse_number_from,
+                      chapter_number_to,verse_number_to,text
+               FROM commentaries
+               ORDER BY book_number,chapter_number_from,verse_number_from"""
+        )
+        for module_book, chapter, verse_start, chapter_end, verse_end, raw_html in cursor:
+            if module_book not in book_map:
+                raise ValueError(f"Unknown Gill module book number: {module_book}.")
+            book_id, book_name, book_code = book_map[module_book]
+            chapter_count = books[book_id - 1][2]
+            if chapter != chapter_end or not 1 <= chapter <= chapter_count:
+                raise ValueError(f"Invalid chapter mapping in {book_name}: {chapter}–{chapter_end}.")
+
+            section = {
+                "sourceUrl": f"https://www.sermonindex.net/commentary/gill/{book_code}/{chapter}",
+                "attribution": "John Gill (1697–1771); electronic module prepared by SermonIndex.net.",
+                "paragraphs": paragraphs(raw_html),
+            }
+            if not section["paragraphs"]:
+                raise ValueError(f"Gill section has no readable text: {book_name} {chapter}.")
+
+            if verse_start == 0 and verse_end == 0:
+                section["id"] = f"b{book_id:02d}-c{chapter:03d}-intro"
+                section["title"] = f"{book_name} {chapter} · Chapter introduction"
+                section["scripture"] = {"book": book_id, "chapter": chapter}
+                chapter_coverage.add((book_id, chapter))
+            else:
+                if verse_start < 1 or verse_end < verse_start:
+                    raise ValueError(f"Invalid Gill verse range in {book_name} {chapter}.")
+                section["id"] = f"b{book_id:02d}-c{chapter:03d}-v{verse_start:03d}"
+                if verse_end != verse_start:
+                    section["id"] += f"-{verse_end:03d}"
+                section["title"] = (
+                    f"{book_name} {chapter}:{verse_start}" if verse_end == verse_start
+                    else f"{book_name} {chapter}:{verse_start}–{verse_end}"
+                )
+                section["scripture"] = {
+                    "book": book_id, "chapter": chapter,
+                    "verseStart": verse_start, "verseEnd": verse_end,
+                }
+                verse_coverage.add((book_id, chapter, verse_start, verse_end))
+
+            if section["id"] in seen:
+                raise ValueError(f"Duplicate Gill section ID: {section['id']}.")
+            seen.add(section["id"])
+            sections.append(section)
+
+        expected_chapters = {
+            (book_id, chapter)
+            for book_id, _, chapter_count in books
+            for chapter in range(1, chapter_count + 1)
+        }
+        chapter_coverage.update((book, chapter) for book, chapter, _, _ in verse_coverage)
+        if chapter_coverage != expected_chapters:
+            raise ValueError(f"Gill source has missing or extra chapter coverage: {chapter_coverage ^ expected_chapters}.")
+
+        # Confirm every source mapping exists in the bundled KJV, while keeping
+        # genuine source gaps explicit instead of inventing verse commentary.
+        bible_db = sqlite3.connect(f"file:{ROOT / 'assets/bible/kjv.sqlite'}?mode=ro", uri=True)
+        try:
+            bible_verses = set(bible_db.execute(
+                """SELECT b.book_reference_id,v.chapter,v.verse
+                   FROM verse v JOIN book b ON b.id=v.book_id WHERE b.id<=66"""
+            ))
+        finally:
+            bible_db.close()
+        mapped_verses = set()
+        for book, chapter, verse_start, verse_end in verse_coverage:
+            mapped_verses.update(
+                (book, chapter, verse) for verse in range(verse_start, verse_end + 1)
+            )
+        if mapped_verses - bible_verses:
+            raise ValueError(f"Gill source contains invalid KJV mappings: {sorted(mapped_verses - bible_verses)[:10]}.")
+        missing_verses = bible_verses - mapped_verses
+
+        return {
+            "schema": 1, "workId": "gill-exposition", "revision": "sermonindex-gill-mybible-1",
+            "notices": [
+                "Gill’s Exposition of the Entire Bible by John Gill (1697–1771).",
+                "Source edition: SermonIndex.net MyBible module SI-GILL, downloaded from "
+                "https://www.sermonindex.net/modules/mybible/SI-GILL.commentaries.zip.",
+                "SermonIndex module metadata identifies this edition as public domain; "
+                "the work page states “Public domain — free to copy, share and build on.”",
+                "The module was converted from MyBible SQLite/HTML to structured paragraphs. "
+                "Original wording and source attribution are retained.",
+                "Verse mappings are taken from the source module. Chapter introductions are "
+                "labeled separately and shown as fallback only when no verse-specific entry exists.",
+                f"The source contains {len(sections):,} sections and maps "
+                f"{len(mapped_verses):,} KJV verses; {len(missing_verses)} KJV verses have no "
+                "verse-specific source entry. No missing commentary was generated.",
+                "Source chapter links: https://www.sermonindex.net/commentary/gill/.",
+            ], "sections": sections,
+        }
+    finally:
+        db.close()
+
+
 if __name__ == "__main__":
     manifest = {}
-    for build in (henry, morning_evening):
+    for build in (henry, gill, morning_evening):
         package = build()
         data = json.dumps(package, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         path = OUT / f"{package['workId']}.json"

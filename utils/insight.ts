@@ -9,8 +9,10 @@ export type SourceContent = {
   paragraphs: { paragraph: number; text: string }[];
 };
 
-export function coverageLabel(row: Pick<PassageMatch, 'verse_start' | 'verse_end'>) {
-  if (row.verse_start === null) return 'Whole chapter';
+export function coverageLabel(row: Pick<PassageMatch, 'verse_start' | 'verse_end' | 'title'>) {
+  if (row.verse_start === null) {
+    return row.title.endsWith(' · Chapter introduction') ? 'Chapter introduction' : 'Whole chapter';
+  }
   return row.verse_start === row.verse_end
     ? `Verse ${row.verse_start}` : `Verses ${row.verse_start}–${row.verse_end}`;
 }

@@ -3,7 +3,7 @@
 The refreshed drawer keeps the existing dark GospelAI identity and bundled logo/Bible artwork, with grouped navigation:
 
 - **Your rhythm:** Today and Bible.
-- **Study & reflect:** Christian insight, Saved verses and Notes.
+- **Study & reflect:** Authors insight, Saved verses and Notes.
 - **Conversations:** labelled New chat action, local history search and conversation options.
 - **More:** Support Us.
 

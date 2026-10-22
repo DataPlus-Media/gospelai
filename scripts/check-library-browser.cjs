@@ -21,8 +21,21 @@ async function main() {
   try {
     await go('/library');
     await page.getByRole('button', { name: 'Exposition of the Old and New Testaments, by John Gill' }).click();
-    await page.getByText('Rights blocker:', { exact: false }).waitFor();
-    assert.equal(await text('Download for offline use').count(), 0);
+    await text('EDITION / SOURCE').waitFor();
+    await text('SermonIndex MyBible module SI-GILL').waitFor();
+    await text('Download for offline use').waitFor();
+    await click('Download for offline use');
+    await text('Read this work').waitFor({ timeout: 240000 });
+    await click('Read this work');
+    await text('HISTORICAL SOURCE TEXT').waitFor();
+    await text('Genesis 1 · Chapter introduction').waitFor();
+    await go('/library?book=43&chapter=3&verse=18&jump=gill');
+    await page.getByRole('button', { name: 'Read full source section: John 3:18', exact: true }).waitFor();
+    await text('Verse 18').waitFor();
+    await page.getByRole('button', { name: 'Read full source section: John 3:18', exact: true }).click();
+    await text('He that believeth on him is not condemned').waitFor();
+    console.log('PASS complete Gill package downloads, opens offline reader and maps John 3:18 to its original verse section');
+
     await go('/library');
     await openMorning();
     await text('EDITION / SOURCE').waitFor();
@@ -104,6 +117,11 @@ async function main() {
     await page.getByText('Charles Spurgeon · Morning and Evening · March 5 · Evening', { exact: false }).waitFor();
     await go('/library');
     await page.getByRole('button', { name: 'Commentary on the Whole Bible, by Matthew Henry, downloaded' }).waitFor();
+    await go('/library?work=gill-exposition');
+    await click('Remove download');
+    await text('Remove this download?').waitFor();
+    await click('Remove');
+    await text('Download for offline use').waitFor();
     await go('/library?work=henry-whole-bible');
     await click('Remove download'); await click('Remove');
     await text('Download for offline use').waitFor();

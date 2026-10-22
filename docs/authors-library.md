@@ -1,29 +1,29 @@
-# Christian insight
+# Authors insight
 
-The user-facing feature is named **Christian insight**, with a navigation-menu destination, a Today shortcut, a visible Bible-page button for the current chapter, and a selected-verse action. Its internal `/library` route is retained for stable links.
+The user-facing feature is named **Authors insight**, with a navigation-menu destination, a Today shortcut, a visible Bible-page button for the current chapter, and a selected-verse action. Its internal `/library` route is retained for stable links.
 
 The Bible connection uses canonical book/chapter/verse identifiers, not translation text. The chapter button does not assume verse 1; the verse action supplies an exact reference. Additional Bible translations are a future feature, not included here.
 
 ## Release status
 
-Two complete editions have been imported, uploaded to App Storage and verified in the static export:
+Three verified editions are imported and available for device download:
 
 | Work | Imported contents | Download |
 | --- | --- | --- |
 | Matthew Henry, *Commentary on the Whole Bible* | All 1,189 Bible chapters, 66 book introductions, original contents and six volume prefaces | 39,487,522 bytes |
+| John Gill, *Exposition of the Old and New Testaments* | 32,139 original sections: 1,049 chapter introductions and 31,090 verse-mapped entries across all 66 books | 56,562,523 bytes |
 | Charles Spurgeon, *Morning and Evening* | 732 morning/evening entries, including February 29 | 1,544,618 bytes |
 
-**Storage/build verification:** the explicitly configured bucket is accessible. Both complete packages were uploaded, retrieved through the official SDK, checked against their recorded SHA-256 hashes and exported successfully by `npm run build:web`. No publishing has been performed. Native release hosting configuration and device verification remain required before shipping an App Store update.
+**Storage/build verification:** all three packages are uploaded to App Storage and checksum-verified. No publishing has been performed. Native release hosting configuration and device verification remain required before shipping an App Store update.
 
 The following works are listed honestly but have no imported text or download button:
 
-- **John Gill, Exposition of the Old and New Testaments:** the historical work and the Sacred Texts catalog are labeled public domain, but redistribution terms for a specific complete electronic edition have not been verified.
 - **Spurgeon, The Treasury of David:** CCEL’s Volume I XML says “Public Domain” but describes an images-only edition, not a complete searchable text. The Spurgeon Archive’s page carries an all-rights-reserved notice. No complete electronic edition with resolved redistribution terms has been imported.
 - **Spurgeon, All of Grace:** CCEL’s electronic edition has an empty `DC.Rights` field. Its general policy requests permission for republication/commercial use. The age of the original book alone has not been used to clear that electronic edition.
 
 These are edition/rights blockers, not AI-generated substitutes or sample excerpts.
 
-## Edition verification (2026-10-16)
+## Edition verification
 
 ### Henry
 
@@ -34,6 +34,15 @@ These are edition/rights blockers, not AI-generated substitutes or sample excerp
 - Preserve the source’s Volume VI preface and its contributor list: <https://www.ccel.org/h/henry/mhc2/MHC00006.HTM>.
 - Henry wrote through Acts. Romans–Revelation were completed by the named ministers using his notes. Each affected chapter has a contributor attribution, including John Evans (Romans), Simon Browne (1 Corinthians), Daniel Mayo (2 Corinthians and 1–2 Thessalonians), and the other contributors exactly as named in the source preface.
 - Mapping is **chapter-level**. It must not be labeled as a precise explanation of a selected verse.
+
+### Gill (2026-10-22)
+
+- Edition: SermonIndex MyBible module `SI-GILL`, *Gill’s Exposition of the Entire Bible*: <https://www.sermonindex.net/modules/mybible/SI-GILL.commentaries.zip>.
+- The module metadata identifies the edition as public domain, and the work page states **“Public domain — free to copy, share and build on.”** The app owner confirmed that this edition may be included in GospelAI.
+- Original author: John Gill (1697–1771). Electronic module prepared by SermonIndex.net; attribution and chapter source links are retained in the package.
+- The module contains 32,139 sections. Every canonical chapter has source coverage. Of 31,102 KJV verse references, 31,090 have an exact verse entry; 12 references have no verse-specific entry in the source. No commentary is invented for those gaps.
+- Chapter introductions are explicitly titled and labeled **Chapter introduction**. For a selected verse they appear only when the source has no verse-specific entry; an exact verse entry takes precedence. On chapter entry, both introductions and verse entries remain available.
+- The importer checks all module mappings against the bundled KJV, preserves exact verse/range mappings, and records the source edition’s notice. The source HTML is normalized into readable paragraphs; source wording is retained.
 
 ### Morning and Evening
 
@@ -47,18 +56,19 @@ These are edition/rights blockers, not AI-generated substitutes or sample excerp
 ### Other inspected evidence
 
 - CCEL general policy: <https://ccel.org/about/copyright.html>.
-- Gill catalog: <https://sacred-texts.com/bib/cmt/gill/index.htm>.
+- Gill edition and source statement: <https://www.sermonindex.net/commentary/gill/>.
+- SermonIndex copying permissions: <https://www.sermonindex.net/md/copying-permissions/>.
 - Treasury XML: <https://ccel.org/ccel/s/spurgeon/treasury1.xml>.
 - Spurgeon Archive Treasury page: <https://www.romans45.org/spurgeon/treasury/treasury.htm>.
 - All of Grace XML: <https://www.ccel.org/ccel/s/spurgeon/grace.xml>.
 
-The edition-specific free-copy notices above, not a blanket assumption about all CCEL material, authorize the imported editions. No modern CCEL summaries, cover art, website navigation assets or modern adaptations are included. No Bible Standard assets or texts are used. Regional copyright law can differ; rights verification here is recorded for these source editions rather than asserted for every jurisdiction.
+The edition-specific source notices and the app owner’s approval authorize these imported editions. No modern CCEL summaries, cover art, website navigation assets or modern adaptations are included. No Bible Standard assets or texts are used. Regional copyright law can differ; rights verification here is recorded for these source editions rather than asserted for every jurisdiction.
 
 ## Storage and build
 
 1. In Replit, open **Tools → App Storage → Create new bucket** and create a bucket for this app.
-2. Run `npm run library:import`. Source archives and generated packages live only under ignored `generated-artifacts/library/`.
-3. Compare `generated-artifacts/library/manifest.json` against the committed small `constants/libraryManifest.json`. Import fails on missing chapters/entries. Do not update hashes blindly after a source change: verify the edition/rights and transformation first.
+2. Run `npm run library:import`. The importer downloads the CCEL sources and SermonIndex MyBible Gill module. Source archives, the extracted module database and generated packages live only under ignored `generated-artifacts/library/`.
+3. Compare `generated-artifacts/library/manifest.json` against the committed small `constants/libraryManifest.json`. Import fails on missing chapters, invalid Gill mappings or empty sections. Do not update hashes blindly after a source change: verify the edition/rights and transformation first.
 4. Run `npm run library:upload`. The official SDK uses the default App Storage bucket. If this environment cannot resolve the default, set the non-secret `LIBRARY_STORAGE_BUCKET_ID` to the unique **Bucket ID** in App Storage's **Settings** view, not its display name. Checksums are verified before upload. A bucket must belong to this project; an ID does not grant access to another project's bucket.
 5. `npm run build:web` downloads the checksum-locked editions from App Storage into ignored `public/library-packages/`, then runs Expo’s existing static export. The static host serves these intentionally public-domain copies to guests. App Storage credentials and arbitrary bucket access never reach the browser.
 
@@ -92,9 +102,9 @@ For a **native release build**, set `EXPO_PUBLIC_LIBRARY_BASE_URL` to the HTTPS 
 ## Verse-based source study
 
 - Bible verse actions open the existing library route with canonical book/chapter/verse identifiers. The insight header retrieves the actual text from the bundled Bible database and labels it **King James Version (KJV)**. Chapter entry remains chapter-level and shows the full chapter; source matching never relies on translation wording.
-- **Author Insights** opens the original downloaded section, preserving the contributor attribution, work, edition, section source link, rights link and installed edition notices. Coverage is explicitly **Whole chapter**, **Verse N**, or **Verses N–M**. Henry remains whole-chapter coverage: no smaller mappings were inferred or shipped.
+- **Author Insights** opens the original downloaded section, preserving the contributor attribution, work, edition, section source link, rights link and installed edition notices. Coverage is explicitly **Whole chapter**, **Chapter introduction**, **Verse N**, or **Verses N–M**. Henry remains whole-chapter coverage; Gill retains the MyBible module’s verse mappings.
 - **Compare** selects at most two downloaded commentary passages. Remove a selection to change it, or use Clear to reset both. Each panel retains the full original passage and provenance. Panels stack below 740px and sit side by side on wider layouts.
-- The cleared catalog currently provides only one commentary passage for a selected verse: Henry's chapter. The UI explains that this is insufficient for a two-source comparison. It does not insert Gill, Calvin, Spurgeon devotionals or the proposal's illustrative summaries to fill the gap.
+- Matthew Henry and John Gill are separate commentary sources. Henry provides a whole-chapter section; Gill provides exact verse entries and chapter introductions. Compare works only with sources downloaded on the device.
 - Not downloaded, rights blocked, and downloaded-but-unmapped commentary are separate states with links to existing work details/download actions. *Morning and Evening* is explicitly separate devotional reading, has no verified verse mapping, and does not count as commentary. Source/rights web links require a connection; downloaded source text and comparison do not.
 - Changing the selected scripture remounts passage state and clears comparison/source results. Existing full-work reading routes, saved positions, notes, bookmarks, highlights and guest access are retained.
 - **Ask GospelAI about this source** is separate from source study. A cancellable disclosure opens an editable draft containing the selected scripture, translation, complete loaded section, precise coverage and attribution. Only Send submits the edited draft to the existing AI service. The screen does not generate/cache explanations or claim answers are original quotations or source-verified conclusions. AI requests require a connection.

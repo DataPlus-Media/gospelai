@@ -22,7 +22,9 @@ async function main() {
       assert.equal(createHash('sha256').update(bytes).digest('hex'), m.sha256);
       api.validatePackage(source(id), work(id));
     }
-    const henry = source('henry-whole-bible'), morning = source('spurgeon-morning-evening');
+    const henry = source('henry-whole-bible');
+    const gill = source('gill-exposition');
+    const morning = source('spurgeon-morning-evening');
     assert.equal(henry.sections.filter(s => s.scripture).length, 1189);
     assert.equal(henry.sections.find(s => s.id === 'b45-c001').attribution.includes('John Evans'), true);
     assert.equal(henry.sections.find(s => s.id === 'b44-c001').attribution, 'Matthew Henry');
@@ -30,7 +32,13 @@ async function main() {
     assert.ok(morning.sections.some(s => s.id === '02-29-am'));
     assert.ok(morning.sections.some(s => s.id === '12-31-pm'));
     assert.equal(morning.sections.length, 732);
-    console.log('PASS verified package sizes/checksums, full Bible chapter coverage, Henry contributor attribution, 732 devotional dates');
+    assert.equal(gill.sections.length, 32139);
+    assert.equal(gill.sections.filter(s => s.id.endsWith('-intro')).length, 1049);
+    assert.equal(gill.sections.filter(s => s.scripture?.verseStart).length, 31090);
+    assert.ok(gill.sections.some(s => s.id === 'b43-c003-v018' && s.title === 'John 3:18'));
+    assert.ok(gill.sections.find(s => s.id === 'b43-c003-v018').attribution.includes('SermonIndex.net'));
+    assert.ok(gill.notices.some(n => n.includes('12 KJV verses have no verse-specific source entry')));
+    console.log('PASS verified package hashes, Henry chapter coverage and attribution, 32,139 Gill sections, 31,090 exact Gill verse mappings, and 732 devotional dates');
 
     await assert.rejects(api.installWork(db, { id: 'blocked', blocker: 'Rights unresolved' }, morning));
     await assert.rejects(api.installWork(db, work('spurgeon-morning-evening'), { ...morning, sections: morning.sections.slice(1) }));
@@ -103,6 +111,25 @@ async function main() {
       assert.equal(checked, 1189);
     } finally { bibleDb.close(); }
     console.log('PASS all 1189 canonical Henry chapter mappings at first/last Bible verses and John 3:18');
+
+    await api.installWork(db, work(gill.workId), gill);
+    assert.equal((await api.workAvailability(db, [work(gill.workId)]))[0].state, 'ready');
+    const johnGill = (await api.commentaryForPassage(db, 43, 3, 18))
+      .find(row => row.work_id === gill.workId);
+    assert.equal(johnGill.id, 'b43-c003-v018');
+    assert.equal(johnGill.verse_start, 18);
+    assert.equal(johnGill.verse_end, 18);
+    const johnGillSection = await api.readSection(db, gill.workId, johnGill.id);
+    assert.equal(johnGillSection.paragraphs[0].text, gill.sections.find(s => s.id === johnGill.id).paragraphs[0]);
+    const introFallback = (await api.commentaryForPassage(db, 13, 11, 1))
+      .find(row => row.work_id === gill.workId);
+    assert.equal(introFallback.id, 'b13-c011-intro');
+    assert.equal(introFallback.verse_start, null);
+    assert.ok((await api.commentaryForPassage(db, 43, 3)).some(row => row.id === 'b43-c003-v018'));
+    await api.removeWork(db, gill.workId);
+    assert.equal((await api.commentaryForPassage(db, 43, 3, 18)).some(row => row.work_id === gill.workId), false);
+    console.log('PASS Gill installs offline, maps John 3:18 exactly, falls back to a labeled chapter introduction for a source gap, and removes cleanly');
+
     await api.saveLibraryPosition(db, henry.workId, 'b43-c003', 2);
     await db.runAsync(`DELETE FROM library_paragraphs WHERE work_id=? AND section_id='b43-c003'`, henry.workId);
     assert.equal((await api.workAvailability(db, [work(henry.workId)]))[0].state, 'incomplete');

@@ -31,26 +31,29 @@ async function main() {
     await assert.rejects(insight.loadSelectedScripture(43, -1, 16));
     await assert.rejects(insight.loadSelectedScripture(43, 3, NaN));
     await assert.rejects(insight.loadSelectedScripture(99, 3, 16));
-    assert.equal(insight.coverageLabel({ verse_start: null, verse_end: null }), 'Whole chapter');
-    assert.equal(insight.coverageLabel({ verse_start: 16, verse_end: 16 }), 'Verse 16');
-    assert.equal(insight.coverageLabel({ verse_start: 14, verse_end: 21 }), 'Verses 14–21');
+    assert.equal(insight.coverageLabel({ title: 'John 3', verse_start: null, verse_end: null }), 'Whole chapter');
+    assert.equal(insight.coverageLabel({ title: 'John 3 · Chapter introduction', verse_start: null, verse_end: null }), 'Chapter introduction');
+    assert.equal(insight.coverageLabel({ title: 'John 3:16', verse_start: 16, verse_end: 16 }), 'Verse 16');
+    assert.equal(insight.coverageLabel({ title: 'John 3:14–21', verse_start: 14, verse_end: 21 }), 'Verses 14–21');
     console.log('PASS actual bundled KJV scripture, canonical reference, translation, chapter entry and invalid references');
 
     await library.initLibrary(db);
     await db.runAsync(`INSERT INTO library_downloads VALUES ('fixture','test',0)`);
     // Deliberately synthetic mappings used only in this isolated test DB.
-    for (const [id, start, end] of [['chapter', null, null], ['range', 14, 21], ['verse', 16, 16]]) {
+    for (const [id, start, end] of [
+      ['chapter', null, null], ['chapter-intro', null, null], ['range', 14, 21], ['verse', 16, 16],
+    ]) {
       await db.runAsync(`INSERT INTO library_sections VALUES ('fixture',?,0,?,'https://example.test/source','Test only',43,3,?,?)`,
-        id, `TEST ONLY ${id}`, start, end);
+        id, id === 'chapter-intro' ? 'John 3 · Chapter introduction' : `TEST ONLY ${id}`, start, end);
       await db.runAsync(`INSERT INTO library_paragraphs VALUES ('fixture',?,0,'TEST ONLY original text')`, id);
     }
     const matchIds = async verse => (await library.commentaryForPassage(db, 43, 3, verse)).map(r => r.id).sort();
-    assert.deepEqual(await matchIds(13), ['chapter']);
-    assert.deepEqual(await matchIds(14), ['chapter', 'range']);
+    assert.deepEqual(await matchIds(13), ['chapter', 'chapter-intro']);
+    assert.deepEqual(await matchIds(14), ['chapter', 'chapter-intro', 'range']);
     assert.deepEqual(await matchIds(16), ['chapter', 'range', 'verse']);
-    assert.deepEqual(await matchIds(21), ['chapter', 'range']);
-    assert.deepEqual(await matchIds(22), ['chapter']);
-    assert.deepEqual(await matchIds(undefined), ['chapter', 'range', 'verse']);
+    assert.deepEqual(await matchIds(21), ['chapter', 'chapter-intro', 'range']);
+    assert.deepEqual(await matchIds(22), ['chapter', 'chapter-intro']);
+    assert.deepEqual(await matchIds(undefined), ['chapter', 'chapter-intro', 'range', 'verse']);
     assert.equal((await library.commentaryForPassage(db, 43, 4, 16)).length, 0);
     const row = (await library.commentaryForPassage(db, 43, 3, 16))[0];
     const content = await library.readSection(db, row.work_id, row.id);
