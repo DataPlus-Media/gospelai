@@ -8,6 +8,7 @@
 // ✅ Keeps your dark card / rounded style
 
 import Colors from '@/constants/Colors';
+import UserAvatar from '@/components/UserAvatar';
 import { useAuth, useOAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -152,11 +153,14 @@ export default function SettingsScreen() {
             {isSignedIn ? (
               <>
                 <View style={styles.signedHeader}>
-                  <View style={styles.avatarCircle}>
-                    <Text style={styles.avatarText}>
-                      {(displayName?.[0] || 'U').toUpperCase()}
-                    </Text>
-                  </View>
+                  <UserAvatar
+                    isSignedIn={isSignedIn}
+                    firstName={user?.firstName}
+                    lastName={user?.lastName}
+                    fallbackName={displayName}
+                    size={42}
+                    radius={21}
+                  />
 
                   <View style={{ flex: 1 }}>
                     <Text style={styles.signedTitle}>{displayName}</Text>
@@ -394,21 +398,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     paddingBottom: 12,
-  },
-  avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 999,
-    backgroundColor: '#101521',
-    borderWidth: 1,
-    borderColor: '#2a2a2c',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#eef2f8',
-    fontWeight: '900',
-    fontSize: 16,
   },
   signedTitle: {
     color: '#fff',

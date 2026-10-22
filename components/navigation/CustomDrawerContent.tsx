@@ -1,5 +1,6 @@
 import { getChats, renameChat } from '@/utils/Database';
 import type { Chat } from '@/utils/Interfaces';
+import UserAvatar from '@/components/UserAvatar';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerContentScrollView, useDrawerStatus } from '@react-navigation/drawer';
@@ -370,7 +371,14 @@ export default function CustomDrawerContent(props: any) {
               accessibilityLabel={`${displayName}, account settings`}
               style={styles.accountCard}
             >
-              <Image source={require('@/assets/images/logo-dark.png')} style={styles.avatar} />
+              <UserAvatar
+                isSignedIn={isSignedIn}
+                firstName={user?.firstName}
+                lastName={user?.lastName}
+                fallbackName={displayName}
+                size={38}
+                radius={12}
+              />
               <View style={styles.accountCopy}>
                 <Text style={styles.accountEyebrow}>SIGNED IN</Text>
                 <Text style={styles.userName} numberOfLines={1}>{displayName}</Text>
@@ -382,7 +390,10 @@ export default function CustomDrawerContent(props: any) {
           </Link>
         ) : (
           <View style={styles.authArea}>
-            <Text style={styles.authPrompt}>Keep your reflections close.</Text>
+            <View style={styles.authPromptRow}>
+              <UserAvatar isSignedIn={false} size={38} radius={12} />
+              <Text style={styles.authPrompt}>Keep your reflections close.</Text>
+            </View>
             <View style={styles.authBtnRow}>
               <TouchableOpacity
                 accessibilityRole="button"

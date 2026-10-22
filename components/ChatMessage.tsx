@@ -1,7 +1,8 @@
 import Colors from '@/constants/Colors';
+import UserAvatar from '@/components/UserAvatar';
 import { addNote } from '@/utils/Database';
 import { Message, Role } from '@/utils/Interfaces';
-import { useUser } from '@clerk/clerk-expo';
+import { useAuth, useUser } from '@clerk/clerk-expo';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -75,10 +76,19 @@ const ChatMessage = ({
   loading,
 }: Message & { loading?: boolean }) => {
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const { user } = useUser();
   const db = useSQLiteContext();
-  const avatarUrl = user?.imageUrl || 'https://galaxies.dev/img/meerkat_2.jpg';
   const isBot = role === Role.Bot;
+  const avatarProps = {
+    isSignedIn,
+    firstName: user?.firstName,
+    lastName: user?.lastName,
+    fallbackName: user?.username || user?.primaryEmailAddress?.emailAddress,
+    size: 34,
+    radius: 17,
+    style: styles.avatar,
+  };
 
   const handleCopy = async (text: string) => {
     await Clipboard.setStringAsync(text);
@@ -140,7 +150,7 @@ const ChatMessage = ({
         <Pressable onPress={goToImageModal}>
           <Image source={{ uri: imageUrl }} style={styles.previewImage} />
         </Pressable>
-        {!isBot && <Image source={{ uri: avatarUrl }} style={styles.avatar} />}
+        {!isBot && <UserAvatar {...avatarProps} />}
       </View>
     );
   }
@@ -181,7 +191,7 @@ const ChatMessage = ({
             >
               <Text style={styles.text}>{p}</Text>
             </Pressable>
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <UserAvatar {...avatarProps} />
           </View>
         );
       })}
@@ -228,11 +238,7 @@ const styles = StyleSheet.create({
   },
 
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
     marginLeft: 8,
-    backgroundColor: '#111217',
   },
 
   bubble: {
