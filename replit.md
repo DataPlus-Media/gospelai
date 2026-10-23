@@ -57,18 +57,19 @@ npm run web   # Start Expo web dev server on port 5000
 - **Full Bible Search**: Search icon in Bible screen header opens a full-screen search modal. Queries the KJV SQLite DB across all 31,000+ verses with 300ms debounce. Tapping a result navigates directly to that verse and highlights it.
 - **Verse of the Day**: `utils/verseOfDay.ts` (52 curated verses, cycles daily). `components/VerseOfDay.tsx` displays a gold-accented card on the home/chat screen. Loads verse text from KJV SQLite on native, falls back to hardcoded KJV texts on web. Share button uses `Share.share()` for text sharing.
 - **Daily study**: Today connects daily KJV scripture, saved reading position, seven bundled reading-plan passages, chat and library shortcuts. Bible supports local bookmarks/highlights, exact saved-verse opening, copy/notes and an editable verse-to-chat draft. Plan completion and reset are explicit. Study state stays on the device.
-- **Shared Bible DB util**: Native `utils/bibleDb.ts` opens the bundled SQLite file; `utils/bibleDb.web.ts` deserializes the bundled asset without native filesystem calls. Web SQLite needs cross-origin isolation headers, supplied by Metro in development and required on a future static host.
+- **Shared Bible DB util**: Native `utils/bibleDb.ts` opens the bundled SQLite file; `utils/bibleDb.web.ts` deserializes the bundled asset without native filesystem calls. Web SQLite needs cross-origin isolation headers, supplied by Metro in development and by the production Node server.
 - **Landing page**: `app/index.tsx` preserves free guest welcome and sign-in/register/OAuth buttons. Continue opens Today; signed-in users enter Today.
 - **Support screen**: `components/Support.tsx` (native IAP) + `components/Support.web.tsx` (web fallback). Platform-specific file resolution prevents expo-iap crash on web.
 - **Header home button**: The GospelAI chat title returns both guests and signed-in users to Today. Chat drafts do not autofocus or auto-send; failures have a retry action.
-- **Christian insight**: Guest-accessible Christian author books, linked from the drawer/menu, Today and the Bible page (chapter or selected verse). Canonical references keep links independent of future translations. Contains verified full Henry and Morning and Evening editions; Gill, Treasury of David and All of Grace show edition-rights blockers. Downloaded text and positions use a separate `library.db`; notes remain in `chat.db`. See `docs/authors-library.md` for provenance, App Storage setup and native-release configuration. Production static builds use `npm run build:web` to retrieve packages from App Storage; development uses `npm run library:import`.
+- **Authors insight**: Guest-accessible Christian author books, linked from the drawer/menu, Today and the Bible page (chapter or selected verse). Canonical references keep links independent of future translations. Available verified editions download through the server from private App Storage; a shared access policy locks Morning and Evening in both app and endpoint. The static web export contains no packages. Downloaded text and positions use a separate `library.db`; notes remain in `chat.db`. See `docs/authors-library.md` for package storage, access policy and native-release configuration.
 - **Drawer auth footer**: Drawer footer conditionally shows user profile (signed in) or "Sign In" / "Create Account" buttons (signed out).
 
 ## Deployment
 
-- Configured as **static** deployment
-- Build: `npm run build:web` (verified library packages from App Storage, then Expo export)
-- Output: `dist/` directory
+- Configured as **Autoscale** server deployment
+- Build: `npm run build:web` (Expo web export; no library packages are published)
+- Run: `node scripts/server.cjs` (web app plus protected library endpoint)
+- Web SQLite cross-origin isolation headers are preserved in Metro and in the production server.
 
 ## Study verification
 

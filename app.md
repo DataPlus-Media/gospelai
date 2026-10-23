@@ -58,6 +58,7 @@ npm run web   # Start Expo web dev server on port 5000
 
 ## Deployment
 
-- Configured as **static** deployment
-- Build: `npm run build:web` (prepares the verified library packages before export)
-- Output: `dist/` directory
+- Configured as **Autoscale** server deployment
+- Build: `npm run build:web` (exports the web app without library package files)
+- Run: `node scripts/server.cjs` (serves the web app and protected App Storage package endpoint)
+- Web SQLite isolation headers are set by both the production server and development Metro middleware.

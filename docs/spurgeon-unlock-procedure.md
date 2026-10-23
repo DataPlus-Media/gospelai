@@ -12,11 +12,14 @@ deletes no local book text, notes, bookmarks, or reading positions.**
 
 | Work | Current lock | What must happen before access changes |
 | --- | --- | --- |
-| Charles Spurgeon, *Morning and Evening* | **App-access lock.** `appAccessBlocker` in `constants/libraryWorks.ts` says the work is currently unavailable in the app. The catalog has an edition-specific CCEL “Public Domain -- Copy Freely” notice and a package entry in `constants/libraryManifest.json`; neither removes the separate product lock. | Confirm the exact CCEL legacy `morn_eve` edition and all scan/cleanup/formatting credits and rights remain appropriate for the proposed package. Validate the complete package and its checksums. Only then may the app-access lock be considered for removal. |
+| Charles Spurgeon, *Morning and Evening* | **App-access lock.** `constants/libraryAccessPolicy.json` denies this work in both the app catalog and server endpoint. The catalog has an edition-specific CCEL “Public Domain -- Copy Freely” notice and a package entry in `constants/libraryManifest.json`; neither removes the separate product lock. | Confirm the exact CCEL legacy `morn_eve` edition and all scan/cleanup/formatting credits and rights remain appropriate for the proposed package. Validate the complete package and its checksums. Only then may the app-access lock be considered for removal. |
 | Charles Spurgeon, *The Treasury of David* | **Edition blocker.** `blocker` in `constants/libraryWorks.ts` records that the cited CCEL Volume I material is images-only, not a complete searchable text, and other electronic editions have unresolved redistribution terms. There is no package entry for this title in `constants/libraryManifest.json`. | Identify a complete, searchable, exact electronic edition with explicit permission or source terms that allow its redistribution in this app. Import and validate that edition before considering removal of this title's blocker. |
 | Charles Spurgeon, *All of Grace* | **Rights blocker.** `blocker` in `constants/libraryWorks.ts` records that redistribution permission for the cited CCEL electronic edition has not been established. Its `DC.Rights` field is empty and CCEL's general policy requests permission for republication/commercial use. There is no package entry for this title in `constants/libraryManifest.json`. | Obtain and record permission or other explicit, edition-specific redistribution evidence for the exact complete electronic text, then import and validate that edition before considering removal of this title's blocker. |
 
-An **app-access lock** is a product decision encoded by `appAccessBlocker`;
+An **app-access lock** is a product decision encoded by
+`constants/libraryAccessPolicy.json`; the catalog derives `appAccessBlocker`
+from that shared policy and the package server enforces the same lock before
+reading App Storage.
 it does not claim that the edition is legally uncleared. An **edition/rights
 blocker** is encoded by `blocker` and means the source edition is not cleared
 for distribution. The app treats these separately: work cards and routes,
@@ -91,18 +94,20 @@ then produce and validate the package for that exact edition.
    manifest-listed generated package's byte length and SHA-256 before uploading
    it to App Storage. It uploads every entry in the manifest, so ensure all
    listed package files and the configured project bucket are available before
-   running it. The web preparation/build path also verifies manifest integrity.
-   On-device, `utils/libraryDownload.ts` checks the downloaded response's
+   running it. The package server checks manifest integrity before returning
+   text. On-device, `utils/libraryDownload.ts` checks the downloaded response's
    SHA-256, and `utils/library.ts` validates the structured package before an
    atomic install. A missing, mismatched, malformed, incomplete, or blocked
    package must fail closed; it must not be installed or become readable.
-6. **Update only the approved catalog entry.** In `constants/libraryWorks.ts`,
-   set accurate edition, source and rights links, rights statement, attribution,
-   and the approved package reference. For *Morning and Evening*, consider
-   removing only its `appAccessBlocker` after the product decision and package
-   validation. For *The Treasury of David* or *All of Grace*, consider removing
-   only that work's `blocker` after its edition rights and package are cleared.
-   Keep every unrelated title's lock and metadata unchanged.
+6. **Update only the approved access or catalog entry.** In
+   `constants/libraryWorks.ts`, set accurate edition, source and rights links,
+   rights statement, attribution, and the approved package reference. For
+   *Morning and Evening*, remove only its ID from
+   `constants/libraryAccessPolicy.json` after the product decision and package
+   validation; do not set a separate catalog-only unlock. For *The Treasury
+   of David* or *All of Grace*, consider removing only that work's `blocker`
+   after its edition rights and package are cleared. Keep every unrelated
+   title's lock and metadata unchanged.
 7. **Review all guards before release.** `utils/libraryTypes.ts` defines the
    two lock fields. Check that `utils/library.ts` package validation and
    availability, `utils/libraryDownload.ts`, `components/library/LibraryWorkCard.tsx`,
@@ -120,6 +125,9 @@ Run the library checks after a proposed catalog/package change:
 - `npm run test:library` — checks manifest byte counts and SHA-256 hashes,
   structured package validation, rejection of blocked/incomplete downloads,
   offline database reading, and safe repair/removal behavior.
+- `npm run test:library:delivery` — checks direct server requests for locked
+  works, unknown IDs, mismatched revisions and successful verified guest
+  delivery without requiring production storage access.
 - `npm run test:library:browser` — with the development app and required
   browser environment available, exercises the guest library UI. It checks
   that all three current Spurgeon locks are inert, a stale route cannot open a

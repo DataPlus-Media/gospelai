@@ -1,5 +1,6 @@
 import type { LibraryWork } from '@/utils/libraryTypes';
 import manifest from './libraryManifest.json';
+import accessPolicy from './libraryAccessPolicy.json';
 
 export const LIBRARY_AUTHORS = ['Matthew Henry', 'John Gill', 'Charles Spurgeon'] as const;
 export const LIBRARY_WORKS: LibraryWork[] = [
@@ -49,7 +50,7 @@ export const LIBRARY_WORKS: LibraryWork[] = [
     rightsUrl: 'https://ccel.org/s/spurgeon/morn_eve/MEDOC.html',
     rights: 'Public Domain — Copy Freely (edition-specific notice).',
     attribution: 'Charles Haddon Spurgeon. Scanned text cleaned and formatted by Ernie Stefanik. Original wording, not a modern adaptation.',
-    appAccessBlocker: 'This work is currently unavailable for reading in the app.',
+    appAccessBlocker: accessPolicy.lockedWorkIds['spurgeon-morning-evening'],
     package: manifest['spurgeon-morning-evening'],
   },
   {

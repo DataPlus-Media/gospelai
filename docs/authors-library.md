@@ -1,6 +1,6 @@
 # Authors insight
 
-> **Gill update verification:** Package integrity, verse mappings, offline database reads, rollback/retry, type checks and targeted lint checks pass. The real download and reader were exercised. The full browser regression is not yet passing: the selected-passage screen can remain loading after installation. Native iOS/Android verification remains required; this is not App Store build approval.
+> **Gill update verification:** Package integrity, verse mappings, offline database reads, rollback/retry, type checks and targeted lint checks pass. The real guest download and offline reader were exercised. In the full library browser regression, those download/offline and locked-work checks pass, but the later Henry selected-verse flow times out waiting for its original-reading button. Native iOS/Android verification remains required; this is not App Store build approval.
 
 The user-facing feature is named **Authors insight**, with a navigation-menu destination, a Today shortcut, a visible Bible-page button for the current chapter, and a selected-verse action. Its internal `/library` route is retained for stable links.
 
@@ -8,16 +8,16 @@ The Bible connection uses canonical book/chapter/verse identifiers, not translat
 
 ## Release status
 
-Four verified editions are imported and available for device download:
+Four verified edition packages are stored in private App Storage; three are currently available for guest download:
 
 | Work | Imported contents | Download |
 | --- | --- | --- |
 | Matthew Henry, *Commentary on the Whole Bible* | All 1,189 Bible chapters, 66 book introductions, original contents and six volume prefaces | 39,487,522 bytes |
 | John Gill, *Exposition of the Old and New Testaments* | 32,139 original sections: 1,049 chapter introductions and 31,090 verse-mapped entries across all 66 books | 56,562,523 bytes |
-| Charles Spurgeon, *Morning and Evening* | 732 morning/evening entries, including February 29 | 1,544,618 bytes |
+| Charles Spurgeon, *Morning and Evening* | 732 morning/evening entries, including February 29 | 1,544,618 bytes (app locked) |
 | Charles Spurgeon, *Commentary and Expositions* | 997 sections in 639 chapters across 59 books; selective coverage | 13,945,598 bytes |
 
-**Storage/build verification:** packages are uploaded to App Storage and checksum-verified before static preparation. No publishing has been performed. Native release hosting configuration and device verification remain required before shipping an App Store update.
+**Storage/build verification:** approved packages stay in private App Storage and are checksum-verified by the protected server endpoint. The public web export contains no package files. Deployment is configured for an Autoscale Node server; no publishing has been performed. Native release hosting configuration and device verification remain required before shipping an App Store update.
 
 The following works are listed honestly but have no imported text or download button:
 
@@ -80,15 +80,17 @@ The edition-specific source notices and the app owner’s approval authorize the
 
 ## Storage and build
 
-1. In Replit, open **Tools → App Storage → Create new bucket** and create a bucket for this app.
+1. In Replit, open **Tools → App Storage** and use this project's private bucket. The server's App Storage SDK uses the Replit runtime identity; no storage credentials are sent to the app.
 2. Run `npm run library:import`. The importer downloads the CCEL sources and SermonIndex MyBible Gill and Spurgeon modules. Source archives, extracted module databases and generated packages live only under ignored `generated-artifacts/library/`.
 3. Compare `generated-artifacts/library/manifest.json` against the committed small `constants/libraryManifest.json`. Import fails on missing chapters, invalid Gill mappings or empty sections. Do not update hashes blindly after a source change: verify the edition/rights and transformation first.
 4. Run `npm run library:upload`. The official SDK uses the default App Storage bucket. If this environment cannot resolve the default, set the non-secret `LIBRARY_STORAGE_BUCKET_ID` to the unique **Bucket ID** in App Storage's **Settings** view, not its display name. Checksums are verified before upload. A bucket must belong to this project; an ID does not grant access to another project's bucket.
-5. `npm run build:web` downloads the checksum-locked editions from App Storage into ignored `public/library-packages/`, then runs Expo’s existing static export. The static host serves these intentionally public-domain copies to guests. App Storage credentials and arbitrary bucket access never reach the browser.
+5. `npm run library:upload` sends the verified packages to private App Storage. `npm run build:web` removes any stale package files from `public/` and `dist/`, then runs Expo's web export without downloading or publishing book text. The public web build contains no library package files or storage SDK credentials.
 
-Development Metro serves checksum-verified packages at versioned `/library-packages/{revision}/{workId}.json` URLs, preferring prepared App Storage copies in `public/` and using the reproducible import only when those copies are absent. A source header distinguishes them; integrity failures never fall back to another copy. Production builds require App Storage and never substitute local imports.
+The Replit Autoscale server serves the exported web app and `/library-packages/{revision}/{workId}.json` from the same origin. Before reading App Storage, the endpoint checks the work ID, the shared locked-work policy and exact package revision; returned bytes must match the committed manifest's length and SHA-256. Locked works are denied without a storage read. Available editions remain free to download as guests, and the app verifies and installs them locally for offline reading. The server sets the same COOP/COEP cross-origin isolation headers as Metro so web SQLite continues to work.
 
-The configured post-merge setup installs the lockfile dependencies and retrieves verified packages from App Storage, so ignored large files do not leave downloads broken after merging. A clean checkout outside Replit needs its own storage access or can run the reproducible importer for local development.
+Local web development continues through Metro's middleware, which applies that same access policy and checksum verification. It reads private App Storage; if working outside Replit, run `npm run library:import` and explicitly set `LIBRARY_DEV_LOCAL_IMPORT=1` to use the verified generated package as a development-only fallback. This fallback is not available in the server deployment. The configured post-merge setup only installs the lockfile dependencies; the server reads packages from App Storage when an allowed download is requested.
+
+To unlock an app-locked work after the separate product and edition review, remove that work ID from `constants/libraryAccessPolicy.json`. The catalog's `appAccessBlocker` is derived from this shared policy, so the reader and server authorization change together. Do not remove an edition/rights `blocker` through this policy; unresolved or unimported editions remain unavailable. Re-run `npm run test:library:delivery` and the app library checks after any access-policy change.
 
 Clean dependency installation was verified as well. The main project's patched Expo/Clerk dependencies and overrides for `tar` and `shell-quote` are preserved to avoid older releases blocked by the package security policy. The authentication provider and credentials were not changed. Merge setup uses a non-destructive install so a running Metro watcher does not lose its entry files before workflow reconciliation.
 
@@ -100,9 +102,9 @@ The committed `.npmrc` uses npm's `omit-lockfile-registry-resolved` option so th
 
 The portability check passed for all 1,469 locked dependency entries, including the empty-cache public-registry installation. No GitHub Actions or EAS release build was triggered from this workspace.
 
-The existing static hosting model is preserved. Any future static host must also preserve the cross-origin isolation headers already required for the app’s web SQLite support.
+The web build now runs with the package endpoint in the same server deployment. Both the Node server and development Metro provide the cross-origin isolation headers required for web SQLite.
 
-For a **native release build**, set `EXPO_PUBLIC_LIBRARY_BASE_URL` to the HTTPS origin of the hosted static app before building. It is a public configuration value, not a credential. Do not guess a production domain or use the AI API origin: that service does not host these packages. Development builds use Expo’s dev host. A missing native release URL has an explicit error; previously downloaded works still read offline.
+For a **native release build**, set `EXPO_PUBLIC_LIBRARY_BASE_URL` to the HTTPS origin of the server deployment before building. It is a public configuration value, not a credential. Do not guess a production domain or use the AI API origin: that service does not host these packages. Development builds use Expo’s dev host. A missing native release URL has an explicit error; previously downloaded works still read offline.
 
 ## Data safety and behavior
 

@@ -22,7 +22,9 @@
     "test:drawer:browser": "node scripts/check-drawer-browser.cjs",
     "library:import": "python scripts/import-library.py",
     "library:upload": "node scripts/upload-library.cjs",
-    "build:web": "node scripts/prepare-library-web.cjs && expo export --platform web"
+    "build:web": "node scripts/prepare-library-web.cjs && expo export --platform web && node scripts/check-library-web-output.cjs",
+    "server": "node scripts/server.cjs",
+    "test:library:delivery": "node scripts/check-library-endpoint.cjs"
   },
   "dependencies": {
     "@clerk/clerk-expo": "^2.20.1",

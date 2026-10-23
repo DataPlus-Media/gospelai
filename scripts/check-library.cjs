@@ -6,9 +6,13 @@ const { createHash } = require('node:crypto');
 const { load, database } = require('./check-study.cjs');
 const api = load('utils/library.ts', { '@/constants/bibleBooks': load('constants/bibleBooks.ts') });
 const manifest = require('../constants/libraryManifest.json');
+const accessPolicy = require('../constants/libraryAccessPolicy.json');
 const source = id => JSON.parse(readFileSync(`generated-artifacts/library/${id}.json`, 'utf8'));
 const work = id => ({ id, package: manifest[id] });
-const catalog = load('constants/libraryWorks.ts', { './libraryManifest.json': { default: manifest } });
+const catalog = load('constants/libraryWorks.ts', {
+  './libraryManifest.json': { default: manifest },
+  './libraryAccessPolicy.json': { default: accessPolicy },
+});
 const download = load('utils/libraryDownload.ts', {
   'expo-constants': { __esModule: true, default: { expoConfig: {} } },
   'expo-crypto': { __esModule: true, default: {} },
