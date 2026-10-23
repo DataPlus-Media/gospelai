@@ -2,6 +2,7 @@
 
 import { defaultStyles } from '@/constants/Styles';
 import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -179,27 +180,41 @@ const Page = () => {
     >
       {loading && (
         <View style={defaultStyles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#fff" />
+          <ActivityIndicator size="large" color="#D8C176" />
         </View>
       )}
 
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Image source={require('../assets/images/logo-dark.png')} style={styles.logo} />
+        <View style={styles.content}>
+          <View style={styles.brand}>
+            <Image source={require('../assets/images/logo-white.png')} style={styles.logo} />
+            <Text style={styles.eyebrow}>GOSPELAI · SCRIPTURE & STUDY</Text>
+          </View>
 
-        <Text style={styles.title}>
-          {mode === 'reset'
-            ? 'Reset your password'
-            : isLogin
-            ? 'Welcome back'
-            : 'Create your account'}
-        </Text>
+          <View style={styles.authCard}>
+            <Text style={styles.title}>
+              {mode === 'reset'
+                ? 'Reset your password'
+                : isLogin
+                ? 'Welcome back'
+                : 'Create your account'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {mode === 'reset'
+                ? 'Enter your email to reset your password.'
+                : isLogin
+                ? 'Sign in to continue your study.'
+                : 'Create an account to get started with GospelAI.'}
+            </Text>
 
         {mode === 'auth' ? (
           <>
-            <View style={{ marginBottom: 30 }}>
+            <View style={styles.fieldGroup}>
               <TextInput
                 ref={emailRef}
                 accessibilityLabel="Email address"
@@ -209,7 +224,7 @@ const Page = () => {
                 blurOnSubmit={false}
                 onSubmitEditing={() => passwordRef.current?.focus()}
                 placeholder="Email address"
-                placeholderTextColor="#8b94a9"
+                placeholderTextColor="#A6B4A9"
                 value={emailAddress}
                 onChangeText={setEmailAddress}
                 style={styles.inputField}
@@ -218,7 +233,7 @@ const Page = () => {
                 ref={passwordRef}
                 accessibilityLabel="Password"
                 placeholder="Password"
-                placeholderTextColor="#8b94a9"
+                placeholderTextColor="#A6B4A9"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -272,6 +287,7 @@ const Page = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Apple"
               >
+                <Ionicons name="logo-apple" size={19} color="#F4F1E8" />
                 <Text style={styles.oauthButtonText}>Apple</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -281,6 +297,7 @@ const Page = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
               >
+                <Ionicons name="logo-google" size={18} color="#D8C176" />
                 <Text style={styles.oauthButtonText}>Google</Text>
               </TouchableOpacity>
             </View>
@@ -288,7 +305,7 @@ const Page = () => {
         ) : (
           // ===== RESET PASSWORD MODE =====
           <>
-            <View style={{ marginBottom: 30 }}>
+            <View style={styles.fieldGroup}>
               <TextInput
                 ref={emailRef}
                 accessibilityLabel="Email address"
@@ -296,7 +313,7 @@ const Page = () => {
                 keyboardType="email-address"
                 returnKeyType="send"
                 placeholder="Email address"
-                placeholderTextColor="#8b94a9"
+                placeholderTextColor="#A6B4A9"
                 value={emailAddress}
                 onChangeText={setEmailAddress}
                 style={styles.inputField}
@@ -313,7 +330,7 @@ const Page = () => {
                 ref={resetCodeRef}
                 accessibilityLabel="Six-digit reset code"
                 placeholder="6-digit code"
-                placeholderTextColor="#8b94a9"
+                placeholderTextColor="#A6B4A9"
                 value={resetCode}
                 onChangeText={setResetCode}
                 keyboardType="number-pad"
@@ -326,7 +343,7 @@ const Page = () => {
                 ref={newPasswordRef}
                 accessibilityLabel="New password"
                 placeholder="New password"
-                placeholderTextColor="#8b94a9"
+                placeholderTextColor="#A6B4A9"
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -350,6 +367,8 @@ const Page = () => {
             </TouchableOpacity>
           </>
         )}
+          </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -358,115 +377,158 @@ const Page = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0b0d12', // FaithChat --bg
-    padding: 20,
+    backgroundColor: '#101C17',
+    paddingHorizontal: 20,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 28,
+  },
+  content: {
+    width: '100%',
+    maxWidth: 480,
+    alignSelf: 'center',
+  },
+  brand: {
+    alignItems: 'center',
+    marginBottom: 22,
   },
   logo: {
-    width: 100,
-    height: 100,
-    alignSelf: 'center',
-    marginVertical: 80,
+    width: 68,
+    height: 68,
+    borderRadius: 18,
+    marginBottom: 13,
+  },
+  eyebrow: {
+    color: '#D3B86D',
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 1.8,
+    textAlign: 'center',
+  },
+  authCard: {
+    position: 'relative',
+    overflow: 'hidden',
+    padding: 20,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(213, 226, 213, 0.13)',
+    backgroundColor: 'rgba(243, 245, 235, 0.055)',
   },
   title: {
-    fontSize: 30,
+    color: '#F4F1E8',
+    fontSize: 29,
+    lineHeight: 36,
+    letterSpacing: -0.7,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  subtitle: {
+    color: '#B4C0B6',
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center',
+    marginTop: 7,
     marginBottom: 20,
-    fontWeight: 'bold',
-    alignSelf: 'center',
-    color: '#eef2f8', // --ink
+  },
+  fieldGroup: {
+    marginBottom: 20,
   },
   inputField: {
-    marginVertical: 6,
-    height: 50,
+    marginTop: 8,
+    height: 54,
     borderWidth: 1,
-    borderColor: '#222a3e', // --border
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    backgroundColor: '#101521', // dark input bg
-    color: '#eef2f8', // --ink
+    borderColor: 'rgba(220, 230, 219, 0.18)',
+    borderRadius: 14,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(8, 18, 13, 0.38)',
+    color: '#F4F1E8',
+    fontSize: 15,
   },
   forgotWrap: {
-    marginTop: 8,
+    marginTop: 12,
     alignItems: 'flex-end',
   },
   forgotText: {
-    color: '#2e7bef', // --accent
-    fontWeight: '600',
+    color: '#DCC77F',
+    fontWeight: '700',
     fontSize: 14,
   },
   btnPrimary: {
-    backgroundColor: '#2e7bef', // --accent
-    borderRadius: 999,
-    marginVertical: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowOffset: { width: 0, height: 14 },
-    shadowRadius: 40,
-    elevation: 10,
+    minHeight: 54,
+    backgroundColor: '#D8C176',
+    borderRadius: 15,
+    marginVertical: 3,
   },
   btnPrimaryText: {
-    color: '#fff',
+    color: '#173A2C',
     fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.2,
+    fontWeight: '700',
+    letterSpacing: 0.1,
   },
   oauthDivider: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 12,
-    marginBottom: 10,
+    marginTop: 19,
+    marginBottom: 14,
   },
   oauthRule: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#222a3e',
+    backgroundColor: 'rgba(220, 201, 130, 0.35)',
   },
   oauthDividerText: {
-    color: '#8b94a9',
+    color: '#D3B86D',
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
   },
   oauthRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 9,
   },
   oauthButton: {
     flex: 1,
-    minHeight: 50,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 9,
     borderWidth: 1,
-    borderColor: '#222a3e',
-    borderRadius: 14,
-    backgroundColor: '#101521',
+    borderColor: 'rgba(220, 230, 219, 0.15)',
+    borderRadius: 13,
+    backgroundColor: 'rgba(8, 18, 13, 0.2)',
   },
   oauthButtonText: {
-    color: '#eef2f8',
+    color: '#E1E6DD',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   secondaryBtn: {
-    backgroundColor: '#101521',
-    borderRadius: 999,
-    marginTop: 10,
-    marginBottom: 14,
+    minHeight: 50,
+    backgroundColor: 'rgba(8, 18, 13, 0.2)',
+    borderRadius: 14,
+    marginTop: 12,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: '#222a3e',
+    borderColor: 'rgba(220, 230, 219, 0.15)',
   },
   secondaryText: {
-    color: '#eef2f8',
+    color: '#E1E6DD',
     fontSize: 14,
     fontWeight: '600',
   },
   backLink: {
-    marginTop: 10,
+    marginTop: 17,
     alignItems: 'center',
   },
   backText: {
-    color: '#8b94a9',
+    color: '#A6B4A9',
     fontSize: 14,
   },
 });

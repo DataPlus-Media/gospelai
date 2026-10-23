@@ -65,10 +65,19 @@ const InitialLayout = () => {
         options={{
           presentation: 'modal',
           title: '',
-          headerTitleStyle: { fontFamily: 'mon-sb' },
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: '#101C17' },
+          headerTintColor: '#A8C6AE',
+          contentStyle: { backgroundColor: '#101C17' },
+          headerTitleStyle: { fontFamily: 'mon-sb', color: '#F4F1E8' },
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="close-outline" size={28} />
+            <TouchableOpacity
+              onPress={() => router.back()}
+              accessibilityRole="button"
+              accessibilityLabel="Close sign-in"
+              hitSlop={10}
+            >
+              <Ionicons name="close-outline" size={28} color="#A8C6AE" />
             </TouchableOpacity>
           ),
         }}
