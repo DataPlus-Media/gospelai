@@ -54,7 +54,7 @@ async function main() {
       return;
     }
     await page.goto(`${base}/today`, { waitUntil: 'networkidle' });
-    await page.getByText('Continue reading', { exact: true }).waitFor();
+    await page.getByText('Continue reading', { exact: true }).first().waitFor();
     for (const [label, path] of [
       ['Bible', '/bible'], ['Authors insight', '/library'], ['Saved verses', '/saved'],
       ['Notes', '/notes'], ['Support GospelAI', '/support'], ['Today', '/today'],
@@ -75,6 +75,15 @@ async function main() {
     await page.waitForURL(url => url.pathname === '/today');
     await closed();
     console.log('PASS GospelAI logo returns to Today from Bible and chat');
+
+    await open();
+    await button('Open welcome page').click();
+    await page.waitForURL(url => url.pathname === '/');
+    await button('Start exploring. Continue without an account.').waitFor();
+    await button('Start exploring. Continue without an account.').click();
+    await page.getByText('Continue reading', { exact: true }).first().waitFor();
+    await button('Open navigation').waitFor();
+    console.log('PASS Welcome page drawer route returns guests to Today');
 
     await open();
     await button('Start a new conversation').click();

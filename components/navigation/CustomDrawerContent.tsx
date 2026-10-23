@@ -172,6 +172,12 @@ export default function CustomDrawerContent(props: any) {
     props.navigation.dispatch(DrawerActions.closeDrawer());
   };
 
+  const openWelcomePage = () => {
+    Keyboard.dismiss();
+    router.push('/');
+    props.navigation.dispatch(DrawerActions.closeDrawer());
+  };
+
   const openChat = (chat: Chat) => {
     Keyboard.dismiss();
     router.push(`/(auth)/(drawer)/(chat)/${chat.id}`);
@@ -354,6 +360,17 @@ export default function CustomDrawerContent(props: any) {
 
         <View style={styles.navGroup}>
           <Text style={styles.groupLabel}>MORE</Text>
+          <Pressable
+            onPress={openWelcomePage}
+            accessibilityRole="button"
+            accessibilityLabel="Open welcome page"
+            style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+          >
+            <View style={styles.iconTile}>
+              <Ionicons name="sparkles-outline" size={19} color={palette.muted} />
+            </View>
+            <Text style={styles.navLabel}>Welcome page</Text>
+          </Pressable>
           {(() => {
             const route = props.state.routes.find((r: any) => r.name === 'support');
             if (!route) return null;

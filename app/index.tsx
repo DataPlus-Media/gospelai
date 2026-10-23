@@ -1,4 +1,4 @@
-import { useOAuth } from '@clerk/clerk-expo';
+import { useAuth, useOAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useRouter } from 'expo-router';
@@ -53,6 +53,7 @@ export default function Index() {
   const { bottom, left, right, top } = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const router = useRouter();
+  const { isSignedIn } = useAuth();
   const { entrance, emeraldStyle, goldStyle, heroEntrance, scriptureEntrance } =
     useWelcomeMotion(FEATURES.length);
 
@@ -198,54 +199,62 @@ export default function Index() {
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Start exploring. Continue without an account."
+              accessibilityLabel={
+                isSignedIn ? 'Return to Today' : 'Start exploring. Continue without an account.'
+              }
               onPress={() => router.replace(WELCOME_ROUTE)}
               style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}
             >
-              <Text style={styles.primaryButtonText}>Start exploring</Text>
+              <Text style={styles.primaryButtonText}>
+                {isSignedIn ? 'Return to Today' : 'Start exploring'}
+              </Text>
               <Ionicons name="arrow-forward" size={18} color="#173A2C" />
             </Pressable>
-            <Text style={styles.guestNote}>
-              Continue without an account. You can explore today’s study as a guest.
-            </Text>
+            {!isSignedIn && (
+              <>
+                <Text style={styles.guestNote}>
+                  Continue without an account. You can explore today’s study as a guest.
+                </Text>
 
-            <View style={[styles.accountActions, stackActions && styles.stackedActions]}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Sign in"
-                onPress={() => router.push({ pathname: '/login', params: { type: 'login' } })}
-                style={({ pressed }) => [styles.signInButton, pressed && styles.pressed]}
-              >
-                <Text style={styles.signInText}>Sign in</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Create account"
-                onPress={() => router.push({ pathname: '/login', params: { type: 'register' } })}
-                style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
-              >
-                <Text style={styles.createText}>Create account</Text>
-              </Pressable>
-            </View>
+                <View style={[styles.accountActions, stackActions && styles.stackedActions]}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Sign in"
+                    onPress={() => router.push({ pathname: '/login', params: { type: 'login' } })}
+                    style={({ pressed }) => [styles.signInButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.signInText}>Sign in</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Create account"
+                    onPress={() => router.push({ pathname: '/login', params: { type: 'register' } })}
+                    style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.createText}>Create account</Text>
+                  </Pressable>
+                </View>
 
-            <View style={styles.oauthRow}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Continue with Apple"
-                onPress={() => doOAuth(apple.startOAuthFlow)}
-                style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
-              >
-                <Text style={styles.oauthText}>Apple</Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Continue with Google"
-                onPress={() => doOAuth(google.startOAuthFlow)}
-                style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
-              >
-                <Text style={styles.oauthText}>Google</Text>
-              </Pressable>
-            </View>
+                <View style={styles.oauthRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Continue with Apple"
+                    onPress={() => doOAuth(apple.startOAuthFlow)}
+                    style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.oauthText}>Apple</Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Continue with Google"
+                    onPress={() => doOAuth(google.startOAuthFlow)}
+                    style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
+                  >
+                    <Text style={styles.oauthText}>Google</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
             <Text style={styles.footerNote}>Read, reflect, and ask questions at your own pace.</Text>
           </View>
         </View>
