@@ -8,6 +8,13 @@ const api = load('utils/library.ts', { '@/constants/bibleBooks': load('constants
 const manifest = require('../constants/libraryManifest.json');
 const source = id => JSON.parse(readFileSync(`generated-artifacts/library/${id}.json`, 'utf8'));
 const work = id => ({ id, package: manifest[id] });
+const catalog = load('constants/libraryWorks.ts', { './libraryManifest.json': { default: manifest } });
+const download = load('utils/libraryDownload.ts', {
+  'expo-constants': { __esModule: true, default: { expoConfig: {} } },
+  'expo-crypto': { __esModule: true, default: {} },
+  'react-native': { Platform: { OS: 'web' } },
+  './library': { installWork: async () => {} },
+});
 
 async function main() {
   const dir = mkdtempSync(join(tmpdir(), 'gospel-library-'));
@@ -25,6 +32,11 @@ async function main() {
     const henry = source('henry-whole-bible');
     const gill = source('gill-exposition');
     const morning = source('spurgeon-morning-evening');
+    const morningWork = catalog.LIBRARY_WORKS.find(item => item.id === 'spurgeon-morning-evening');
+    assert.equal(morningWork.appAccessBlocker, 'This work is currently unavailable for reading in the app.');
+    assert.match(morningWork.rights, /Public Domain/);
+    assert.equal(morningWork.blocker, undefined, 'the product lock is not a legal rights blocker');
+    assert.equal(catalog.LIBRARY_WORKS.find(item => item.id === 'spurgeon-expositions').appAccessBlocker, undefined);
     assert.equal(henry.sections.filter(s => s.scripture).length, 1189);
     assert.equal(henry.sections.find(s => s.id === 'b45-c001').attribution.includes('John Evans'), true);
     assert.equal(henry.sections.find(s => s.id === 'b44-c001').attribution, 'Matthew Henry');
@@ -41,6 +53,12 @@ async function main() {
     console.log('PASS verified package hashes, Henry chapter coverage and attribution, 32,139 Gill sections, 31,090 exact Gill verse mappings, and 732 devotional dates');
 
     await assert.rejects(api.installWork(db, { id: 'blocked', blocker: 'Rights unresolved' }, morning));
+    await assert.rejects(api.installWork(db, {
+      ...work('spurgeon-morning-evening'), appAccessBlocker: 'Product access lock.',
+    }, morning));
+    await assert.rejects(download.downloadWork(db, {
+      ...work('spurgeon-morning-evening'), appAccessBlocker: 'Product access lock.',
+    }, () => {}), /Product access lock/);
     await assert.rejects(api.installWork(db, work('spurgeon-morning-evening'), { ...morning, sections: morning.sections.slice(1) }));
     assert.equal((await api.installedWorks(db)).length, 0);
     let progress = 0;

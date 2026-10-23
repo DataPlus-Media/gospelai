@@ -52,6 +52,7 @@ function receive(url: string, total: number, report: (p: DownloadProgress) => vo
 
 export async function downloadWork(db: SQLiteDatabase, work: LibraryWork, report: (p: DownloadProgress) => void) {
   if (busy) throw new Error('Another library download is running. Please wait for it to finish.');
+  if (work.appAccessBlocker) throw new Error(work.appAccessBlocker);
   if (!work.package || work.blocker) throw new Error(work.blocker || 'This edition is not cleared for download.');
   busy = true;
   try {

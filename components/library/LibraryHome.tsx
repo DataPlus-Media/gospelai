@@ -52,7 +52,9 @@ export default function LibraryHome({
     return () => { mountedRef.current = false; };
   }, []);
 
-  const selectedWork = params.work ? LIBRARY_WORKS.find(w => w.id === params.work) ?? null : null;
+  const requestedWork = params.work ? LIBRARY_WORKS.find(w => w.id === params.work) ?? null : null;
+  const selectedWork = requestedWork && !requestedWork.blocker && !requestedWork.appAccessBlocker
+    ? requestedWork : null;
   const isReading = !!(params.section && selectedWork);
   const selectedTitle = selectedTitleId ? LIBRARY_WORKS.find(work => work.id === selectedTitleId) ?? null : null;
   const installedIds = useMemo(() => new Set(installed.map(row => row.work_id)), [installed]);
@@ -91,10 +93,17 @@ export default function LibraryHome({
   }, [db]);
   useFocusEffect(useCallback(() => { void refreshInstalled(); }, [refreshInstalled]));
 
+  // Drop stale or manually supplied routes before they can show a work detail or reader.
+  useEffect(() => {
+    if (requestedWork && (requestedWork.blocker || requestedWork.appAccessBlocker)) {
+      setParams({ work: undefined, section: undefined, paragraph: undefined });
+    }
+  }, [requestedWork, setParams]);
+
   const openDetail = useCallback(async (work: LibraryWork) => {
     const request = ++detailRequestRef.current;
     setWorkError(null); setDetailNotices([]); setDetailPosition(null);
-    if (work.blocker) return;
+    if (work.blocker || work.appAccessBlocker) return;
     try {
       const [notices, position] = await Promise.all([workNotices(db, work.id), getLibraryPosition(db, work.id)]);
       if (mountedRef.current && request === detailRequestRef.current) { setDetailNotices(notices); setDetailPosition(position); }
@@ -123,6 +132,7 @@ export default function LibraryHome({
       if (!term) return;
       const ids = LIBRARY_WORKS
         .filter(work => installedIds.has(work.id) &&
+          !work.blocker && !work.appAccessBlocker &&
           (author === 'All authors' || work.author === author) &&
           (!selectedTitleId || work.id === selectedTitleId))
         .map(work => work.id);
@@ -139,6 +149,7 @@ export default function LibraryHome({
   }, [db, query, author, selectedTitleId, installedIds]);
 
   const beginDownload = async (work: LibraryWork) => {
+    if (work.blocker || work.appAccessBlocker) return;
     setDownloadBusy(true); setWorkError(null); setDownloadProgress({ phase: 'downloading', fraction: 0, received: 0, total: work.package?.bytes ?? 0 });
     try {
       await downloadWork(db, work, (progress: DownloadProgress) => {
@@ -172,7 +183,7 @@ export default function LibraryHome({
 
   const openHit = async (hit: LibraryHit) => {
     const work = LIBRARY_WORKS.find(w => w.id === hit.work_id);
-    if (!work) return;
+    if (!work || work.blocker || work.appAccessBlocker) return;
     setParams({ work: hit.work_id, section: hit.section_id, paragraph: String(hit.paragraph), book: undefined, chapter: undefined, verse: undefined, jump: undefined });
   };
 
@@ -240,8 +251,16 @@ export default function LibraryHome({
       key={`${params.book}:${params.chapter}:${params.verse ?? ''}:${params.jump ?? ''}:${installed.map(w => w.work_id).sort().join(',')}`}
       db={db} book={Number(params.book)} chapter={Number(params.chapter)}
       verse={params.verse === undefined ? undefined : Number(params.verse)}
-      onOpenSection={row => setParams({ work: row.work_id, section: row.id, paragraph: undefined })}
-      onOpenWork={id => setParams({ work: id, section: undefined, paragraph: undefined })}
+       onOpenSection={row => {
+         const work = LIBRARY_WORKS.find(candidate => candidate.id === row.work_id);
+         if (!work || work.blocker || work.appAccessBlocker) return;
+         setParams({ work: row.work_id, section: row.id, paragraph: undefined });
+       }}
+       onOpenWork={id => {
+         const work = LIBRARY_WORKS.find(candidate => candidate.id === id);
+         if (!work || work.blocker || work.appAccessBlocker) return;
+         setParams({ work: id, section: undefined, paragraph: undefined });
+       }}
       onClose={() => setParams({ book: undefined, chapter: undefined, verse: undefined, jump: undefined })}
     />;
   }
@@ -283,6 +302,7 @@ export default function LibraryHome({
           if (item.type === 'hit') {
             const hit = item.hit;
             const work = LIBRARY_WORKS.find(candidate => candidate.id === hit.work_id);
+            if (!work || work.blocker || work.appAccessBlocker) return null;
             return <Pressable onPress={() => void openHit(hit)} style={styles.hitRow}>
               <Text style={styles.hitWork}>{work?.author ?? ''} · {work?.title ?? ''}</Text>
               <Text numberOfLines={3} style={styles.hitText}>{hit.text}</Text>
@@ -290,7 +310,10 @@ export default function LibraryHome({
             </Pressable>;
           }
           const work = item.work;
-          return <LibraryWorkCard work={work} installed={installedIds.has(work.id)} onPress={() => setParams({ work: work.id, section: undefined, paragraph: undefined })} />;
+          return <LibraryWorkCard work={work} installed={installedIds.has(work.id)} onPress={() => {
+            if (work.blocker || work.appAccessBlocker) return;
+            setParams({ work: work.id, section: undefined, paragraph: undefined });
+          }} />;
         }}
         ItemSeparatorComponent={() => <View style={{ height: 9 }} />}
         ListEmptyComponent={query.trim() ? (

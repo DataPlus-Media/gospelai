@@ -21,12 +21,15 @@ export default function LibraryWorkCard({
   installed: boolean;
   onPress: () => void;
 }) {
+  const locked = !!(work.blocker || work.appAccessBlocker);
   return (
     <Pressable
+      disabled={locked}
       accessibilityRole="button"
-      accessibilityLabel={`${work.title}, by ${work.author}${installed ? ', downloaded' : ''}`}
+      accessibilityLabel={`${work.title}, by ${work.author}${installed ? ', downloaded' : ''}${locked ? ', unavailable' : ''}`}
+      accessibilityState={{ disabled: locked }}
       onPress={onPress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, pressed && !locked && styles.pressed]}
     >
       <View style={styles.index}>
         <Ionicons name={work.kind === 'commentary' ? 'book-outline' : 'sunny-outline'} size={20} color={palette.gold} />
@@ -37,10 +40,10 @@ export default function LibraryWorkCard({
         <Text style={styles.meta}>{work.kind === 'commentary' ? 'COMMENTARY' : work.kind.toUpperCase()}</Text>
       </View>
       <View style={styles.trailing}>
-        {installed ? (
-          <View style={styles.offline}><Ionicons name="checkmark" size={12} color={palette.green} /><Text style={styles.offlineText}>OFFLINE</Text></View>
-        ) : work.blocker ? (
+        {locked ? (
           <Ionicons name="lock-closed-outline" size={16} color="#A99B8B" />
+        ) : installed ? (
+          <View style={styles.offline}><Ionicons name="checkmark" size={12} color={palette.green} /><Text style={styles.offlineText}>OFFLINE</Text></View>
         ) : (
           <Ionicons name="arrow-forward" size={17} color={palette.muted} />
         )}

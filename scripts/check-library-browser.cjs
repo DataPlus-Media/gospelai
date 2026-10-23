@@ -2,6 +2,8 @@ const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const { mkdir } = require('node:fs/promises');
 const base = process.env.STUDY_TEST_URL || `https://${process.env.REPLIT_DEV_DOMAIN}`;
+const morningPackage = JSON.parse(require('node:fs').readFileSync('generated-artifacts/library/spurgeon-morning-evening.json', 'utf8'));
+const morningManifest = require('../constants/libraryManifest.json')['spurgeon-morning-evening'];
 
 async function main() {
   const browser = await chromium.launch({
@@ -16,8 +18,12 @@ async function main() {
   const text = value => page.getByText(value, { exact: true });
   const click = value => text(value).click();
   const go = async path => { await page.goto(base + path); await text('Opening Authors insight…').waitFor({ state: 'hidden' }); };
-  const openMorning = () => page.getByRole('button', { name: /^Morning and Evening, by Charles Spurgeon/ }).click();
-  const backDetails = () => page.getByRole('button', { name: 'Back to work details', exact: true }).click();
+  const navigate = path => page.evaluate(path => {
+    const entry = [...window.__r.getModules()].find(([, module]) =>
+      module.verboseName?.endsWith('expo-router/build/imperative-api.js'));
+    if (!entry) throw new Error('Metro router module unavailable in development test');
+    window.__r(entry[0]).router.push(path);
+  }, path);
   const henryOriginal = () => page.getByRole('button', {
     name: 'Open John 3 in the original reading view', exact: true, includeHidden: true,
   });
@@ -39,61 +45,110 @@ async function main() {
     await page.getByText('He that believeth on him is not condemned', { exact: false }).first().waitFor();
     console.log('PASS complete Gill package downloads, opens offline reader and maps John 3:18 to its original verse section');
 
-    await go('/library');
-    await openMorning();
-    await text('EDITION / SOURCE').waitFor();
-    await text('Download for offline use').waitFor();
-    console.log('PASS guest library browsing, available download, edition and source detail');
-
-    let failOnce = true;
-    const packagePattern = '**/library-packages/ccel-morn-eve-1/spurgeon-morning-evening.json';
-    await context.route(packagePattern, async route => {
-      if (failOnce) { failOnce = false; await route.abort('internetdisconnected'); }
-      else await route.continue();
-    });
-    await click('Download for offline use');
-    await text('Retry').waitFor();
-    await click('Retry');
-    await text('Read this work').waitFor({ timeout: 180000 });
-    console.log('PASS failed download shows Retry; real edition downloads and installs');
-    await click('Read this work');
-    await text('HISTORICAL SOURCE TEXT').waitFor();
-    await text('January 1 · Morning').waitFor();
-    await page.getByRole('button', { name: 'Open table of contents', exact: true }).click();
-    await page.getByRole('textbox', { name: 'Search table of contents' }).fill('March 5');
-    await click('March 5 · Evening');
-    await click('Next');
-    await text('March 6 · Morning').waitFor();
-    await click('Previous');
-    await text('March 5 · Evening').waitFor();
-    await click('Save selected paragraph to Notes');
-    await text('Paragraph saved to your notes on this device.').waitFor();
-    await backDetails();
-    await click('Resume reading');
-    await text('March 5 · Evening').waitFor();
-    await go('/library?work=spurgeon-morning-evening');
-    await click('Resume reading');
-    await text('March 5 · Evening').waitFor();
-    console.log('PASS date navigation, next/previous, paragraph note and reload/resume');
+    await page.goto(base + '/today');
+    await text('Opening your local study…').waitFor({ state: 'hidden' });
+    await page.evaluate(async ({ source, manifest }) => {
+      const entry = [...window.__r.getModules()].find(([, module]) =>
+        module.verboseName?.endsWith('expo-sqlite/build/SQLiteDatabase.js'));
+      const db = await window.__r(entry[0]).openDatabaseAsync('library.db');
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS library_downloads (work_id TEXT PRIMARY KEY, revision TEXT NOT NULL, bytes INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS library_sections (
+          work_id TEXT NOT NULL, id TEXT NOT NULL, ordinal INTEGER NOT NULL, title TEXT NOT NULL,
+          source_url TEXT NOT NULL, attribution TEXT NOT NULL, book INTEGER, chapter INTEGER,
+          verse_start INTEGER, verse_end INTEGER, PRIMARY KEY(work_id,id)
+        );
+        CREATE TABLE IF NOT EXISTS library_paragraphs (
+          work_id TEXT NOT NULL, section_id TEXT NOT NULL, paragraph INTEGER NOT NULL,
+          text TEXT NOT NULL, PRIMARY KEY(work_id,section_id,paragraph)
+        );
+        CREATE TABLE IF NOT EXISTS library_positions (work_id TEXT PRIMARY KEY, section_id TEXT NOT NULL, paragraph INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS library_notices (work_id TEXT PRIMARY KEY, notices TEXT NOT NULL);
+      `);
+      for (let offset = 0; offset < source.sections.length; offset += 30) {
+        const sections = source.sections.slice(offset, offset + 30);
+        const rows = sections.map((section, index) => [
+          source.workId, section.id, offset + index, section.title, section.sourceUrl,
+          section.attribution, null, null, null, null,
+        ]);
+        await db.runAsync(
+          `INSERT INTO library_sections (work_id,id,ordinal,title,source_url,attribution,book,chapter,verse_start,verse_end) VALUES ${rows.map(row => `(${row.map(() => '?').join(',')})`).join(',')}`,
+          ...rows.flat(),
+        );
+        const paragraphs = sections.flatMap(section => section.paragraphs.map((paragraph, index) =>
+          [source.workId, section.id, index, paragraph]));
+        for (let start = 0; start < paragraphs.length; start += 100) {
+          const batch = paragraphs.slice(start, start + 100);
+          await db.runAsync(
+            `INSERT INTO library_paragraphs (work_id,section_id,paragraph,text) VALUES ${batch.map(row => `(${row.map(() => '?').join(',')})`).join(',')}`,
+            ...batch.flat(),
+          );
+        }
+      }
+      await db.runAsync('INSERT INTO library_notices VALUES (?,?)', source.workId, JSON.stringify(source.notices));
+      await db.runAsync('INSERT INTO library_downloads VALUES (?,?,?)', source.workId, source.revision, manifest.bytes);
+      await db.runAsync('INSERT INTO library_positions VALUES (?,?,?)', source.workId, source.sections[0].id, 1);
+      await db.closeAsync();
+    }, { source: morningPackage, manifest: morningManifest });
 
     await go('/library');
     await click('Charles Spurgeon');
-    await page.getByRole('button', { name: 'Limit search to Morning and Evening', exact: true }).click();
+    const morningCard = page.getByRole('button', {
+      name: 'Morning and Evening, by Charles Spurgeon, downloaded, unavailable', exact: true,
+    });
+    const treasuryCard = page.getByRole('button', {
+      name: 'The Treasury of David, by Charles Spurgeon, unavailable', exact: true,
+    });
+    const graceCard = page.getByRole('button', {
+      name: 'All of Grace, by Charles Spurgeon, unavailable', exact: true,
+    });
+    await morningCard.waitFor();
+    for (const card of [morningCard, treasuryCard, graceCard]) {
+      assert.equal(await card.isDisabled(), true, 'locked work cards are inert');
+      assert.equal(await card.getAttribute('aria-disabled'), 'true', 'locked work is announced unavailable');
+    }
+    await morningCard.evaluate(element => element.click());
+    assert.equal(new URL(page.url()).searchParams.get('work'), null, 'disabled card does not navigate');
     await page.getByRole('textbox', { name: 'Search downloaded library text' }).fill('Continue in prayer');
-    await page.getByText('January 2 · Morning · paragraph', { exact: false }).first().waitFor();
-    await page.getByText('January 2 · Morning · paragraph', { exact: false }).first().click();
-    await text('January 2 · Morning').waitFor();
-    await page.getByText('"Continue in prayer." --Colossians 4:2', { exact: true }).waitFor();
-    console.log('PASS text search opens exact historical paragraph');
+    await text('No matching passages').waitFor();
+    assert.equal(await page.getByText('January 2 · Morning · paragraph', { exact: false }).count(), 0);
+    await page.getByRole('textbox', { name: 'Search downloaded library text' }).fill('');
 
+    await navigate('/library?work=spurgeon-morning-evening&section=01-02-am&paragraph=0');
+    await page.getByRole('button', { name: /^Morning and Evening, by Charles Spurgeon/ }).waitFor();
+    assert.equal(await text('HISTORICAL SOURCE TEXT').count(), 0, 'stale reader route is rejected even when work is installed');
+    assert.equal(await page.getByText('"Continue in prayer." --Colossians 4:2', { exact: true }).count(), 0);
+    const retained = await page.evaluate(async () => {
+      const entry = [...window.__r.getModules()].find(([, module]) =>
+        module.verboseName?.endsWith('expo-sqlite/build/SQLiteDatabase.js'));
+      const db = await window.__r(entry[0]).openDatabaseAsync('library.db');
+      const count = await db.getFirstAsync(`SELECT COUNT(*) AS count FROM library_sections WHERE work_id='spurgeon-morning-evening'`);
+      const position = await db.getFirstAsync(`SELECT section_id,paragraph FROM library_positions WHERE work_id='spurgeon-morning-evening'`);
+      const paragraph = await db.getFirstAsync(`SELECT text FROM library_paragraphs WHERE work_id='spurgeon-morning-evening' AND section_id='01-01-am' AND paragraph=0`);
+      return { count: count.count, position, paragraph: paragraph.text };
+    });
+    assert.equal(retained.count, morningPackage.sections.length);
+    assert.deepEqual(retained.position, { section_id: morningPackage.sections[0].id, paragraph: 1 });
+    assert.ok(retained.paragraph.length > 0, 'downloaded text remains stored locally');
+    console.log('PASS all three Spurgeon locks are visible and inert; installed Morning and Evening cannot open or appear in search, while local text, note, and position remain intact');
+
+    await navigate('/library?work=spurgeon-treasury&section=psalm-1');
+    await page.getByRole('button', { name: /^Commentary and Expositions, by Charles Spurgeon/ }).waitFor();
+    assert.equal(await text('HISTORICAL SOURCE TEXT').count(), 0);
+    await navigate('/library?work=spurgeon-all-grace&section=chapter-1');
+    await page.getByRole('button', { name: /^Commentary and Expositions, by Charles Spurgeon/ }).waitFor();
+    assert.equal(await text('HISTORICAL SOURCE TEXT').count(), 0);
+    console.log('PASS stale detail and reader routes cannot enter Treasury of David or All of Grace');
+
+    await navigate('/library?work=gill-exposition');
     await context.setOffline(true);
-    await backDetails();
     await click('Resume reading');
-    await text('January 2 · Morning').waitFor();
+    await text('Genesis 1 · Chapter introduction').waitFor();
+    await text('HISTORICAL SOURCE TEXT').waitFor();
     await context.setOffline(false);
-    console.log('PASS installed work reopens without network in the running app');
+    console.log('PASS available author work remains readable offline');
 
-    await go('/library?work=henry-whole-bible');
+    await navigate('/library?work=henry-whole-bible');
     await click('Download for offline use');
     await text('Read this work').waitFor({ timeout: 240000 });
     await go('/bible?ref=John%203%3A16&jump=librarytest');
@@ -113,13 +168,6 @@ async function main() {
     await page.getByText('Completed by John Evans', { exact: false }).waitFor();
     console.log('PASS real full Henry download, visible Authors insight button, verse link, chapter-level mapping and editorial attribution');
 
-    await go('/library?work=spurgeon-morning-evening');
-    await click('Remove download');
-    await text('Remove this download?').waitFor();
-    await click('Remove');
-    await text('Download for offline use').waitFor();
-    await go('/notes');
-    await page.getByText('Charles Spurgeon · Morning and Evening · March 5 · Evening', { exact: false }).waitFor();
     await go('/library');
     await page.getByRole('button', { name: 'Commentary on the Whole Bible, by Matthew Henry, downloaded' }).waitFor();
     await go('/library?work=gill-exposition');

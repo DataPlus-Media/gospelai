@@ -35,6 +35,7 @@ export type LibraryWork = {
   rights: string;
   attribution: string;
   blocker?: string;
+  appAccessBlocker?: string;
   package?: { revision: string; bytes: number; sha256: string; sections: number };
 };
 

@@ -34,7 +34,7 @@ export async function initLibrary(db: SQLiteDatabase) {
 
 export function validatePackage(value: unknown, work: LibraryWork): LibraryPackage {
   const p = value as LibraryPackage;
-  if (!work.package || work.blocker || !p || p.schema !== 1 || p.workId !== work.id ||
+  if (!work.package || work.blocker || work.appAccessBlocker || !p || p.schema !== 1 || p.workId !== work.id ||
     p.revision !== work.package.revision || !Array.isArray(p.notices) ||
     !p.notices.length || !p.notices.every(n => typeof n === 'string') ||
     !Array.isArray(p.sections) || p.sections.length !== work.package.sections) {

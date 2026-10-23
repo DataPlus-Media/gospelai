@@ -88,6 +88,12 @@ export default function LibraryReader({
   }, [onPersistError, queuePositionSave]);
 
   const load = useCallback(async (sectionId?: string, paragraph?: number) => {
+    if (work.blocker || work.appAccessBlocker) {
+      setLoading(false);
+      setError(null);
+      setContent(null);
+      return;
+    }
     const request = ++loadRequestRef.current;
     requestedSectionRef.current = sectionId;
     requestedParagraphRef.current = paragraph;
@@ -131,7 +137,7 @@ export default function LibraryReader({
     } finally {
       if (mountedRef.current && request === loadRequestRef.current) setLoading(false);
     }
-  }, [db, persistPosition, work.id]);
+  }, [db, persistPosition, work.id, work.blocker, work.appAccessBlocker]);
 
   useEffect(() => { void load(initialSection, initialParagraph); }, [load, initialSection, initialParagraph]);
 
@@ -187,6 +193,18 @@ export default function LibraryReader({
     const nextIndex = sectionIndex + delta;
     if (nextIndex >= 0 && nextIndex < sections.length) changeSection(nextIndex);
   };
+
+  if (work.blocker || work.appAccessBlocker) {
+    return (
+      <View style={styles.screen}>
+        <View style={styles.readerHeader}>
+          <Pressable onPress={onClose} accessibilityRole="button" accessibilityLabel="Back to work details" style={styles.back}><Ionicons name="arrow-back" size={19} color={C.ink} /></Pressable>
+          <View style={styles.headerText}><Text style={styles.eyebrow}>HISTORICAL SOURCE TEXT</Text><Text style={styles.headerTitle} numberOfLines={1}>{work.title}</Text></View>
+        </View>
+        <View style={styles.readerError}><Text style={styles.errorText}>{work.appAccessBlocker ?? work.blocker}</Text></View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>

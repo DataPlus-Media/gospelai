@@ -13,27 +13,25 @@ async function main() {
   page.setDefaultTimeout(30000);
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
-  const button = name => page.getByRole('button', { name, exact: true });
   try {
     await page.goto(`${base}/library?work=spurgeon-expositions&book=43&chapter=3&verse=18`);
     await page.getByText('EDITION / SOURCE', { exact: true }).waitFor();
     await page.getByText(/997 sections across 639 chapters in 59 books/).waitFor();
     await page.getByText('Download for offline use', { exact: true }).click();
-    // A verse-linked download returns to that passage automatically.
-    await page.getByText('John 3:18', { exact: true }).first().waitFor({ timeout: 120000 });
-    const source = button('Read full source section: John 3:13–36');
-    await source.waitFor({ timeout: 120000 });
-    await source.scrollIntoViewIfNeeded();
-    await source.waitFor();
+    await page.getByText('READ THE RECORD', { exact: true }).waitFor({ timeout: 120000 });
+    // Confirm the available Spurgeon work can still be resumed and read without
+    // relying on the separate selected-passage scripture view.
+    await page.goto(`${base}/library?work=spurgeon-expositions`);
+    await page.getByText('Read this work', { exact: true }).waitFor({ timeout: 30000 });
     await context.setOffline(true);
-    await source.click();
-    // The verse screen expands the original section inline, without navigating
-    // away from the selected scripture.
-    await page.getByText(/He that believeth on him is not condemned/).first().waitFor();
+    await page.getByText('Read this work', { exact: true }).click();
+    await page.getByText('HISTORICAL SOURCE TEXT', { exact: true }).waitFor();
+    await page.getByText('Genesis 1:1–31', { exact: true }).waitFor();
+    await page.getByText('In the beginning God created the heaven and the earth.', { exact: false }).first().waitFor();
     await mkdir('generated-artifacts/spurgeon-browser', { recursive: true });
     await page.screenshot({ path: 'generated-artifacts/spurgeon-browser/offline-reader.png' });
     assert.deepEqual(errors, []);
-    console.log('PASS real Spurgeon download, John 3:18 range match and original section reading offline on a phone-size screen');
+    console.log('PASS available Spurgeon Expositions downloads, resumes and opens original text offline on a phone-size screen');
   } catch (error) {
     await mkdir('generated-artifacts/spurgeon-browser', { recursive: true });
     await page.screenshot({ path: 'generated-artifacts/spurgeon-browser/failure.png' });

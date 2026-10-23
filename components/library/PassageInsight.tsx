@@ -105,7 +105,7 @@ export default function PassageInsight({
         const downloaded = new Set(status.filter(item => item.state === 'ready').map(item => item.work_id));
         setRows(matches.filter(row => {
           const work = workFor(row.work_id);
-          return work?.kind === 'commentary' && !work.blocker && downloaded.has(row.work_id);
+          return work?.kind === 'commentary' && !work.blocker && !work.appAccessBlocker && downloaded.has(row.work_id);
         }));
         setInstalled(downloads);
         setAvailability(status);
@@ -159,6 +159,8 @@ export default function PassageInsight({
 
   const loadSource = useCallback(async (row: PassageMatch) => {
     const key = rowKey(row);
+    const work = workFor(row.work_id);
+    if (!work || work.blocker || work.appAccessBlocker) return;
     if (loadedSources[key] || sourceLoading[key]) return;
     const token = ++detailSequence.current;
     detailTokens.current[key] = token;
@@ -215,7 +217,7 @@ export default function PassageInsight({
     const key = rowKey(confirmSource);
     const loaded = loadedSources[key];
     const work = workFor(confirmSource.work_id);
-    if (!loaded || !work) return;
+    if (!loaded || !work || work.blocker || work.appAccessBlocker) return;
     const draft = sourceDraft(scripture, work, confirmSource, loaded.content);
     setConfirmSource(null);
     router.push({
