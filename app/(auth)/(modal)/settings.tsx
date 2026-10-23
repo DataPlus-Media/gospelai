@@ -37,10 +37,18 @@ export default function SettingsScreen() {
   const apple = useOAuth({ strategy: 'oauth_apple' });
 
   const [busy, setBusy] = useState(false);
+  const [deleteInputFocused, setDeleteInputFocused] = useState(false);
+  const [focusedAction, setFocusedAction] = useState<string | null>(null);
 
   // Delete account UI state
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteText, setDeleteText] = useState('');
+
+  const focusHandlers = (action: string) => ({
+    onFocus: () => setFocusedAction(action),
+    onBlur: () =>
+      setFocusedAction((current) => (current === action ? null : current)),
+  });
 
   const displayName = useMemo(() => {
     if (!user) return '';
@@ -168,22 +176,38 @@ export default function SettingsScreen() {
                   </View>
                 </View>
 
-                <TouchableOpacity
-                  style={[styles.rowBtn, busy && { opacity: 0.6 }]}
-                  onPress={onSignOut}
-                  disabled={busy}
-                >
-                  <Ionicons name="log-out-outline" size={20} color="#ff6b6b" />
-                  <Text style={styles.rowBtnTextDanger}>Sign out</Text>
-                  <View style={{ flex: 1 }} />
-                  <Ionicons name="chevron-forward" size={18} color="#6b7280" />
-                </TouchableOpacity>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Sign out of GospelAI"
+                    {...focusHandlers('sign-out')}
+                    style={({ pressed }) => [
+                      styles.rowBtn,
+                      busy && { opacity: 0.6 },
+                      pressed && styles.pressed,
+                      focusedAction === 'sign-out' && styles.focused,
+                    ]}
+                    onPress={onSignOut}
+                    disabled={busy}
+                  >
+                    <Ionicons name="log-out-outline" size={20} color="#ff6b6b" />
+                    <Text style={styles.rowBtnTextDanger}>Sign out</Text>
+                    <View style={{ flex: 1 }} />
+                    <Ionicons name="chevron-forward" size={18} color="#6b7280" />
+                  </Pressable>
 
                 {/* Delete account (toggle) */}
                 <View style={{ height: 10 }} />
 
-                <TouchableOpacity
-                  style={[styles.rowBtn, busy && { opacity: 0.6 }]}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={deleteOpen ? 'Close account deletion options' : 'Open account deletion options'}
+                  {...focusHandlers('delete-account')}
+                  style={({ pressed }) => [
+                    styles.rowBtn,
+                    busy && { opacity: 0.6 },
+                    pressed && styles.pressed,
+                    focusedAction === 'delete-account' && styles.focused,
+                  ]}
                   onPress={() => setDeleteOpen((v) => !v)}
                   disabled={busy}
                 >
@@ -195,7 +219,7 @@ export default function SettingsScreen() {
                     size={18}
                     color="#6b7280"
                   />
-                </TouchableOpacity>
+                </Pressable>
 
                 {deleteOpen && (
                   <View style={styles.dangerBox}>
@@ -206,10 +230,18 @@ export default function SettingsScreen() {
                       confirm.
                     </Text>
 
-                    <View style={styles.deleteInputWrap}>
+                    <View
+                      style={[
+                        styles.deleteInputWrap,
+                        deleteInputFocused && styles.focused,
+                      ]}
+                    >
                       <TextInput
+                        accessibilityLabel="Type DELETE to confirm account deletion"
                         value={deleteText}
                         onChangeText={setDeleteText}
+                        onFocus={() => setDeleteInputFocused(true)}
+                        onBlur={() => setDeleteInputFocused(false)}
                         autoCapitalize="characters"
                         placeholder="Type DELETE"
                         placeholderTextColor="#8b94a9"
@@ -217,19 +249,24 @@ export default function SettingsScreen() {
                       />
                     </View>
 
-                    <TouchableOpacity
-                      style={[
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Permanently delete account"
+                      {...focusHandlers('confirm-delete')}
+                      style={({ pressed }) => [
                         styles.deleteBtn,
                         (busy || deleteText.trim().toUpperCase() !== 'DELETE') && {
                           opacity: 0.6,
                         },
+                        pressed && styles.pressed,
+                        focusedAction === 'confirm-delete' && styles.focused,
                       ]}
                       onPress={onDeleteAccount}
                       disabled={busy || deleteText.trim().toUpperCase() !== 'DELETE'}
                     >
                       <Ionicons name="warning-outline" size={18} color="#fff" />
                       <Text style={styles.deleteBtnText}>Permanently delete</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                   </View>
                 )}
               </>
@@ -245,11 +282,16 @@ export default function SettingsScreen() {
 
                 {/* OAuth buttons */}
                 <View style={styles.authWrap}>
-                  <TouchableOpacity
-                    style={[
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Continue with Apple"
+                    {...focusHandlers('apple-sign-in')}
+                    style={({ pressed }) => [
                       styles.authBtn,
                       styles.authBtnLight,
                       busy && { opacity: 0.6 },
+                      pressed && styles.pressed,
+                      focusedAction === 'apple-sign-in' && styles.focused,
                     ]}
                     onPress={() => doOAuth(apple.startOAuthFlow)}
                     disabled={busy}
@@ -263,13 +305,18 @@ export default function SettingsScreen() {
                     <Text style={[styles.authBtnText, { color: '#000' }]}>
                       Continue with Apple
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
 
-                  <TouchableOpacity
-                    style={[
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Continue with Google"
+                    {...focusHandlers('google-sign-in')}
+                    style={({ pressed }) => [
                       styles.authBtn,
                       styles.authBtnDark,
                       busy && { opacity: 0.6 },
+                      pressed && styles.pressed,
+                      focusedAction === 'google-sign-in' && styles.focused,
                     ]}
                     onPress={() => doOAuth(google.startOAuthFlow)}
                     disabled={busy}
@@ -283,7 +330,7 @@ export default function SettingsScreen() {
                     <Text style={[styles.authBtnText, { color: '#fff' }]}>
                       Continue with Google
                     </Text>
-                  </TouchableOpacity>
+                  </Pressable>
 
                   {/* Email buttons row (FIXED STYLING) */}
                   <View style={styles.authRow}>
@@ -292,10 +339,17 @@ export default function SettingsScreen() {
                       asChild
                     >
                       <TouchableOpacity
-                        style={[styles.smallBtn, styles.smallBtnSolid]}
+                        {...focusHandlers('email-sign-up')}
+                        accessibilityRole="button"
+                        accessibilityLabel="Sign up with email"
+                        style={StyleSheet.flatten([
+                          styles.smallBtn,
+                          styles.smallBtnSolid,
+                          focusedAction === 'email-sign-up' && styles.focused,
+                        ])}
                       >
                         <Ionicons name="mail" size={16} color="#fff" />
-                        <Text style={styles.smallBtnText} numberOfLines={1}>
+                        <Text style={styles.smallBtnText} numberOfLines={2}>
                           Sign up with email
                         </Text>
                       </TouchableOpacity>
@@ -306,7 +360,14 @@ export default function SettingsScreen() {
                       asChild
                     >
                       <TouchableOpacity
-                        style={[styles.smallBtn, styles.smallBtnOutline]}
+                        {...focusHandlers('email-login')}
+                        accessibilityRole="button"
+                        accessibilityLabel="Log in with email"
+                        style={StyleSheet.flatten([
+                          styles.smallBtn,
+                          styles.smallBtnOutline,
+                          focusedAction === 'email-login' && styles.focused,
+                        ])}
                       >
                         <Ionicons name="log-in-outline" size={16} color="#fff" />
                         <Text style={styles.smallBtnText} numberOfLines={1}>
@@ -332,7 +393,14 @@ export default function SettingsScreen() {
 
           <View style={styles.card}>
             <Pressable
-              style={styles.rowBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Learn why creating an account is useful"
+              {...focusHandlers('account-info')}
+              style={({ pressed }) => [
+                styles.rowBtn,
+                pressed && styles.pressed,
+                focusedAction === 'account-info' && styles.focused,
+              ]}
               onPress={() => {
                 Alert.alert(
                   'Why create an account?',
@@ -357,39 +425,43 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0b0d12',
+    backgroundColor: '#0b1116',
   },
   container: {
-    paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 28,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 36,
   },
 
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 18,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: '800',
     color: '#e9edf5',
+    letterSpacing: -0.5,
   },
 
-  section: { marginTop: 14 },
+  section: { marginTop: 20 },
   sectionTitle: {
-    color: '#8b94a9',
+    color: '#7f9c9a',
     fontWeight: '800',
-    letterSpacing: 1,
-    fontSize: 12,
-    marginBottom: 10,
+    letterSpacing: 1.5,
+    fontSize: 11,
+    marginBottom: 9,
+    marginLeft: 3,
   },
 
   card: {
-    backgroundColor: '#1c1c1e',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    backgroundColor: '#121d24',
+    borderRadius: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: '#23343a',
   },
 
   // Signed-in block
@@ -397,7 +469,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingBottom: 12,
+    paddingBottom: 16,
   },
   signedTitle: {
     color: '#fff',
@@ -405,7 +477,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   signedSub: {
-    color: '#8b94a9',
+    color: '#9aadb2',
     fontSize: 13,
     marginTop: 2,
   },
@@ -418,15 +490,15 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   guestBadge: {
-    backgroundColor: '#101521',
+    backgroundColor: '#17252b',
     borderWidth: 1,
-    borderColor: '#2a2a2c',
+    borderColor: '#30464a',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
   },
   guestBadgeText: {
-    color: '#8b94a9',
+    color: '#a6c5bd',
     fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.6,
@@ -441,16 +513,16 @@ const styles = StyleSheet.create({
   // Auth buttons
   authWrap: { gap: 12 },
   authBtn: {
-    height: 52,
-    borderRadius: 999,
+    minHeight: 52,
+    borderRadius: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  authBtnLight: { backgroundColor: '#fff' },
-  authBtnDark: { backgroundColor: Colors.grey },
+  authBtnLight: { backgroundColor: '#eaf1ed' },
+  authBtnDark: { backgroundColor: '#1b2931', borderWidth: 1, borderColor: '#39505a' },
   authBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '900',
     letterSpacing: 0.2,
   },
@@ -463,19 +535,19 @@ const styles = StyleSheet.create({
   },
   smallBtn: {
     flex: 1,
-    height: 46,
-    borderRadius: 999,
+    minHeight: 48,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
     paddingHorizontal: 14,
   },
-  smallBtnSolid: { backgroundColor: '#2e7bef' },
+  smallBtnSolid: { backgroundColor: Colors.primary },
   smallBtnOutline: {
     borderWidth: 2,
-    borderColor: Colors.grey,
-    backgroundColor: '#101521',
+    borderColor: '#4b7180',
+    backgroundColor: '#17252b',
   },
   smallBtnText: {
     color: '#fff',
@@ -485,7 +557,7 @@ const styles = StyleSheet.create({
   },
 
   helperText: {
-    color: '#8b94a9',
+    color: '#9aadb2',
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'center',
@@ -497,15 +569,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    minHeight: 50,
     paddingVertical: 12,
     paddingHorizontal: 10,
-    borderRadius: 12,
-    backgroundColor: '#0f1117',
+    borderRadius: 13,
+    backgroundColor: '#17242a',
     borderWidth: 1,
-    borderColor: '#2a2a2c',
+    borderColor: '#2a3d43',
+  },
+  pressed: { opacity: 0.78 },
+  focused: {
+    borderColor: Colors.sky,
+    borderWidth: 2,
   },
   rowBtnText: {
-    color: '#e9edf5',
+    color: '#e5eeec',
     fontSize: 15,
     fontWeight: '800',
   },
@@ -518,11 +596,11 @@ const styles = StyleSheet.create({
   // Delete account panel
   dangerBox: {
     marginTop: 10,
-    backgroundColor: '#0f1117',
+    backgroundColor: '#151d22',
     borderWidth: 1,
-    borderColor: '#3a1f1f',
-    borderRadius: 14,
-    padding: 12,
+    borderColor: '#673b3f',
+    borderRadius: 15,
+    padding: 14,
     gap: 10,
   },
   dangerTitle: {
@@ -532,14 +610,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   dangerText: {
-    color: '#8b94a9',
+    color: '#a5b6b8',
     fontSize: 13,
     lineHeight: 18,
   },
   deleteInputWrap: {
     borderWidth: 1,
-    borderColor: '#2a2a2c',
-    backgroundColor: '#101521',
+    borderColor: '#3b4c51',
+    backgroundColor: '#10191e',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -554,7 +632,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     height: 46,
     borderRadius: 999,
-    backgroundColor: '#ff6b6b',
+    backgroundColor: '#b84f58',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -568,8 +646,8 @@ const styles = StyleSheet.create({
 
   footerNote: {
     textAlign: 'center',
-    color: '#6b7280',
-    marginTop: 22,
+    color: '#77908f',
+    marginTop: 28,
     fontWeight: '700',
   },
 });
