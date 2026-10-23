@@ -31,11 +31,19 @@ export default function AuthLayout() {
           options={{
             presentation: 'modal',
             title: 'Settings',
+            headerTintColor: '#dce9e1',
             headerShadowVisible: false,
-            headerStyle: { backgroundColor: Colors.selected },
+            headerStyle: { backgroundColor: '#0b1116' },
+            headerTitleStyle: { color: '#edf3ef', fontWeight: '700' },
+            headerTitleAlign: 'center',
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()} accessibilityLabel="Close">
-                <Ionicons name="close-outline" size={28} color="#8E8E93" />
+              <TouchableOpacity
+                onPress={() => router.back()}
+                accessibilityLabel="Close"
+                hitSlop={10}
+                style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
+              >
+                <Ionicons name="close-outline" size={25} color="#a8c4b7" />
               </TouchableOpacity>
             ),
           }}

@@ -19,3 +19,14 @@ links.
 **How to apply:** When a nested route link fails only on web, inspect the
 rendered DOM style props and flatten the child style before changing navigation
 or link behavior.
+
+In this Expo Router project, modal stack headers are not visible in the web
+preview even when configured in the auth stack. When title and close controls
+must also appear on web, keep the native navigator header and provide a
+platform-specific in-screen fallback.
+
+**Why:** The Settings modal rendered its content on web without showing the
+configured native title or close control.
+
+**How to apply:** Verify modal routes on both native and web; do not assume
+`Stack.Screen` header options are rendered by React Native Web.

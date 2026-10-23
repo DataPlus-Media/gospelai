@@ -7,7 +7,6 @@
 // ✅ If signed in: show profile + Sign out button + Delete account option
 // ✅ Keeps your dark card / rounded style
 
-import Colors from '@/constants/Colors';
 import UserAvatar from '@/components/UserAvatar';
 import { useAuth, useOAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +15,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useMemo, useState } from 'react';
 import {
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -148,10 +148,23 @@ export default function SettingsScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <Text style={styles.headerTitle}>Settings</Text>
-        </View>
+        {Platform.OS === 'web' && (
+          <View style={styles.webHeader}>
+            <Text style={styles.webHeaderTitle}>Settings</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={10}
+              onPress={() => router.back()}
+              style={({ pressed }) => [
+                styles.webCloseButton,
+                pressed && styles.pressed,
+              ]}
+            >
+              <Ionicons name="close-outline" size={24} color="#a8c4b7" />
+            </Pressable>
+          </View>
+        )}
 
         {/* ACCOUNT */}
         <View style={styles.section}>
@@ -428,40 +441,55 @@ const styles = StyleSheet.create({
     backgroundColor: '#0b1116',
   },
   container: {
+    width: '100%',
+    maxWidth: 600,
+    alignSelf: 'center',
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 36,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
 
-  headerRow: {
+  webHeader: {
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 18,
+    justifyContent: 'space-between',
+    marginBottom: 6,
   },
-  headerTitle: {
-    fontSize: 28,
+  webHeaderTitle: {
+    color: '#edf3ef',
+    fontSize: 22,
     fontWeight: '800',
-    color: '#e9edf5',
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
+  },
+  webCloseButton: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 19,
+    backgroundColor: '#172426',
+    borderWidth: 1,
+    borderColor: '#2b4140',
   },
 
-  section: { marginTop: 20 },
+  section: { marginTop: 18 },
   sectionTitle: {
-    color: '#7f9c9a',
+    color: '#94b9ae',
     fontWeight: '800',
-    letterSpacing: 1.5,
-    fontSize: 11,
-    marginBottom: 9,
-    marginLeft: 3,
+    letterSpacing: 1.7,
+    fontSize: 10,
+    marginBottom: 10,
+    marginLeft: 4,
   },
 
   card: {
-    backgroundColor: '#121d24',
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 15,
+    backgroundColor: '#111c20',
+    borderRadius: 18,
+    paddingVertical: 17,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#23343a',
+    borderColor: '#263a3c',
   },
 
   // Signed-in block
@@ -469,15 +497,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingBottom: 16,
+    paddingBottom: 18,
   },
   signedTitle: {
-    color: '#fff',
+    color: '#edf3ef',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
   },
   signedSub: {
-    color: '#9aadb2',
+    color: '#a1b2ad',
     fontSize: 13,
     marginTop: 2,
   },
@@ -487,43 +515,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingBottom: 12,
+    paddingBottom: 15,
   },
   guestBadge: {
-    backgroundColor: '#17252b',
+    backgroundColor: '#1a2b2b',
     borderWidth: 1,
-    borderColor: '#30464a',
+    borderColor: '#3a5a51',
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
   },
   guestBadgeText: {
-    color: '#a6c5bd',
-    fontSize: 12,
+    color: '#b4d2c3',
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
   guestTitle: {
-    color: '#fff',
+    color: '#edf3ef',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '800',
     flex: 1,
   },
 
   // Auth buttons
-  authWrap: { gap: 12 },
+  authWrap: { gap: 11 },
   authBtn: {
-    minHeight: 52,
-    borderRadius: 15,
+    minHeight: 54,
+    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  authBtnLight: { backgroundColor: '#eaf1ed' },
-  authBtnDark: { backgroundColor: '#1b2931', borderWidth: 1, borderColor: '#39505a' },
+  authBtnLight: { backgroundColor: '#e7eee8' },
+  authBtnDark: { backgroundColor: '#1a292b', borderWidth: 1, borderColor: '#405653' },
   authBtnText: {
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
     letterSpacing: 0.2,
   },
 
@@ -531,37 +559,38 @@ const styles = StyleSheet.create({
   authRow: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 2,
+    marginTop: 1,
   },
   smallBtn: {
     flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
+    minHeight: 50,
+    borderRadius: 13,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
   },
-  smallBtnSolid: { backgroundColor: Colors.primary },
+  smallBtnSolid: { backgroundColor: '#20845e' },
   smallBtnOutline: {
-    borderWidth: 2,
-    borderColor: '#4b7180',
-    backgroundColor: '#17252b',
+    borderWidth: 1,
+    borderColor: '#526a63',
+    backgroundColor: '#182626',
   },
   smallBtnText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '900',
-    letterSpacing: 0.2,
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.1,
   },
 
   helperText: {
-    color: '#9aadb2',
+    color: '#a5b5b0',
     fontSize: 13,
-    lineHeight: 18,
+    lineHeight: 19,
     textAlign: 'center',
-    marginTop: 2,
+    marginTop: 4,
+    paddingHorizontal: 4,
   },
 
   // Row buttons
@@ -569,37 +598,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    minHeight: 50,
+    minHeight: 52,
     paddingVertical: 12,
     paddingHorizontal: 10,
-    borderRadius: 13,
-    backgroundColor: '#17242a',
+    borderRadius: 12,
+    backgroundColor: '#172426',
     borderWidth: 1,
-    borderColor: '#2a3d43',
+    borderColor: '#2b4140',
   },
   pressed: { opacity: 0.78 },
   focused: {
-    borderColor: Colors.sky,
+    borderColor: '#7dbda2',
     borderWidth: 2,
   },
   rowBtnText: {
-    color: '#e5eeec',
+    color: '#e3ece7',
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   rowBtnTextDanger: {
     color: '#ff6b6b',
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '800',
   },
 
   // Delete account panel
   dangerBox: {
     marginTop: 10,
-    backgroundColor: '#151d22',
+    backgroundColor: '#171f20',
     borderWidth: 1,
-    borderColor: '#673b3f',
-    borderRadius: 15,
+    borderColor: '#634247',
+    borderRadius: 14,
     padding: 14,
     gap: 10,
   },
@@ -610,14 +639,14 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   dangerText: {
-    color: '#a5b6b8',
+    color: '#b0bfba',
     fontSize: 13,
     lineHeight: 18,
   },
   deleteInputWrap: {
     borderWidth: 1,
-    borderColor: '#3b4c51',
-    backgroundColor: '#10191e',
+    borderColor: '#405451',
+    backgroundColor: '#10191a',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -632,7 +661,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     height: 46,
     borderRadius: 999,
-    backgroundColor: '#b84f58',
+    backgroundColor: '#a94750',
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -646,8 +675,9 @@ const styles = StyleSheet.create({
 
   footerNote: {
     textAlign: 'center',
-    color: '#77908f',
-    marginTop: 28,
-    fontWeight: '700',
+    color: '#839a91',
+    marginTop: 12,
+    fontWeight: '600',
+    fontSize: 12,
   },
 });
