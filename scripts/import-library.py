@@ -1,4 +1,4 @@
-"""Reproducible importer for the two explicitly redistributable editions.
+"""Reproducible importer for the explicitly redistributable source editions.
 
 No third-party scraping libraries. Sources/build output stay outside Git.
 Run python scripts/import-library.py, then node scripts/upload-library.cjs.
@@ -330,8 +330,14 @@ def gill():
 
 
 if __name__ == "__main__":
+    from import_spurgeon import build_spurgeon
+
+    def spurgeon():
+        return build_spurgeon(fetch, paragraphs, books, mybible_book_numbers,
+                              sermonindex_book_codes, ROOT, SOURCES)
+
     manifest = {}
-    for build in (henry, gill, morning_evening):
+    for build in (henry, gill, morning_evening, spurgeon):
         package = build()
         data = json.dumps(package, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         path = OUT / f"{package['workId']}.json"

@@ -8,15 +8,16 @@ The Bible connection uses canonical book/chapter/verse identifiers, not translat
 
 ## Release status
 
-Three verified editions are imported and available for device download:
+Four verified editions are imported and available for device download:
 
 | Work | Imported contents | Download |
 | --- | --- | --- |
 | Matthew Henry, *Commentary on the Whole Bible* | All 1,189 Bible chapters, 66 book introductions, original contents and six volume prefaces | 39,487,522 bytes |
 | John Gill, *Exposition of the Old and New Testaments* | 32,139 original sections: 1,049 chapter introductions and 31,090 verse-mapped entries across all 66 books | 56,562,523 bytes |
 | Charles Spurgeon, *Morning and Evening* | 732 morning/evening entries, including February 29 | 1,544,618 bytes |
+| Charles Spurgeon, *Commentary and Expositions* | 997 sections in 639 chapters across 59 books; selective coverage | 13,945,598 bytes |
 
-**Storage/build verification:** all three packages are uploaded to App Storage and checksum-verified. No publishing has been performed. Native release hosting configuration and device verification remain required before shipping an App Store update.
+**Storage/build verification:** packages are uploaded to App Storage and checksum-verified before static preparation. No publishing has been performed. Native release hosting configuration and device verification remain required before shipping an App Store update.
 
 The following works are listed honestly but have no imported text or download button:
 
@@ -46,6 +47,17 @@ These are edition/rights blockers, not AI-generated substitutes or sample excerp
 - Chapter introductions are explicitly titled and labeled **Chapter introduction**. For a selected verse they appear only when the source has no verse-specific entry; an exact verse entry takes precedence. On chapter entry, both introductions and verse entries remain available.
 - The importer checks all module mappings against the bundled KJV, preserves exact verse/range mappings, and records the source edition’s notice. The source HTML is normalized into readable paragraphs; source wording is retained.
 
+### Spurgeon: Commentary and Expositions
+
+- The user chose this downloadable SermonIndex edition rather than online-only StudyLight links. These compilations differ; the app does not label the downloaded text as StudyLight's edition.
+- Source and explicit public-domain notice: <https://www.sermonindex.net/commentary/spurgeon/>.
+- Download: <https://www.sermonindex.net/modules/mybible/SI-SPURGEON.commentaries.zip>.
+- The module contains 997 sections, including 22 chapter introductions, across 639 chapters in 59 Bible books. It includes Psalms material from *The Treasury of David* but is not represented as commentary on every verse or as a complete separately verified Treasury edition.
+- Source verse ranges can overlap; separate expositions are retained rather than merged or generated. Only source-backed ranges are matched to a selected verse.
+- One source metadata error records a cross-chapter reading, Revelation 20:11–15 and 21:1, as the impossible same-chapter range 20:11–21. Its original text remains readable but is deliberately excluded from passage matching. Nothing is silently clamped or fabricated.
+- `node scripts/check-spurgeon.cjs` verifies package integrity, all canonical verse ranges, actual John 3:18/Psalms matching, honest gaps, offline SQLite reading and safe removal.
+- `node scripts/check-spurgeon-browser.cjs` exercises the real phone-size guest download, return to John 3:18, and original-section reading with the browser offline.
+
 ### Morning and Evening
 
 - Edition: CCEL legacy `morn_eve`; not a modern adaptation.
@@ -69,7 +81,7 @@ The edition-specific source notices and the app owner’s approval authorize the
 ## Storage and build
 
 1. In Replit, open **Tools → App Storage → Create new bucket** and create a bucket for this app.
-2. Run `npm run library:import`. The importer downloads the CCEL sources and SermonIndex MyBible Gill module. Source archives, the extracted module database and generated packages live only under ignored `generated-artifacts/library/`.
+2. Run `npm run library:import`. The importer downloads the CCEL sources and SermonIndex MyBible Gill and Spurgeon modules. Source archives, extracted module databases and generated packages live only under ignored `generated-artifacts/library/`.
 3. Compare `generated-artifacts/library/manifest.json` against the committed small `constants/libraryManifest.json`. Import fails on missing chapters, invalid Gill mappings or empty sections. Do not update hashes blindly after a source change: verify the edition/rights and transformation first.
 4. Run `npm run library:upload`. The official SDK uses the default App Storage bucket. If this environment cannot resolve the default, set the non-secret `LIBRARY_STORAGE_BUCKET_ID` to the unique **Bucket ID** in App Storage's **Settings** view, not its display name. Checksums are verified before upload. A bucket must belong to this project; an ID does not grant access to another project's bucket.
 5. `npm run build:web` downloads the checksum-locked editions from App Storage into ignored `public/library-packages/`, then runs Expo’s existing static export. The static host serves these intentionally public-domain copies to guests. App Storage credentials and arbitrary bucket access never reach the browser.

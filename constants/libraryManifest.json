@@ -11,6 +11,12 @@
     "sha256": "489cd113b8ec5305c96a2f9dc816f9a43a9320e963d97c19ce69f0b122562820",
     "sections": 32139
   },
+  "spurgeon-expositions": {
+    "revision": "sermonindex-spurgeon-mybible-1",
+    "bytes": 13945598,
+    "sha256": "88a3babd82450f3b6e69009fb5398cbf7832de6d997fa2c4f80673b66997f034",
+    "sections": 997
+  },
   "spurgeon-morning-evening": {
     "revision": "ccel-morn-eve-1",
     "bytes": 1544618,

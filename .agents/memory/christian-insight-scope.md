@@ -41,3 +41,9 @@ The user approved the SermonIndex edition of John Gill’s whole-Bible commentar
 **Why:** After supplying the SermonIndex source, the user stated, “It's allowed don't keep it blocked.”
 
 **How to apply:** Treat that specific edition as approved for this project. Preserve its source attribution and honest passage coverage; do not extend this approval to unrelated editions.
+
+For Spurgeon offline commentary, use the downloadable SermonIndex compilation, not an unlabeled substitution for StudyLight's Verse Expositions.
+
+**Why:** After the different coverage and download options were explained, the user selected “Downloadable SermonIndex edition for offline reading.”
+
+**How to apply:** Preserve edition-specific attribution and selective coverage. Do not claim this is the exact StudyLight collection or that it covers every verse.

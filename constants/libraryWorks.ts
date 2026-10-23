@@ -28,6 +28,18 @@ export const LIBRARY_WORKS: LibraryWork[] = [
     package: manifest['gill-exposition'],
   },
   {
+    id: 'spurgeon-expositions',
+    author: 'Charles Spurgeon',
+    title: 'Commentary and Expositions',
+    kind: 'commentary',
+    edition: 'SermonIndex MyBible module SI-SPURGEON; 997 sections across 639 chapters in 59 books. Selective coverage, not every verse.',
+    sourceUrl: 'https://www.sermonindex.net/commentary/spurgeon/',
+    rightsUrl: 'https://www.sermonindex.net/commentary/spurgeon/',
+    rights: 'Public domain — free to copy, share and build on (source page and module notice).',
+    attribution: 'Charles Haddon Spurgeon (1834–1892). Electronic compilation prepared by SermonIndex.net, including Psalms material from The Treasury of David. This is not the StudyLight edition.',
+    package: manifest['spurgeon-expositions'],
+  },
+  {
     id: 'spurgeon-morning-evening',
     author: 'Charles Spurgeon',
     title: 'Morning and Evening',
