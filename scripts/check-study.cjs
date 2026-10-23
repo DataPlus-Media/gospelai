@@ -72,7 +72,6 @@ async function main() {
   assert.equal(nav.entryRedirect(false, true), null);
   assert.equal(nav.entryRedirect(true, true), '/(auth)/(drawer)/today');
   assert.equal(nav.entryRedirect(true, true, 'login'), '/(auth)/(drawer)/today');
-  assert.equal(nav.entryRedirect(true, true, 'index'), null);
   assert.equal(nav.entryRedirect(true, true, '(auth)'), null);
   assert.equal(nav.entryRedirect(true, false), null);
   assert.equal(nav.entryRedirect(true, false, '(auth)'), null);

@@ -67,6 +67,7 @@ export default function CustomDrawerContent(props: any) {
   const currentRoute = props.state.routes[props.state.index];
   const activeRoute = currentRoute?.name;
   const todayRoute = props.state.routes.find((route: any) => route.name === 'today');
+  const welcomeRoute = props.state.routes.find((route: any) => route.name === 'welcome');
 
   const loadHistory = useCallback(async () => {
     const rows = (await getChats(db)) as Chat[];
@@ -173,9 +174,7 @@ export default function CustomDrawerContent(props: any) {
   };
 
   const openWelcomePage = () => {
-    Keyboard.dismiss();
-    router.push('/');
-    props.navigation.dispatch(DrawerActions.closeDrawer());
+    if (welcomeRoute) navigateToRoute('welcome', welcomeRoute.key);
   };
 
   const openChat = (chat: Chat) => {
@@ -364,12 +363,21 @@ export default function CustomDrawerContent(props: any) {
             onPress={openWelcomePage}
             accessibilityRole="button"
             accessibilityLabel="Open welcome page"
-            style={({ pressed }) => [styles.navItem, pressed && styles.pressed]}
+            accessibilityState={{ selected: activeRoute === 'welcome' }}
+            {...(Platform.OS === 'web' ? { 'aria-current': activeRoute === 'welcome' ? 'page' : undefined } : {})}
+            style={({ pressed }) => [
+              styles.navItem,
+              activeRoute === 'welcome' && styles.navItemSelected,
+              pressed && styles.pressed,
+            ]}
           >
+            {activeRoute === 'welcome' && <View style={styles.selectedRail} />}
             <View style={styles.iconTile}>
               <Ionicons name="sparkles-outline" size={19} color={palette.muted} />
             </View>
-            <Text style={styles.navLabel}>Welcome page</Text>
+            <Text style={[styles.navLabel, activeRoute === 'welcome' && styles.navLabelSelected]}>
+              Welcome page
+            </Text>
           </Pressable>
           {(() => {
             const route = props.state.routes.find((r: any) => r.name === 'support');

@@ -55,6 +55,13 @@ export default function Layout() {
         }}
       />
       <Drawer.Screen
+        name="welcome"
+        options={{
+          title: 'Welcome page',
+          drawerIcon: () => <Ionicons name="sparkles-outline" size={22} color={palette.gold} />,
+        }}
+      />
+      <Drawer.Screen
         name="saved"
         options={{
           title: 'Saved verses',

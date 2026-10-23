@@ -78,9 +78,10 @@ async function main() {
 
     await open();
     await button('Open welcome page').click();
-    await page.waitForURL(url => url.pathname === '/');
+    await page.waitForURL(url => url.pathname === '/welcome');
     await button('Start exploring. Continue without an account.').waitFor();
     await button('Start exploring. Continue without an account.').click();
+    await page.waitForURL(url => url.pathname === '/today');
     await page.getByText('Continue reading', { exact: true }).first().waitFor();
     await button('Open navigation').waitFor();
     console.log('PASS Welcome page drawer route returns guests to Today');
