@@ -376,7 +376,7 @@ export default function CustomDrawerContent(props: any) {
               <Ionicons name="sparkles-outline" size={19} color={palette.muted} />
             </View>
             <Text style={[styles.navLabel, activeRoute === 'welcome' && styles.navLabelSelected]}>
-              Welcome page
+              Home page
             </Text>
           </Pressable>
           {(() => {

@@ -144,11 +144,8 @@ export default function Index() {
               accessible
               accessibilityLabel="GospelAI"
             />
-            <Text style={styles.eyebrow}>A QUIET PLACE TO READ AND REFLECT</Text>
+            <Text style={styles.eyebrow}>A QUIET PLACE TO READ AND REFLECT ON GOD's WORD</Text>
             <Text style={styles.headline}>Come as you are.{'\n'}Begin with Scripture.</Text>
-            <Text style={styles.intro}>
-              Read a passage, ask an honest question, and see where it leads.
-            </Text>
           </Animated.View>
 
           <Animated.View
@@ -160,13 +157,13 @@ export default function Index() {
           >
             <View style={styles.scriptureTopline}>
               <View style={styles.scriptureRule} />
-              <Text style={styles.scriptureLabel}>FROM THE PSALMS</Text>
+              <Text style={styles.scriptureLabel}>FROM 2 CORINTHIANS</Text>
               <View style={styles.scriptureRule} />
             </View>
             <Text style={styles.scripture}>
-              “Thy word is a lamp unto my feet, and a light unto my path.”
+              “Therefore if any man be in Christ, he is a new creature: the old things are passed away; and all things are become new.”
             </Text>
-            <Text style={styles.citation}>PSALM 119:105</Text>
+            <Text style={styles.citation}>2 CORINTHIANS 5:17</Text>
             <View pointerEvents="none" style={styles.cardCorner} />
           </Animated.View>
 

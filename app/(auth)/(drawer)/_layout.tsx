@@ -57,7 +57,7 @@ export default function Layout() {
       <Drawer.Screen
         name="welcome"
         options={{
-          title: 'Welcome page',
+          title: 'Welcome',
           drawerIcon: () => <Ionicons name="sparkles-outline" size={22} color={palette.gold} />,
         }}
       />
