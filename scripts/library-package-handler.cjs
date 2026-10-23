@@ -1,7 +1,10 @@
 const { createHash } = require('node:crypto');
+const { promisify } = require('node:util');
+const { gzip } = require('node:zlib');
 const manifest = require('../constants/libraryManifest.json');
 const accessPolicy = require('../constants/libraryAccessPolicy.json');
 
+const compress = promisify(gzip);
 let storageClient;
 
 async function loadFromAppStorage(id, entry) {
@@ -14,7 +17,17 @@ async function loadFromAppStorage(id, entry) {
 
   const result = await storageClient.downloadAsBytes(`library/${entry.revision}/${id}.json`);
   if (!result.ok) throw new Error('Verified package is not available in App Storage.');
-  return Buffer.from(result.value[0]);
+  return result.value[0];
+}
+
+function acceptsGzip(header) {
+  const preferences = new Map(String(header || '').toLowerCase().split(',').map(part => {
+    const [name, ...parameters] = part.trim().split(';');
+    const quality = parameters.map(p => p.trim()).find(p => p.startsWith('q='));
+    const value = quality === undefined ? 1 : Number(quality.slice(2));
+    return [name, Number.isFinite(value) ? value : 0];
+  }));
+  return (preferences.get('gzip') ?? preferences.get('*') ?? 0) > 0;
 }
 
 function sendJson(res, status, body) {
@@ -66,22 +79,41 @@ function createLibraryPackageHandler({
       return true;
     }
 
+    let phase = 'storage';
     try {
-      const bytes = Buffer.from(await loadPackage(id, entry));
+      const loaded = await loadPackage(id, entry);
+      const bytes = Buffer.isBuffer(loaded) ? loaded : Buffer.from(loaded);
+      phase = 'integrity';
       if (bytes.length !== entry.bytes
         || createHash('sha256').update(bytes).digest('hex') !== entry.sha256) {
         throw new Error('Stored package failed manifest verification.');
       }
 
+      // Native URLSession and browser XHR decode gzip before the existing
+      // client checksum/JSON checks. Keep large books small on the wire.
+      phase = 'compression';
+      const compressed = acceptsGzip(req.headers['accept-encoding']);
+      const body = compressed ? await compress(bytes) : bytes;
+      phase = 'response';
       res.writeHead(200, {
         'Content-Type': 'application/json; charset=utf-8',
-        'Content-Length': bytes.length,
+        'Content-Length': body.length,
+        ...(compressed ? { 'Content-Encoding': 'gzip' } : {}),
+        Vary: 'Accept-Encoding',
         'Cache-Control': 'no-store',
         'X-Content-Type-Options': 'nosniff',
       });
-      res.end(bytes);
-    } catch {
-      sendJson(res, 503, { error: 'This edition is temporarily unavailable. Please retry later.' });
+      res.end(body);
+    } catch (error) {
+      // Do not log book text, credentials, query strings or SDK error payloads.
+      console.error('[library] Package delivery failed', {
+        workId: id, revision, phase, errorType: error?.name || 'UnknownError',
+      });
+      if (!res.headersSent) {
+        sendJson(res, 503, { error: 'This edition is temporarily unavailable. Please retry later.' });
+      } else {
+        res.destroy();
+      }
     }
     return true;
   };

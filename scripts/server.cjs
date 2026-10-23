@@ -91,7 +91,11 @@ const server = http.createServer(async (req, res) => {
     });
     if (req.method === 'HEAD') res.end();
     else createReadStream(filePath).pipe(res);
-  } catch {
+  } catch (error) {
+    console.error('[server] Request failed', {
+      method: req.method,
+      errorType: error?.name || 'UnknownError',
+    });
     if (!res.headersSent) res.writeHead(500);
     res.end();
   }
