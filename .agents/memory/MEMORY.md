@@ -9,3 +9,4 @@
 - [Library import performance](library-import-performance.md) — batch SQLite writes within one atomic transaction; per-row async calls make whole-Bible installs too slow.
 - [Offline library cleanup timing](library-cleanup-timing.md) — allow longer than a brief browser wait when removing a large downloaded commentary.
 - [Library delivery verification](library-delivery-verification.md) — verify large packages through the published HTTP endpoint, not only bucket integrity and local mocks.
+- [Native Clerk configuration](native-clerk-configuration.md) — EAS uses external Clerk; workspace management detection does not establish native build configuration.

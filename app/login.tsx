@@ -2,7 +2,7 @@
 
 import { defaultStyles } from '@/constants/Styles';
 import Colors from '@/constants/Colors';
-import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
+import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,6 +29,7 @@ import {
   hasSessionId,
   type SignInFactorPlan,
 } from '@/utils/clerkAuth';
+import { runClerkOAuthFlow } from '@/utils/clerkOAuth';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -42,6 +43,7 @@ type PendingChallenge =
       plan: SignInFactorPlan;
     }
   | { kind: 'signUpEmail'; resource: SignUpResource }
+  | { kind: 'newPassword'; resource: SignInResource }
   | { kind: 'signUpFields'; resource: SignUpResource; fields: string[] };
 
 const Page = () => {
@@ -49,8 +51,6 @@ const Page = () => {
   const router = useRouter();
   const { signIn, isLoaded, setActive } = useSignIn();
   const { signUp, isLoaded: signUpLoaded, setActive: signupSetActive } = useSignUp();
-  const google = useOAuth({ strategy: 'oauth_google' });
-  const apple = useOAuth({ strategy: 'oauth_apple' });
 
   const [mode, setMode] = useState<Mode>('auth');
 
@@ -69,7 +69,7 @@ const Page = () => {
   const [newPassword, setNewPassword] = useState('');
 
   const redirectUrl = makeRedirectUri({
-    scheme: 'gospelai',
+    scheme: 'gospelsai',
     path: 'oauth-native-callback',
   });
 
@@ -90,11 +90,19 @@ const Page = () => {
   };
 
   const continueSignIn = async (resource: SignInResource) => {
+    if (resource.status === 'needs_new_password') {
+      setNewPassword('');
+      setPendingChallenge({ kind: 'newPassword', resource });
+      return;
+    }
     const plan = getSignInFactorPlan(resource);
     if (!plan) {
       Alert.alert(
         'Sign-in needs another step',
-        'Clerk requires a verification method this screen cannot complete. Try another sign-in option or contact support.'
+        `This sign-in cannot continue on this screen. Try another sign-in option or share these details with support: status=${resource.status ?? 'unknown'}; methods=${[
+          ...(resource.supportedFirstFactors ?? []),
+          ...(resource.supportedSecondFactors ?? []),
+        ].map((factor) => factor.strategy).join(', ') || 'none'}.`
       );
       return;
     }
@@ -187,29 +195,22 @@ const Page = () => {
     await continueSignUp(resource);
   };
 
-  const doOAuth = async (start: typeof google.startOAuthFlow) => {
+  const doOAuth = async (strategy: 'oauth_apple' | 'oauth_google') => {
+    if (!isLoaded || !signUpLoaded || loading) return;
     setLoading(true);
+    setPendingChallenge(null);
     try {
-      const { createdSessionId, setActive: setOAuthActive, signIn: oauthSignIn, signUp: oauthSignUp } =
-        await start({ redirectUrl });
-      const sessionId =
-        createdSessionId || oauthSignIn?.createdSessionId || oauthSignUp?.createdSessionId;
-
-      if (sessionId) {
-        if (await activateAndContinue(sessionId, setOAuthActive)) {
-          return;
-        }
-      }
-
-      if (oauthSignIn) {
-        await finishSignIn(oauthSignIn, setOAuthActive);
-      } else if (oauthSignUp) {
-        await finishSignUp(oauthSignUp);
-      } else {
-        Alert.alert(
-          'Sign-in not completed',
-          'The provider did not return an active session. Return to sign in and try again.'
-        );
+      const result = await runClerkOAuthFlow({
+        strategy,
+        redirectUrl,
+        signIn,
+        signUp,
+        openAuthSession: WebBrowser.openAuthSessionAsync,
+      });
+      if (result.kind === 'signIn') {
+        await finishSignIn(result.resource);
+      } else if (result.kind === 'signUp') {
+        await finishSignUp(result.resource);
       }
     } catch (err: any) {
       Alert.alert(
@@ -229,12 +230,13 @@ const Page = () => {
 
   useEffect(() => {
     if (provider !== 'apple' && provider !== 'google') return;
+    if (!isLoaded || !signUpLoaded) return;
     if (startedProvider.current === provider) return;
     startedProvider.current = provider;
     void doOAuthRef.current(
-      provider === 'apple' ? apple.startOAuthFlow : google.startOAuthFlow
+      provider === 'apple' ? 'oauth_apple' : 'oauth_google'
     );
-  }, [apple.startOAuthFlow, google.startOAuthFlow, provider]);
+  }, [isLoaded, signUpLoaded, provider]);
 
   // refs so we can jump between fields
   const emailRef = useRef<TextInput | null>(null);
@@ -268,7 +270,8 @@ const Page = () => {
 
     try {
       const completeSignIn = await signIn.create({
-        identifier: emailAddress,
+        strategy: 'password',
+        identifier: emailAddress.trim(),
         password,
       });
       await finishSignIn(completeSignIn);
@@ -346,6 +349,22 @@ const Page = () => {
 
   const onSubmitVerification = async () => {
     if (!pendingChallenge) return;
+    if (pendingChallenge.kind === 'newPassword') {
+      if (!newPassword.trim()) {
+        Alert.alert('Password needed', 'Enter a new password to continue.');
+        return;
+      }
+      setLoading(true);
+      try {
+        const result = await pendingChallenge.resource.resetPassword({ password: newPassword });
+        await finishSignIn(result);
+      } catch (err) {
+        Alert.alert('Couldn’t update password', clerkErrorMessage(err, 'Please try again.'));
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
     if (!verificationCode.trim()) {
       Alert.alert('Code needed', 'Enter the verification code to continue.');
       return;
@@ -466,6 +485,8 @@ const Page = () => {
                   <Text style={styles.challengeTitle}>
                     {pendingChallenge.kind === 'signUpFields'
                       ? 'Complete your account'
+                      : pendingChallenge.kind === 'newPassword'
+                      ? 'Choose a new password'
                       : 'Verify your sign-in'}
                   </Text>
                   <Text style={styles.challengeHint}>
@@ -473,6 +494,8 @@ const Page = () => {
                       ? 'Clerk needs a few more details before your account can be created.'
                       : pendingChallenge.kind === 'signUpEmail'
                       ? 'Enter the email verification code sent to you.'
+                      : pendingChallenge.kind === 'newPassword'
+                      ? 'Your account requires a new password before you can sign in.'
                       : pendingChallenge.plan.strategy === 'totp'
                       ? 'Enter the code from your authenticator app.'
                       : pendingChallenge.plan.strategy === 'backup_code'
@@ -515,6 +538,16 @@ const Page = () => {
                         />
                       )}
                     </>
+                  ) : pendingChallenge.kind === 'newPassword' ? (
+                    <TextInput
+                      accessibilityLabel="New password"
+                      placeholder="New password"
+                      placeholderTextColor={Colors.textMuted}
+                      value={newPassword}
+                      onChangeText={setNewPassword}
+                      secureTextEntry
+                      style={styles.inputField}
+                    />
                   ) : (
                     <TextInput
                       accessibilityLabel="Verification code"
@@ -522,7 +555,12 @@ const Page = () => {
                       placeholderTextColor={Colors.textMuted}
                       value={verificationCode}
                       onChangeText={setVerificationCode}
-                      keyboardType="number-pad"
+                      keyboardType={
+                        pendingChallenge.kind === 'signIn' &&
+                        pendingChallenge.plan.strategy === 'backup_code'
+                          ? 'default'
+                          : 'number-pad'
+                      }
                       autoCapitalize="none"
                       style={styles.inputField}
                     />
@@ -539,12 +577,16 @@ const Page = () => {
                     accessibilityLabel={
                       pendingChallenge.kind === 'signUpFields'
                         ? 'Continue account creation'
+                        : pendingChallenge.kind === 'newPassword'
+                        ? 'Update password and continue'
                         : 'Verify and continue'
                     }
                   >
                     <Text style={styles.secondaryText}>
                       {pendingChallenge.kind === 'signUpFields'
                         ? 'Continue'
+                        : pendingChallenge.kind === 'newPassword'
+                        ? 'Update password and continue'
                         : 'Verify and continue'}
                     </Text>
                   </TouchableOpacity>
@@ -628,7 +670,7 @@ const Page = () => {
             <View style={styles.oauthRow}>
               <TouchableOpacity
                 style={styles.oauthButton}
-                onPress={() => doOAuth(apple.startOAuthFlow)}
+                onPress={() => doOAuth('oauth_apple')}
                 disabled={loading}
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Apple"
@@ -638,7 +680,7 @@ const Page = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.oauthButton}
-                onPress={() => doOAuth(google.startOAuthFlow)}
+                onPress={() => doOAuth('oauth_google')}
                 disabled={loading}
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
