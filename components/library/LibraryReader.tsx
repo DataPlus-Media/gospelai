@@ -81,7 +81,7 @@ export default function LibraryReader({
       if (!mountedRef.current || activeSectionRef.current !== sectionId ||
         failedPositionRef.current?.sectionId !== target.sectionId ||
         failedPositionRef.current.paragraph !== target.paragraph) return;
-      const message = e instanceof Error ? e.message : 'Reading position could not be saved.';
+      const message = e instanceof Error ? e.message : 'We couldn’t save your reading position.';
       setPositionError(message);
       onPersistError(message);
     }
@@ -101,7 +101,7 @@ export default function LibraryReader({
       let index = -1;
       if (sectionId !== undefined) {
         index = all.findIndex(s => s.id === sectionId);
-        if (index < 0) throw new Error('This section is not available in the downloaded work. Return to its details and retry the download.');
+        if (index < 0) throw new Error('This section isn’t in the downloaded work. Return to the work details and try downloading it again.');
       } else {
         const position = await getLibraryPosition(db, work.id);
         if (!mountedRef.current || request !== loadRequestRef.current) return;
@@ -109,7 +109,7 @@ export default function LibraryReader({
         if (index >= 0 && paragraph === undefined) paragraph = position!.paragraph;
       }
       if (index < 0) index = 0;
-      if (!all[index]) throw new Error('This work has no readable sections. Return to the library and retry the download.');
+      if (!all[index]) throw new Error('This work has no readable sections. Return to the library and try downloading it again.');
       const result = await readSection(db, work.id, all[index].id);
       if (!mountedRef.current || request !== loadRequestRef.current) return;
       const resolvedParagraph = clampParagraph(paragraph, result.paragraphs.length);
@@ -126,7 +126,7 @@ export default function LibraryReader({
       await persistPosition(all[index].id, resolvedParagraph);
     } catch (e) {
       if (mountedRef.current && request === loadRequestRef.current) {
-        setError(e instanceof Error ? e.message : 'This section could not be opened. Please retry.');
+        setError(e instanceof Error ? e.message : 'We couldn’t open this section. Please try again.');
       }
     } finally {
       if (mountedRef.current && request === loadRequestRef.current) setLoading(false);
@@ -177,9 +177,9 @@ export default function LibraryReader({
     if (!text) return;
     try {
       await addNote(appDb, text, 'library', `${work.author} · ${work.title} · ${current.title} · paragraph ${visibleParagraph + 1}`);
-      setNoteStatus('Paragraph saved to Notes on this device.');
+      setNoteStatus('Paragraph saved to your notes on this device.');
     } catch (e) {
-      setNoteStatus(e instanceof Error ? e.message : 'The paragraph could not be saved as a note. Please retry.');
+      setNoteStatus(e instanceof Error ? e.message : 'We couldn’t save that paragraph as a note. Please try again.');
     }
   };
 

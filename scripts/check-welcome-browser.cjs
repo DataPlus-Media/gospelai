@@ -113,8 +113,8 @@ async function main() {
 
     // Link-as-child retains both modal modes. Navigation is independent of motion.
     for (const [label, type, title] of [
-      ['Sign In', 'login', 'Welcome back'],
-      ['Create Account', 'register', 'Create your account'],
+      ['Sign in', 'login', 'Welcome back'],
+      ['Create account', 'register', 'Create your account'],
     ]) {
       await button(label).click();
       await page.waitForURL(url => url.pathname === '/login' && url.searchParams.get('type') === type);

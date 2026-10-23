@@ -47,6 +47,6 @@ export function sourceDraft(scripture: SelectedScripture, work: LibraryWork, row
     `SCRIPTURE · ${scripture.reference} · ${scripture.translation}\n${scripture.text}`,
     `HISTORICAL SOURCE · ${work.author} · ${work.title}\nSection: ${content.title}\nCoverage: ${coverageLabel(row)} (not a narrower verse mapping)\nPassage attribution: ${content.attribution}\nEdition: ${work.edition}\nSource: ${content.source_url}\nRights: ${work.rights}\nEdition attribution: ${work.attribution}`,
     `ORIGINAL SOURCE TEXT\n${content.paragraphs.map(p => p.text).join('\n\n')}`,
-    'MY QUESTION (edit before sending):\nHelp me understand this source in relation to the selected scripture.',
+    'MY QUESTION (edit before sending):\nHow does this source relate to the selected Bible passage?',
   ].join('\n\n');
 }

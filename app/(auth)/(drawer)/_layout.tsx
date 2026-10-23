@@ -121,7 +121,7 @@ export default function Layout() {
       <Drawer.Screen
         name="support"
         options={{
-          title: 'Support Us',
+          title: 'Support GospelAI',
           drawerIcon: () => <Ionicons name="heart-outline" size={22} color={palette.gold} />,
         }}
       />

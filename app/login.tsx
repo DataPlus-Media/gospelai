@@ -61,14 +61,14 @@ const Page = () => {
         return;
       }
 
-      Alert.alert('Authentication', 'Additional steps are required to complete sign in.');
+      Alert.alert('Sign in', 'A few more steps are needed to finish signing in.');
     } catch (err: any) {
       Alert.alert(
-        'Authentication',
+        'Sign in',
         err?.errors?.[0]?.longMessage ||
           err?.errors?.[0]?.message ||
           err?.message ||
-          'Sign in failed.'
+          'We couldn’t sign you in. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ const Page = () => {
       });
       signupSetActive({ session: result.createdSessionId });
     } catch (err: any) {
-      Alert.alert('Sign up failed', err?.errors?.[0]?.message || 'Please try again.');
+      Alert.alert('Couldn’t create account', err?.errors?.[0]?.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ const Page = () => {
       });
       await setActive({ session: completeSignIn.createdSessionId });
     } catch (err: any) {
-      Alert.alert('Login failed', err?.errors?.[0]?.message || 'Please try again.');
+      Alert.alert('Couldn’t sign in', err?.errors?.[0]?.message || 'Please try again.');
     } finally {
       setLoading(false);
     }
@@ -118,7 +118,7 @@ const Page = () => {
   const onRequestResetCode = async () => {
     if (!isLoaded) return;
     if (!emailAddress.trim()) {
-      Alert.alert('Email required', 'Please enter your email address first.');
+      Alert.alert('Email needed', 'Enter your email address first.');
       return;
     }
 
@@ -134,9 +134,9 @@ const Page = () => {
       );
     } catch (err: any) {
       Alert.alert(
-        'Reset failed',
+        'Password reset unavailable',
         err?.errors?.[0]?.message ||
-          'Unable to start password reset. Check that email sign-in is enabled in Clerk.'
+          'We couldn’t start the password reset. Please try again, or contact support if it keeps happening.'
       );
     } finally {
       setLoading(false);
@@ -146,7 +146,7 @@ const Page = () => {
   const onCompleteReset = async () => {
     if (!isLoaded) return;
     if (!resetCode.trim() || !newPassword.trim()) {
-      Alert.alert('Missing info', 'Enter the code and your new password.');
+      Alert.alert('A few details are missing', 'Enter the code and your new password.');
       return;
     }
 
@@ -161,7 +161,7 @@ const Page = () => {
       await setActive({ session: result.createdSessionId });
     } catch (err: any) {
       Alert.alert(
-        'Reset failed',
+        'Couldn’t reset password',
         err?.errors?.[0]?.message || 'The code may be invalid or expired.'
       );
     } finally {
@@ -202,12 +202,13 @@ const Page = () => {
             <View style={{ marginBottom: 30 }}>
               <TextInput
                 ref={emailRef}
+                accessibilityLabel="Email address"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 returnKeyType="next"
                 blurOnSubmit={false}
                 onSubmitEditing={() => passwordRef.current?.focus()}
-                placeholder="john@apple.com"
+                placeholder="Email address"
                 placeholderTextColor="#8b94a9"
                 value={emailAddress}
                 onChangeText={setEmailAddress}
@@ -215,7 +216,8 @@ const Page = () => {
               />
               <TextInput
                 ref={passwordRef}
-                placeholder="password"
+                accessibilityLabel="Password"
+                placeholder="Password"
                 placeholderTextColor="#8b94a9"
                 value={password}
                 onChangeText={setPassword}
@@ -240,9 +242,9 @@ const Page = () => {
                 onPress={onSignInPress}
                 disabled={loading}
                 accessibilityRole="button"
-                accessibilityLabel="Login"
+                accessibilityLabel="Sign in"
               >
-                <Text style={styles.btnPrimaryText}>Login</Text>
+                <Text style={styles.btnPrimaryText}>Sign in</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -289,10 +291,11 @@ const Page = () => {
             <View style={{ marginBottom: 30 }}>
               <TextInput
                 ref={emailRef}
+                accessibilityLabel="Email address"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 returnKeyType="send"
-                placeholder="john@apple.com"
+                placeholder="Email address"
                 placeholderTextColor="#8b94a9"
                 value={emailAddress}
                 onChangeText={setEmailAddress}
@@ -308,6 +311,7 @@ const Page = () => {
 
               <TextInput
                 ref={resetCodeRef}
+                accessibilityLabel="Six-digit reset code"
                 placeholder="6-digit code"
                 placeholderTextColor="#8b94a9"
                 value={resetCode}
@@ -320,6 +324,7 @@ const Page = () => {
               />
               <TextInput
                 ref={newPasswordRef}
+                accessibilityLabel="New password"
                 placeholder="New password"
                 placeholderTextColor="#8b94a9"
                 value={newPassword}
@@ -341,7 +346,7 @@ const Page = () => {
               style={styles.backLink}
               onPress={() => setMode('auth')}
             >
-              <Text style={styles.backText}>← Back to login</Text>
+              <Text style={styles.backText}>← Back to sign in</Text>
             </TouchableOpacity>
           </>
         )}

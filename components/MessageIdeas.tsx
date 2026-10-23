@@ -69,6 +69,8 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
         {items.map((item, index) => (
           <TouchableOpacity
             key={index}
+            accessibilityRole="button"
+            accessibilityLabel={`${item.title}${item.text ? `: ${item.text}` : ''}`}
             style={styles.card}
             onPress={() => onSelectCard(`${item.title} ${item.text}`)}>
             <Text style={{ fontSize: 16, fontWeight: '500' }} numberOfLines={1}>{item.title}</Text>

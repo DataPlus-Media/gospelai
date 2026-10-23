@@ -27,18 +27,18 @@ async function main() {
   }, path);
   try {
     await page.goto(base + '/bible?ref=John%203%3A18&jump=fresh-insight');
-    await button('John 3:18. Verse actions').click();
+    await button('Open actions for John 3:18').click();
     await text('Authors insight · this verse').click();
     await text('John 3:18').waitFor();
-    await text('Available chapter commentary · download required').waitFor();
+    await text('Chapter commentary available · download required').waitFor();
     await mkdir('generated-artifacts/insight-browser', { recursive: true });
     await page.screenshot({ path: 'generated-artifacts/insight-browser/verse-narrow.png' });
     await text('Full work · 37.7 MB').waitFor();
     assert.equal(await text('0 matches').count(), 0);
     assert.equal(await page.locator('body').evaluate(el => el.scrollWidth > window.innerWidth), false);
-    assert.equal(await text('Rights blocked').count(), 2);
+    assert.equal(await text('Rights blocked').count(), 1);
     await button('Ask AI about selected scripture').click();
-    const scriptureDraft = page.getByRole('textbox', { name: 'Message GospelAI. Editable draft', exact: true });
+    const scriptureDraft = page.getByRole('textbox', { name: 'Write a message', exact: true });
     await scriptureDraft.waitFor();
     assert.match(await scriptureDraft.inputValue(), /SCRIPTURE · John 3:18 · King James Version/);
     assert.match(await scriptureDraft.inputValue(), /Help me understand John 3:18/);
@@ -113,7 +113,7 @@ async function main() {
     assert.equal(sends, 0);
     await button('Ask GospelAI about this source').click();
     await button('Review draft').click();
-    const draft = page.getByRole('textbox', { name: 'Message GospelAI. Editable draft', exact: true });
+    const draft = page.getByRole('textbox', { name: 'Write a message', exact: true });
     await draft.waitFor();
     const original = await draft.inputValue();
     assert.match(original, /For God so loved the world/);
@@ -121,7 +121,7 @@ async function main() {
     assert.match(original, /https:\/\/www.ccel.org\/h\/henry\/mhc2\/MHC43003.HTM/);
     assert.match(original, /not a narrower verse mapping/);
     assert.match(original, /not.*source-verified/);
-    await page.getByText('Sending shares the scripture', { exact: false }).waitFor();
+    await page.getByText('Sending shares its Scripture and source text', { exact: false }).waitFor();
     assert.equal(sends, 0);
     await draft.fill(original + '\nmy edited question');
     await button('Send message').click();
@@ -197,7 +197,7 @@ async function main() {
     console.log('PASS source comparison offline in loaded app, verse switch resets selections/results, contributor attribution');
     await context.setOffline(false);
     await navigate('/bible?ref=Acts%2017%3A1&jump=canonical-acts');
-    await button('Acts 17:1. Verse actions').click();
+    await button('Open actions for Acts 17:1').click();
     await text('Authors insight · this verse').click();
     await button('Read full source section: Acts 17').waitFor();
     assert.match(await page.getByTestId('selected-scripture-text').innerText(), /Amphipolis and Apollonia/);
@@ -210,7 +210,7 @@ async function main() {
     await text('Remove').click();
     await text('Download for offline use').waitFor();
     await button('Return to selected passage').click();
-    await text('Available chapter commentary · download required').waitFor();
+    await text('Chapter commentary available · download required').waitFor();
     await button('Download commentary for Commentary on the Whole Bible').click();
     await text('Download for offline use').click();
     await button('Read full source section: John 3').waitFor({ timeout: 240000 });

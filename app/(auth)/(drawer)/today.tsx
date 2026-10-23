@@ -46,7 +46,7 @@ export default function TodayScreen() {
     try {
       setSummary(await getStudySummary(db));
     } catch {
-      setError('Your study progress could not be loaded. Your saved study data remains on this device.');
+      setError('We couldn’t load your study progress. Your study data is still saved on this device.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function TodayScreen() {
           const result = await getStudySummary(db);
           if (active) setSummary(result);
         } catch {
-          if (active) setError('Your study progress could not be loaded. Your saved study data remains on this device.');
+          if (active) setError('We couldn’t load your study progress. Your study data is still saved on this device.');
         } finally {
           if (active) setLoading(false);
         }
@@ -92,7 +92,7 @@ export default function TodayScreen() {
       await startPlan(db);
       await loadSummary();
     } catch {
-      setError('The reading plan could not be started. Please try again.');
+      setError('We couldn’t start the reading plan. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -106,7 +106,7 @@ export default function TodayScreen() {
       setResetVisible(false);
       await loadSummary();
     } catch {
-      setError('The reading plan could not be reset. Please try again.');
+      setError('We couldn’t reset the reading plan. Please try again.');
     } finally {
       setBusy(false);
     }
@@ -128,7 +128,7 @@ export default function TodayScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.eyebrow}>GOSPELAI · YOUR DAILY SPACE</Text>
+            <Text style={styles.eyebrow}>GOSPELAI · YOUR DAILY STUDY</Text>
             <Text style={styles.title}>Today</Text>
           </View>
           <View style={styles.mark} accessibilityLabel="GospelAI">
@@ -137,7 +137,7 @@ export default function TodayScreen() {
         </View>
 
         <Text style={styles.intro}>
-          A little time in the Word can change the shape of a day.
+          Take a few minutes to read, reflect, and carry a passage with you.
         </Text>
 
         <View style={styles.readingCard}>
@@ -171,7 +171,7 @@ export default function TodayScreen() {
             </View>
             <View style={styles.actionCopy}>
               <Text style={styles.actionTitle}>Start a chat</Text>
-              <Text style={styles.actionSub}>Ask, reflect, explore</Text>
+              <Text style={styles.actionSub}>Ask a question or explore a passage</Text>
             </View>
             <Ionicons name="arrow-forward" size={17} color="#9696A0" />
           </Pressable>
@@ -182,7 +182,7 @@ export default function TodayScreen() {
         <View style={styles.planSection}>
           <View style={styles.sectionHeading}>
             <View>
-              <Text style={styles.sectionEyebrow}>BUILD A RHYTHM</Text>
+              <Text style={styles.sectionEyebrow}>YOUR READING PLAN</Text>
               <Text style={styles.sectionTitle}>Seven days in the Word</Text>
             </View>
             <View style={styles.planBadge}>
@@ -191,7 +191,7 @@ export default function TodayScreen() {
             </View>
           </View>
           <Text style={styles.planDescription}>
-            One focused reading each day. Readings work offline; AI chat needs an internet connection.
+            Read one passage each day. Readings work offline; AI chat needs an internet connection.
           </Text>
 
           {loading ? (
@@ -204,7 +204,7 @@ export default function TodayScreen() {
             <View style={styles.errorPanel} accessibilityRole="alert">
               <Ionicons name="cloud-offline-outline" size={20} color="#F0A69B" />
               <View style={styles.errorCopy}>
-                <Text style={styles.errorTitle}>Study data unavailable</Text>
+                <Text style={styles.errorTitle}>Couldn’t load your study data</Text>
                 <Text style={styles.errorText}>{error}</Text>
               </View>
               <Pressable
@@ -238,14 +238,14 @@ export default function TodayScreen() {
                   </View>
                   {nextDay >= 0 && <Pressable accessibilityRole="button" onPress={() => openBible(READING_PLAN[nextDay].reference, nextDay)}
                     style={{ paddingTop: 14, paddingBottom: 6, minHeight: 44 }}>
-                    <Text style={{ color: '#91d7ae', fontWeight: '700' }}>Resume plan · {READING_PLAN[nextDay].reference}</Text>
+                    <Text style={{ color: '#91d7ae', fontWeight: '700' }}>Continue plan · {READING_PLAN[nextDay].reference}</Text>
                   </Pressable>}
                 </View>
               ) : (
                 <View style={styles.startPlanPanel}>
                   <View style={styles.startPlanText}>
-                    <Text style={styles.startPlanTitle}>Make room for the Word.</Text>
-                    <Text style={styles.startPlanSub}>Start whenever you’re ready. Your progress stays on this device.</Text>
+                    <Text style={styles.startPlanTitle}>Ready to start?</Text>
+                    <Text style={styles.startPlanSub}>Begin anytime. Your progress is saved on this device.</Text>
                   </View>
                   <Pressable
                     accessibilityRole="button"
@@ -308,14 +308,14 @@ export default function TodayScreen() {
         <View style={styles.shortcuts}>
           <View style={styles.shortcutHeading}>
             <Text style={styles.sectionEyebrow}>YOUR LIBRARY</Text>
-            <Text style={styles.sectionTitle}>Go where you need</Text>
+            <Text style={styles.sectionTitle}>Keep exploring</Text>
           </View>
           <View style={styles.shortcutGrid}>
-            <Shortcut icon="book-outline" label="Bible" hint="Read scripture" onPress={() => router.push(ROUTES.bible)} />
+            <Shortcut icon="book-outline" label="Bible" hint="Read Scripture" onPress={() => router.push(ROUTES.bible)} />
             <Shortcut icon="chatbubble-ellipses-outline" label="Chat" hint="Talk it through" onPress={() => router.push(ROUTES.chat)} />
             <Shortcut icon="document-text-outline" label="Notes" hint="Your reflections" onPress={() => router.push(ROUTES.notes)} />
-            <Shortcut icon="bookmark-outline" label="Saved" hint="Keep close" onPress={() => router.push(ROUTES.saved)} />
-            <Shortcut icon="library-outline" label="Authors insight" hint="Study Christian authors" onPress={() => router.push(ROUTES.library)} />
+            <Shortcut icon="bookmark-outline" label="Saved" hint="Bookmarks and highlights" onPress={() => router.push(ROUTES.saved)} />
+            <Shortcut icon="library-outline" label="Authors insight" hint="Read Christian authors" onPress={() => router.push(ROUTES.library)} />
           </View>
         </View>
 
@@ -340,7 +340,7 @@ export default function TodayScreen() {
             </View>
             <Text style={styles.modalTitle}>Reset your plan?</Text>
             <Text style={styles.modalBody}>
-              This clears all seven-day plan progress on this device. You can start again anytime.
+              This clears your progress for all seven days on this device. You can start again anytime.
             </Text>
             <View style={styles.modalActions}>
               <Pressable

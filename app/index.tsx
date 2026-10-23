@@ -25,7 +25,7 @@ const FEATURES = [
     icon: 'chatbubble-ellipses-outline' as const,
     iconColor: '#71D9A4',
     title: 'Ask and explore',
-    desc: 'Bring your questions to AI chat.',
+    desc: 'Ask questions and explore Scripture in chat.',
   },
   {
     icon: 'book-outline' as const,
@@ -37,13 +37,13 @@ const FEATURES = [
     icon: 'sunny-outline' as const,
     iconColor: '#E7C978',
     title: 'A daily passage',
-    desc: 'Begin with a moment in the Word.',
+    desc: 'Start the day with a passage.',
   },
   {
     icon: 'journal-outline' as const,
     iconColor: '#A8C6AE',
     title: 'Keep personal notes',
-    desc: 'Write reflections and prayers.',
+    desc: 'Write down reflections and prayers.',
   },
 ];
 
@@ -72,14 +72,14 @@ export default function Index() {
         router.replace(WELCOME_ROUTE);
         return;
       }
-      Alert.alert('Authentication', 'Additional steps are required to complete sign in.');
+      Alert.alert('Sign in', 'A few more steps are needed to finish signing in.');
     } catch (e: any) {
       const msg =
         e?.errors?.[0]?.longMessage ||
         e?.errors?.[0]?.message ||
         e?.message ||
-        'Sign in failed';
-      Alert.alert('Authentication', msg);
+        'We couldn’t sign you in. Please try again.';
+      Alert.alert('Sign in', msg);
     }
   }
 
@@ -143,10 +143,10 @@ export default function Index() {
               accessible
               accessibilityLabel="GospelAI"
             />
-            <Text style={styles.eyebrow}>A QUIETER WAY INTO THE WORD</Text>
+            <Text style={styles.eyebrow}>A QUIET PLACE TO READ AND REFLECT</Text>
             <Text style={styles.headline}>Come as you are.{'\n'}Begin with Scripture.</Text>
             <Text style={styles.intro}>
-              Make room for a little wonder, one passage and one honest question at a time.
+              Read a passage, ask an honest question, and see where it leads.
             </Text>
           </Animated.View>
 
@@ -159,7 +159,7 @@ export default function Index() {
           >
             <View style={styles.scriptureTopline}>
               <View style={styles.scriptureRule} />
-              <Text style={styles.scriptureLabel}>A WORD FOR THE WAY</Text>
+              <Text style={styles.scriptureLabel}>FROM THE PSALMS</Text>
               <View style={styles.scriptureRule} />
             </View>
             <Text style={styles.scripture}>
@@ -170,7 +170,7 @@ export default function Index() {
           </Animated.View>
 
           <View style={styles.featuresHeading}>
-            <Text style={styles.sectionLabel}>A GOOD PLACE TO START</Text>
+            <Text style={styles.sectionLabel}>GET STARTED</Text>
             <Text style={styles.sectionNote}>Explore at your own pace.</Text>
           </View>
           <View style={[styles.features, wide && styles.featuresWide]}>
@@ -212,19 +212,19 @@ export default function Index() {
             <View style={[styles.accountActions, stackActions && styles.stackedActions]}>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Sign In"
+                accessibilityLabel="Sign in"
                 onPress={() => router.push({ pathname: '/login', params: { type: 'login' } })}
                 style={({ pressed }) => [styles.signInButton, pressed && styles.pressed]}
               >
-                <Text style={styles.signInText}>Sign In</Text>
+                <Text style={styles.signInText}>Sign in</Text>
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Create Account"
+                accessibilityLabel="Create account"
                 onPress={() => router.push({ pathname: '/login', params: { type: 'register' } })}
                 style={({ pressed }) => [styles.createButton, pressed && styles.pressed]}
               >
-                <Text style={styles.createText}>Create Account</Text>
+                <Text style={styles.createText}>Create account</Text>
               </Pressable>
             </View>
 
@@ -246,7 +246,7 @@ export default function Index() {
                 <Text style={styles.oauthText}>Google</Text>
               </Pressable>
             </View>
-            <Text style={styles.footerNote}>A welcoming space to read, reflect, and ask.</Text>
+            <Text style={styles.footerNote}>Read, reflect, and ask questions at your own pace.</Text>
           </View>
         </View>
       </ScrollView>

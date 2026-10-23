@@ -231,9 +231,9 @@ export default function PassageInsight({
   const beginScriptureDraft = () => {
     if (!scripture) return;
     const draft = [
-      `Help me understand ${scripture.reference}. Please distinguish your AI-generated explanation from Bible text and from any historical author's original words.`,
+      `Help me understand ${scripture.reference}. Keep your AI-generated explanation separate from the Bible text and the historical author's original words.`,
       `SCRIPTURE · ${scripture.reference} · ${scripture.translation}\n${scripture.text}`,
-      'MY QUESTION (edit before sending):\nWhat is the meaning and context of this passage?',
+      'MY QUESTION (edit before sending):\nWhat does this passage mean, and what is its context?',
     ].join('\n\n');
     router.push({
       pathname: '/(auth)/(drawer)/(chat)/new',
@@ -242,7 +242,7 @@ export default function PassageInsight({
   };
 
   const openExternal = (url: string) => {
-    void Linking.openURL(url).catch(() => setLinkError('Could not open the source link. External editions and rights pages require a connection and a browser. Downloaded text remains available offline.'));
+    void Linking.openURL(url).catch(() => setLinkError('We couldn’t open that source link. External editions and rights pages need an internet connection and a browser. Downloaded text is still available offline.'));
   };
 
   return (
@@ -318,7 +318,7 @@ export default function PassageInsight({
           {loading ? <ActivityIndicator color={C.green} /> : !loadError && <Text style={styles.count}>{availableDownload ? 'Download available' : catalogStates.some(item => item.state === 'incomplete') ? 'Repair required' : `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}`}</Text>}
         </View>
         <Text style={styles.intro}>
-          Historical commentary is shown only where a downloaded source names this passage. These are the writers’ preserved words, not generated opinions.
+          Commentary appears only when a downloaded source names this passage. These are the authors’ preserved words, not AI-generated opinions.
         </Text>
 
         {loadError ? (
@@ -333,8 +333,8 @@ export default function PassageInsight({
         {!loading && rows.length === 0 && !loadError && !availableDownload ? (
           <View style={styles.emptyPanel}>
             <View style={styles.emptyMark}><Ionicons name="document-text-outline" size={19} color={C.gold} /></View>
-            <Text style={styles.emptyTitle}>{catalogStates.some(item => item.state === 'incomplete') ? 'A commentary download needs repair' : 'No verified commentary mapping for this passage'}</Text>
-            <Text style={styles.emptyCopy}>The catalog states below distinguish unavailable downloads, editions that cannot be redistributed, and downloaded works with no verified mapping here.</Text>
+            <Text style={styles.emptyTitle}>{catalogStates.some(item => item.state === 'incomplete') ? 'A commentary download needs repair' : 'No verified commentary for this passage'}</Text>
+            <Text style={styles.emptyCopy}>The list below shows downloads that aren’t available, editions we can’t redistribute, and downloaded works without a verified match for this passage.</Text>
           </View>
         ) : null}
 
@@ -461,7 +461,7 @@ export default function PassageInsight({
               <Text style={styles.honestCopy}>
                 {rows.length < 2
                   ? `Only ${rows.length} downloaded commentary source ${rows.length === 1 ? 'passage is' : 'passages are'} available for this scripture. Two are needed for comparison. Devotionals and rights-blocked works are not substitutes.`
-                  : 'Choose two mapped source passages above. A single source is not a comparison. Remove a selection to choose a different passage.'}
+                  : 'Choose two matching source passages above to compare them. Remove one to choose a different passage.'}
               </Text>
             </View>
           ) : null}
@@ -519,7 +519,7 @@ export default function PassageInsight({
           <View style={styles.catalogSection}>
             <Text style={styles.sectionEyebrow}>CATALOG STATUS</Text>
             <Text style={styles.sectionTitle}>Other commentary</Text>
-            <Text style={styles.catalogIntro}>Works not shown as passage matches are not silently treated as commentary for this verse.</Text>
+            <Text style={styles.catalogIntro}>Other works are shown as commentary for this verse only when the passage match is verified.</Text>
             {catalogStates.map(({ work, state }) => (
               <PassageCatalogRow key={work.id} work={work} state={state}
                 chapterLabel={work.id === 'henry-whole-bible' ? chapterLabel : undefined}
@@ -535,7 +535,7 @@ export default function PassageInsight({
             <View style={styles.devotionalNote}>
               <Ionicons name="bookmark-outline" size={16} color={C.gold} />
               <Text style={styles.devotionalCopy}>
-                These devotionals have no verified verse mapping in the current catalog. They are kept separate and are never counted as commentary or included in source comparison.
+                These devotionals don’t have a verified verse match in the catalog. They’re kept separate and aren’t counted as commentary or included in source comparisons.
               </Text>
             </View>
             {devotionals.map(work => (
@@ -557,7 +557,7 @@ export default function PassageInsight({
             ))}
           </View>
         ) : null}
-        <Text style={styles.footer}>Source wording remains distinct from Scripture and from AI-generated responses.</Text>
+        <Text style={styles.footer}>Historical source text is shown separately from Scripture and AI-generated responses.</Text>
       </ScrollView>
 
       <Modal transparent visible={!!confirmSource} animationType="fade" onRequestClose={() => setConfirmSource(null)}>
@@ -566,7 +566,7 @@ export default function PassageInsight({
             <View style={styles.modalMark}><Ionicons name="paper-plane-outline" size={19} color={C.gold} /></View>
             <Text style={styles.modalTitle}>Use this source in a question?</Text>
             <Text style={styles.modalBody}>
-              The selected Bible passage and the loaded historical source text will be placed in a draft for the existing GospelAI service. Nothing is sent until you review the editable draft and choose to send it. The AI response is not a verified historical source.
+              The selected Bible passage and historical source text will be added to a draft for GospelAI’s AI chat. Nothing is sent until you review and send the draft. The reply is AI-generated, not a verified historical source.
             </Text>
             {confirmSource ? <Text style={styles.modalSource}>{workFor(confirmSource.work_id)?.author} · {confirmSource.title}</Text> : null}
             <View style={styles.modalActions}>

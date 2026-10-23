@@ -5,10 +5,10 @@ export default function SupportWebFallback() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.center}>
-        <Text style={styles.title}>Support Us</Text>
+        <Text style={styles.title}>Support GospelAI</Text>
         <Text style={styles.body}>
-          In-app purchases are available on the iOS and Android apps.{'\n'}
-          Thank you for your support!
+          You can support GospelAI through in-app purchases on iOS and Android.{'\n'}
+          Thanks for your support!
         </Text>
       </View>
     </SafeAreaView>

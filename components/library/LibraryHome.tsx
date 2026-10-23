@@ -86,7 +86,7 @@ export default function LibraryHome({
         setAvailability(status); setPageError(null);
       }
     } catch (e) {
-      if (mountedRef.current) setPageError(e instanceof Error ? e.message : 'Downloaded books could not be loaded. Please retry.');
+      if (mountedRef.current) setPageError(e instanceof Error ? e.message : 'We couldn’t load your downloads. Please try again.');
     }
   }, [db]);
   useFocusEffect(useCallback(() => { void refreshInstalled(); }, [refreshInstalled]));
@@ -99,7 +99,7 @@ export default function LibraryHome({
       const [notices, position] = await Promise.all([workNotices(db, work.id), getLibraryPosition(db, work.id)]);
       if (mountedRef.current && request === detailRequestRef.current) { setDetailNotices(notices); setDetailPosition(position); }
     } catch (e) {
-      if (mountedRef.current && request === detailRequestRef.current) setWorkError(e instanceof Error ? e.message : 'Work details could not be loaded. Please retry.');
+      if (mountedRef.current && request === detailRequestRef.current) setWorkError(e instanceof Error ? e.message : 'We couldn’t load this work. Please try again.');
     }
   }, [db]);
   useEffect(() => {
@@ -131,7 +131,7 @@ export default function LibraryHome({
         const result = await searchLibrary(db, term, ids);
         if (active && token === searchToken.current) setHits(result);
       } catch (e) {
-        if (active && token === searchToken.current) setPageError(e instanceof Error ? e.message : 'Library search failed. Please retry.');
+        if (active && token === searchToken.current) setPageError(e instanceof Error ? e.message : 'We couldn’t search the library. Please try again.');
       } finally { if (active && token === searchToken.current) setLoading(false); }
     };
     const timer = setTimeout(() => { void run(); }, 220);
@@ -152,7 +152,7 @@ export default function LibraryHome({
         setParams({ work: undefined, section: undefined, paragraph: undefined });
       }
     } catch (e) {
-      if (mountedRef.current) setWorkError(e instanceof Error ? e.message : 'The download could not be completed. Please retry.');
+      if (mountedRef.current) setWorkError(e instanceof Error ? e.message : 'We couldn’t download this work. Please try again.');
     } finally {
       if (mountedRef.current) { setDownloadBusy(false); setDownloadProgress(null); }
     }
@@ -166,7 +166,7 @@ export default function LibraryHome({
       if (!mountedRef.current) return;
       setRemoveVisible(false); await refreshInstalled(); setDetailNotices([]); setDetailPosition(null);
     } catch (e) {
-      if (mountedRef.current) setWorkError(e instanceof Error ? e.message : 'This download could not be removed. Please retry.');
+      if (mountedRef.current) setWorkError(e instanceof Error ? e.message : 'We couldn’t remove this download. Please try again.');
     } finally { if (mountedRef.current) setDownloadBusy(false); }
   };
 
@@ -205,9 +205,9 @@ export default function LibraryHome({
             {selectedWork.package ? <Text style={styles.packageMeta}>Verified package · {selectedWork.package.sections} sections · {formatBytes(selectedWork.package.bytes)}</Text> : null}
           </View>
           {selectedWork.blocker ? <View style={styles.blocker}><Ionicons name="lock-closed-outline" size={18} color="#D5A78C" /><Text style={styles.blockerText}>{selectedWork.blocker}</Text><Text style={styles.blockerFoot}>This work cannot be downloaded in the app at this time.</Text></View> : null}
-          {needsRepair ? <View style={styles.errorPanel}><Text style={styles.errorText}>Incomplete download. Repair downloads and replaces this work’s source text only. Your notes and reading position are kept.</Text></View> : null}
+          {needsRepair ? <View style={styles.errorPanel}><Text style={styles.errorText}>This download is incomplete. Repairing it replaces only the source text. Your notes and reading position will stay here.</Text></View> : null}
           {!isInstalled && selectedWork.package && !selectedWork.blocker ? <Text style={styles.deviceNote}>Full work download · {formatBytes(selectedWork.package.bytes)}. After installation, the original text is available offline on this device.{params.book ? ' You will return to your selected passage automatically.' : ''}</Text> : null}
-          {pageError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{pageError}</Text><Pressable accessibilityRole="button" onPress={() => void refreshInstalled()}><Text style={styles.linkText}>Retry loading downloads</Text></Pressable></View> : null}
+          {pageError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{pageError}</Text><Pressable accessibilityRole="button" onPress={() => void refreshInstalled()}><Text style={styles.linkText}>Try again</Text></Pressable></View> : null}
           {workError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{workError}</Text><Pressable onPress={() => selectedWork.package && !isInstalled ? void beginDownload(selectedWork) : void openDetail(selectedWork)} style={styles.retryLink}><Text style={styles.linkText}>Retry</Text></Pressable></View> : null}
           {downloadProgress ? <View style={styles.progressPanel}><Text style={styles.progressLabel}>{downloadProgress.phase === 'installing' ? 'Installing on this device' : 'Downloading verified text'}</Text><View style={styles.track}><View style={[styles.fill, { width: `${Math.round((downloadProgress.fraction ?? 0) * 100)}%` }]} /></View><Text style={styles.progressMeta}>{downloadProgress.fraction === null ? `${formatBytes(downloadProgress.received)} received` : `${Math.round(downloadProgress.fraction * 100)}%`}{downloadProgress.total > 0 ? ` · ${formatBytes(downloadProgress.total)}` : ''}</Text></View> : null}
           {isInstalled ? (
@@ -258,10 +258,10 @@ export default function LibraryHome({
         ListHeaderComponent={
           <View>
             <View style={styles.header}><View><Text style={styles.eyebrow}>GOSPELAI · HISTORICAL TEXTS</Text><Text style={styles.title}>Authors insight</Text></View><View style={styles.headerMark}><Ionicons name="library-outline" size={20} color={C.gold} /></View></View>
-            <Text style={styles.intro}>Read enduring Christian writing, preserved with its sources and history.</Text>
+          <Text style={styles.intro}>Read Christian authors in their original words, with source and edition details.</Text>
             <View style={styles.localBanner}><Ionicons name="phone-portrait-outline" size={16} color={C.green} /><Text style={styles.localText}>Guest access · downloads and reading progress stay on this device.</Text></View>
             <View style={styles.searchBox}><Ionicons name="search-outline" size={18} color="#92929B" /><TextInput value={query} onChangeText={setQuery} placeholder="Search downloaded text" placeholderTextColor="#777780" style={styles.searchInput} returnKeyType="search" accessibilityLabel="Search downloaded library text" />{query ? <Pressable onPress={() => setQuery('')} accessibilityLabel="Clear search"><Ionicons name="close-circle" size={18} color="#85858E" /></Pressable> : null}</View>
-            <Text style={styles.scope}>Search downloaded text within the selected author and title.</Text>
+            <Text style={styles.scope}>Search downloaded text by author or title.</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.authorList}>
               {['All authors', ...LIBRARY_AUTHORS].map(name => <Pressable key={name} onPress={() => selectAuthor(name)} style={[styles.authorChip, author === name && styles.authorChipActive]}><Text style={[styles.authorChipText, author === name && styles.authorChipTextActive]}>{name}</Text></Pressable>)}
             </ScrollView>
@@ -294,7 +294,7 @@ export default function LibraryHome({
         }}
         ItemSeparatorComponent={() => <View style={{ height: 9 }} />}
         ListEmptyComponent={query.trim() ? (
-          <View style={styles.emptyState}><View style={styles.emptyMark}><Ionicons name="search-outline" size={20} color={C.gold} /></View><Text style={styles.emptyTitle}>{loading ? 'Searching your library' : 'No matching passages'}</Text><Text style={styles.emptyBody}>{loading ? 'Looking through the downloaded works available for this device.' : 'Try another word, or clear this search to browse and download available works. Some listed works are rights-blocked and cannot be downloaded.'}</Text>{!loading && <Pressable onPress={() => setQuery('')} style={styles.emptyAction}><Text style={styles.linkText}>Browse available works</Text></Pressable>}</View>
+          <View style={styles.emptyState}><View style={styles.emptyMark}><Ionicons name="search-outline" size={20} color={C.gold} /></View><Text style={styles.emptyTitle}>{loading ? 'Searching your library' : 'No matching passages'}</Text><Text style={styles.emptyBody}>{loading ? 'Looking through the works downloaded on this device.' : 'Try another search, or clear it to browse available works. Some works can’t be downloaded because of their rights.'}</Text>{!loading && <Pressable onPress={() => setQuery('')} style={styles.emptyAction}><Text style={styles.linkText}>Browse available works</Text></Pressable>}</View>
         ) : <View style={styles.emptyState}><Text style={styles.emptyTitle}>No works for this author</Text><Text style={styles.emptyBody}>Choose another author or view all works.</Text></View>}
         ListFooterComponent={<View style={styles.footer}><Text style={styles.footerTitle}>Three writers · carefully sourced</Text><Text style={styles.footerCopy}>This library keeps historical editions distinct from modern commentary and generative text.</Text></View>}
       />

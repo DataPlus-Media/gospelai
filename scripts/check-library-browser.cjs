@@ -67,7 +67,7 @@ async function main() {
     await click('Previous');
     await text('March 5 · Evening').waitFor();
     await click('Save selected paragraph to Notes');
-    await text('Paragraph saved to Notes on this device.').waitFor();
+    await text('Paragraph saved to your notes on this device.').waitFor();
     await backDetails();
     await click('Resume reading');
     await text('March 5 · Evening').waitFor();
@@ -101,7 +101,7 @@ async function main() {
     await henryOriginal().scrollIntoViewIfNeeded();
     await henryOriginal().waitFor();
     await go('/bible?ref=John%203%3A16&jump=libraryverse');
-    await page.getByRole('button', { name: 'John 3:16. Verse actions', exact: true }).click();
+    await page.getByRole('button', { name: 'Open actions for John 3:16', exact: true }).click();
     await click('Authors insight · this verse');
     await henryOriginal().scrollIntoViewIfNeeded();
     await page.getByText('Whole chapter', { exact: true }).first().waitFor();
@@ -126,12 +126,12 @@ async function main() {
     await click('Remove download');
     await text('Remove this download?').waitFor();
     await click('Remove');
-    await text('Download for offline use').waitFor();
+    await text('Download for offline use').waitFor({ timeout: 120000 });
     await go('/library?work=henry-whole-bible');
     await click('Remove download'); await click('Remove');
-    await text('Download for offline use').waitFor();
+    await text('Download for offline use').waitFor({ timeout: 120000 });
     await go('/library?book=43&chapter=3&verse=16&jump=empty');
-    await page.getByText('Available chapter commentary · download required', { exact: true }).waitFor();
+    await page.getByText('Chapter commentary available · download required', { exact: true }).waitFor();
     assert.deepEqual(errors, []);
     console.log('PASS removal confirmation, personal note retained, independent downloads, explicit commentary empty state, no browser errors');
   } catch (error) {

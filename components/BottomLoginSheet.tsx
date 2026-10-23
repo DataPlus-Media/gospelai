@@ -39,7 +39,7 @@ const BottomLoginSheet = () => {
         return;
       }
 
-      Alert.alert('Authentication', 'Additional steps are required to complete sign in.');
+      Alert.alert('Sign in', 'A few more steps are needed to finish signing in.');
     } catch (e: any) {
       // ✅ log the real Clerk error so we can see the exact cause
       console.log('OAUTH ERROR', JSON.stringify(e, null, 2));
@@ -48,8 +48,8 @@ const BottomLoginSheet = () => {
         e?.errors?.[0]?.longMessage ||
         e?.errors?.[0]?.message ||
         e?.message ||
-        'Sign in failed';
-      Alert.alert('Authentication', msg);
+        'We couldn’t sign you in. Please try again.';
+      Alert.alert('Sign in', msg);
     }
   }
 
@@ -88,7 +88,7 @@ const BottomLoginSheet = () => {
         asChild
       >
         <TouchableOpacity>
-          <Text style={styles.btnDarkText}>Log in</Text>
+          <Text style={styles.btnDarkText}>Sign in</Text>
         </TouchableOpacity>
       </Link>
     </View>

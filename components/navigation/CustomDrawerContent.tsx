@@ -111,7 +111,7 @@ export default function CustomDrawerContent(props: any) {
       if (chat) setDeleteChatTarget(chat);
       return;
     }
-    Alert.alert('Delete conversation', 'This will permanently remove the conversation and its messages.', [
+    Alert.alert('Delete this conversation?', 'This will permanently delete the conversation and all its messages.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -346,7 +346,7 @@ export default function CustomDrawerContent(props: any) {
             <View style={styles.emptyHistory}>
               <Ionicons name={q ? 'search-outline' : 'chatbubble-outline'} size={18} color={palette.quiet} />
               <Text style={styles.emptyText}>
-                {q ? 'No matching conversations' : 'Your conversations will appear here'}
+                 {q ? 'No conversations match your search' : 'Your conversations will show up here'}
               </Text>
             </View>
           )}
@@ -361,7 +361,7 @@ export default function CustomDrawerContent(props: any) {
               <Pressable
                 onPress={() => navigateToRoute('support', route.key)}
                 accessibilityRole="button"
-                accessibilityLabel="Support Us"
+              accessibilityLabel="Support GospelAI"
                 accessibilityState={{ selected: activeRoute === 'support' }}
                 {...(Platform.OS === 'web' ? { 'aria-current': activeRoute === 'support' ? 'page' : undefined } : {})}
                 style={({ pressed }) => [
@@ -374,7 +374,7 @@ export default function CustomDrawerContent(props: any) {
                 <View style={styles.iconTile}>
                   <Ionicons name="heart-outline" size={19} color={palette.muted} />
                 </View>
-                <Text style={styles.navLabel}>Support Us</Text>
+                <Text style={styles.navLabel}>Support GospelAI</Text>
               </Pressable>
             );
           })()}
@@ -410,7 +410,7 @@ export default function CustomDrawerContent(props: any) {
           <View style={styles.authArea}>
             <View style={styles.authPromptRow}>
               <UserAvatar isSignedIn={false} size={38} radius={12} />
-              <Text style={styles.authPrompt}>Keep your reflections close.</Text>
+              <Text style={styles.authPrompt}>Save your reflections across devices.</Text>
             </View>
             <View style={styles.authBtnRow}>
               <TouchableOpacity
@@ -447,12 +447,12 @@ export default function CustomDrawerContent(props: any) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <Text style={styles.modalEyebrow}>CONVERSATION</Text>
-            <Text style={styles.modalTitle}>Give it a new name</Text>
+            <Text style={styles.modalTitle}>Rename this conversation</Text>
             <TextInput
               autoFocus
               value={renameText}
               onChangeText={setRenameText}
-              placeholder="Conversation title"
+              placeholder="New name"
               placeholderTextColor={palette.quiet}
               style={styles.modalInput}
               returnKeyType="done"

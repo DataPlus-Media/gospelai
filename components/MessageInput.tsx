@@ -67,7 +67,12 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
   return (
     <BlurView intensity={90} tint="dark" style={{ paddingBottom: bottom, paddingTop: 10 }}>
       <View style={styles.row}>
-        <ATouchableOpacity onPress={expandItems} style={[styles.roundBtn, expandButtonStyle]}>
+        <ATouchableOpacity
+          accessibilityRole="button"
+          accessibilityLabel="More chat options"
+          onPress={expandItems}
+          style={[styles.roundBtn, expandButtonStyle]}
+        >
           <Ionicons name="add" size={24} color={Colors.grey} />
         </ATouchableOpacity>
 
@@ -88,8 +93,8 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
 
         <TextInput
           ref={inputRef}
-          placeholder="Message GospelAI"
-          accessibilityLabel="Message GospelAI. Editable draft"
+          placeholder="Write a message"
+          accessibilityLabel="Write a message"
           autoFocus={false}
           editable={!disabled}
           style={styles.messageInput}

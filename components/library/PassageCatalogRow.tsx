@@ -21,11 +21,11 @@ export default function PassageCatalogRow({
     ? 'Rights blocked'
     : state === 'download'
       ? hasChapterCommentary
-        ? 'Available chapter commentary · download required'
+         ? 'Chapter commentary available · download required'
         : 'Not downloaded'
       : state === 'incomplete'
         ? 'Incomplete download'
-        : 'No verified mapping';
+         : 'No verified verse match';
   const description = state === 'rights'
     ? work.blocker ?? 'This edition cannot currently be redistributed.'
     : state === 'download'
@@ -34,7 +34,7 @@ export default function PassageCatalogRow({
         : 'This commentary is not installed on this device. Download the work to read it offline.'
       : state === 'incomplete'
         ? 'This download is incomplete. Repair replaces the source text only; your notes and reading position are retained.'
-        : 'Downloaded, but this passage has no verified verse mapping in the installed text.';
+        : 'Downloaded, but this edition has no verified verse match for this passage.';
   const tint = state === 'rights'
     ? C.red
     : state === 'download'

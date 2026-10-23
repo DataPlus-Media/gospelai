@@ -92,15 +92,15 @@ const ChatMessage = ({
 
   const handleCopy = async (text: string) => {
     await Clipboard.setStringAsync(text);
-    Alert.alert('Copied', 'Text copied to clipboard.');
+    Alert.alert('Copied', 'Text copied.');
   };
 
   const handleSaveNote = async (text: string) => {
     try {
       await addNote(db, text, 'chat', 'AI Response');
-      Alert.alert('Saved', 'Note saved successfully.');
+      Alert.alert('Saved', 'Note saved.');
     } catch {
-      Alert.alert('Error', 'Failed to save note.');
+      Alert.alert('Couldn’t save note', 'Please try again.');
     }
   };
 
@@ -170,9 +170,9 @@ const ChatMessage = ({
               <Pressable
                 style={[styles.bubble, styles.botBubble]}
                 onLongPress={() => {
-                  Alert.alert('Message Options', undefined, [
-                    { text: 'Copy Text', onPress: () => handleCopy(p) },
-                    { text: 'Save to Notes', onPress: () => handleSaveNote(p) },
+                  Alert.alert('Message options', undefined, [
+                    { text: 'Copy text', onPress: () => handleCopy(p) },
+                    { text: 'Save to notes', onPress: () => handleSaveNote(p) },
                     { text: 'Cancel', style: 'cancel' },
                   ]);
                 }}

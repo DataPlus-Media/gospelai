@@ -7,3 +7,4 @@
 - [Welcome motion verification](welcome-motion-verification.md) — test reduced motion at cold launch as well as live changes; wait for Expo’s client tree in browser checks.
 - [Git merge readiness](git-merge-readiness.md) — verify remote ancestry after a local merge commit; staged resolutions and clean checkpoints alone did not finish the pull.
 - [Library import performance](library-import-performance.md) — batch SQLite writes within one atomic transaction; per-row async calls make whole-Bible installs too slow.
+- [Offline library cleanup timing](library-cleanup-timing.md) — allow longer than a brief browser wait when removing a large downloaded commentary.

@@ -57,7 +57,7 @@ async function main() {
     await page.getByText('Continue reading', { exact: true }).waitFor();
     for (const [label, path] of [
       ['Bible', '/bible'], ['Authors insight', '/library'], ['Saved verses', '/saved'],
-      ['Notes', '/notes'], ['Support Us', '/support'], ['Today', '/today'],
+      ['Notes', '/notes'], ['Support GospelAI', '/support'], ['Today', '/today'],
     ]) await route(label, path);
     console.log('PASS grouped routes, current-page selection and drawer dismissal including Bible listener');
 
@@ -79,19 +79,19 @@ async function main() {
     await open();
     await button('Start a new conversation').click();
     await closed();
-    await page.getByRole('textbox', { name: 'Message GospelAI. Editable draft' }).fill('Drawer test conversation');
+    await page.getByRole('textbox', { name: 'Write a message' }).fill('Drawer test conversation');
     await button('Send message').click();
     await page.getByText('Automated drawer navigation test reply.', { exact: true }).waitFor();
     await page.goto(`${base}/today`, { waitUntil: 'networkidle' });
     await open();
     const search = page.getByRole('textbox', { name: 'Search conversation history' });
     await search.fill('no-such-conversation');
-    await page.getByText('No matching conversations', { exact: true }).waitFor();
+    await page.getByText('No conversations match your search', { exact: true }).waitFor();
     await button('Clear conversation search').click();
     await button('Options for Drawer test conversation').click();
     assert.equal(new URL(page.url()).pathname, '/today', 'Options must not open the conversation');
     await button('Rename conversation').click();
-    await page.getByPlaceholder('Conversation title').fill('Evening reflections');
+    await page.getByPlaceholder('New name').fill('Evening reflections');
     await page.getByText('Save name', { exact: true }).click();
     await button('Options for Evening reflections').waitFor();
     await page.reload({ waitUntil: 'networkidle' });
@@ -110,21 +110,21 @@ async function main() {
     await button('Options for Evening reflections').click();
     await button('Delete conversation').click();
     await button('Delete').click();
-    await page.getByText('Your conversations will appear here', { exact: true }).waitFor();
+    await page.getByText('Your conversations will show up here', { exact: true }).waitFor();
     await button('Today').click();
     await closed();
     await page.reload({ waitUntil: 'networkidle' });
     await open();
-    await page.getByText('Your conversations will appear here', { exact: true }).waitFor();
+    await page.getByText('Your conversations will show up here', { exact: true }).waitFor();
     console.log('PASS cancel deletion retains messages; explicit deletion removes the isolated test conversation persistently');
 
     await mkdir('generated-artifacts/drawer', { recursive: true });
     await page.screenshot({ path: 'generated-artifacts/drawer/phone.png' });
     await page.setViewportSize({ width: 320, height: 568 });
-    await button('Support Us').scrollIntoViewIfNeeded();
-    const small = await button('Support Us').boundingBox();
+    await button('Support GospelAI').scrollIntoViewIfNeeded();
+    const small = await button('Support GospelAI').boundingBox();
     assert.ok(small && small.x >= 0 && small.x + small.width <= 320);
-    await button('Support Us').click();
+    await button('Support GospelAI').click();
     await closed();
     await open();
     await page.screenshot({ path: 'generated-artifacts/drawer/small-phone.png' });

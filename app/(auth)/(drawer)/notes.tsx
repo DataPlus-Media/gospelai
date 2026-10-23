@@ -22,7 +22,7 @@ export default function NotesScreen() {
       const rows = await getNotes(db);
       setNotes(rows);
     } catch {
-      Alert.alert('Error', 'Failed to load notes.');
+      Alert.alert('Couldn’t load notes', 'Please try again.');
     }
   }, [db]);
 
@@ -33,7 +33,7 @@ export default function NotesScreen() {
   );
 
   const confirmDelete = (id: number) => {
-    Alert.alert('Delete Note', 'Are you sure you want to delete this note?', [
+    Alert.alert('Delete this note?', 'This can’t be undone.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -78,6 +78,8 @@ export default function NotesScreen() {
           </Text>
         ) : null}
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete note${item.reference ? ` for ${item.reference}` : ''}`}
           onPress={() => confirmDelete(item.id)}
           hitSlop={12}
           style={styles.deleteBtn}
@@ -97,9 +99,9 @@ export default function NotesScreen() {
       {notes.length === 0 ? (
         <View style={styles.emptyWrap}>
           <Ionicons name="document-text-outline" size={48} color="#3a3d4a" />
-          <Text style={styles.emptyText}>No notes yet</Text>
+          <Text style={styles.emptyText}>You haven’t saved any notes yet</Text>
           <Text style={styles.emptyHint}>
-            Long-press on a chat message or Bible verse to save a note.
+            Press and hold a chat message or Bible verse to save a note.
           </Text>
         </View>
       ) : (

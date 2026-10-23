@@ -26,7 +26,7 @@ const ALL_PRODUCT_IDS = Object.values(PRODUCT_IDS_BY_AMOUNT);
 function AmountChips({
   amount,
   onPick,
-  currency = 'Tip €',
+  currency = '€',
 }: {
   amount: number;
   onPick: (n: number) => void;
@@ -38,6 +38,9 @@ function AmountChips({
       {presets.map((v) => (
         <TouchableOpacity
           key={v}
+          accessibilityRole="button"
+          accessibilityLabel={`Tip €${v}`}
+          accessibilityState={{ selected: amount === v }}
           onPress={() => onPick(v)}
           style={[styles.chip, amount === v && styles.chipActive]}
         >
@@ -60,7 +63,7 @@ export default function SupportScreen() {
       onPurchaseSuccess: async (purchase) => {
         try {
           await finishTransaction({ purchase, isConsumable: true });
-          Alert.alert('Thank you!', 'Your gift helps us keep sharing GospelAI.');
+          Alert.alert('Thank you', 'Your gift helps us keep sharing GospelAI.');
         } catch (err) {
           console.warn('finishTransaction error', err);
         }
@@ -68,8 +71,8 @@ export default function SupportScreen() {
       onPurchaseError: (error) => {
         console.warn('Purchase failed:', error);
         Alert.alert(
-          'Purchase error',
-          error?.message || 'Unable to complete the purchase. Please try again.'
+          'Purchase didn’t go through',
+          error?.message || 'Please try again.'
         );
       },
     });
@@ -113,14 +116,14 @@ export default function SupportScreen() {
 
   async function handleDonate() {
     if (!connected) {
-      Alert.alert('Store not ready', 'Please wait a few seconds and try again.');
+      Alert.alert('Store isn’t ready yet', 'Wait a few seconds, then try again.');
       return;
     }
 
     if (!currentSku) {
       Alert.alert(
         'Amount not supported',
-        'For now, please choose one of the preset amounts (5, 10, 20).'
+        'For now, choose one of the preset amounts: 5, 10, or 20.'
       );
       return;
     }
@@ -130,7 +133,7 @@ export default function SupportScreen() {
     if (!currentProduct) {
       Alert.alert(
         'Purchases unavailable',
-        'Tips are temporarily unavailable. Please try again later.'
+        'Tips aren’t available right now. Please try again later.'
       );
       return;
     }
@@ -146,8 +149,8 @@ export default function SupportScreen() {
     } catch (e: any) {
       console.warn('requestPurchase error', e);
       Alert.alert(
-        'Purchase error',
-        e?.message || 'Unable to start purchase. Please try again.'
+        'Purchase didn’t go through',
+        e?.message || 'Please try again.'
       );
     }
   }
@@ -156,7 +159,7 @@ export default function SupportScreen() {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <SafeAreaView style={styles.page}>
         <View style={styles.container}>
-          <Text style={styles.title}>Support the mission</Text>
+          <Text style={styles.title}>Support GospelAI</Text>
           <Text style={styles.lede}>
             Gifts are handled as secure in-app “tips”. Your support helps us share
             clear, Bible-based answers (KJV only) and Christ-centred resources with
@@ -172,7 +175,8 @@ export default function SupportScreen() {
               <TextInput
                 style={styles.amountInput}
                 inputMode="decimal"
-                placeholder="Custom amount"
+                placeholder="Custom tip amount"
+                accessibilityLabel="Custom tip amount in euros"
                 placeholderTextColor={styles.placeholder.color}
                 value={String(amount)}
                 onChangeText={onCustomAmount}
@@ -215,7 +219,7 @@ export default function SupportScreen() {
             </Text>
           </TouchableOpacity>
 
-          <Text style={styles.note}>Built with ❤️ · KJV Scripture references only ·</Text>
+          <Text style={styles.note}>Built with ❤️ · KJV Scripture references only.</Text>
         </View>
       </SafeAreaView>
     </TouchableWithoutFeedback>

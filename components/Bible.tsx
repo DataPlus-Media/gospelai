@@ -72,7 +72,7 @@ export default function BibleScreen() {
   const positionQueue = useRef(Promise.resolve());
   const persistPosition = (book: string, ch: number, verse: number) => {
     positionQueue.current = positionQueue.current.then(() => savePosition(appDb, { book, chapter: ch, verse }))
-      .catch(() => setNotice('Could not save reading position. Tap a verse to try again.'));
+      .catch(() => setNotice('We couldn’t save your reading position. Tap a verse to try again.'));
   };
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { item: VerseRow }[] }) => {
     const meta = visibleMeta.current;
@@ -87,8 +87,8 @@ export default function BibleScreen() {
     persistPosition(meta.book, meta.chapter, verse);
   }).current;
   useFocusEffect(useCallback(() => {
-    getSavedVerses(appDb).then(setSaved).catch(() => setNotice('Could not load saved verses. Reopen Bible to retry.'));
-    getStudySummary(appDb).then(s => setCompletedDays(s.plan.completed)).catch(() => setNotice('Could not load reading progress.'));
+    getSavedVerses(appDb).then(setSaved).catch(() => setNotice('We couldn’t load your saved verses. Reopen the Bible to try again.'));
+    getStudySummary(appDb).then(s => setCompletedDays(s.plan.completed)).catch(() => setNotice('We couldn’t load your reading progress.'));
   }, [appDb]));
   async function saveMark(kind: SavedVerse['kind']) {
     if (!actionVerse) return;
@@ -99,7 +99,7 @@ export default function BibleScreen() {
       setSaved(await getSavedVerses(appDb));
       setNotice(`${kind === 'bookmark' ? 'Bookmark' : 'Highlight'} ${remove ? 'removed' : 'saved'}.`);
       setActionVerse(null);
-    } catch { setNotice('Could not save this change. Please try again.'); }
+    } catch { setNotice('We couldn’t save that change. Please try again.'); }
   }
 
   // ===== Full Bible Search =====
@@ -171,17 +171,17 @@ export default function BibleScreen() {
   const handleCopyVerse = async (verseNum: number, text: string) => {
     const formatted = `${bookName} ${chapter}:${verseNum} — "${text}"`;
     await Clipboard.setStringAsync(formatted);
-    Alert.alert('Copied', 'Verse copied to clipboard.');
+    Alert.alert('Copied', 'Verse copied.');
   };
 
   const handleSaveVerse = async (verseNum: number, text: string) => {
     const reference = `${bookName} ${chapter}:${verseNum}`;
     try {
       await addNote(appDb, text, 'bible', reference);
-      setNotice('Verse saved to notes.');
-      Alert.alert('Saved', 'Verse saved to notes.');
+      setNotice('Verse saved to your notes.');
+      Alert.alert('Saved', 'Verse saved to your notes.');
     } catch {
-      Alert.alert('Error', 'Failed to save note.');
+      Alert.alert('Couldn’t save note', 'Please try again.');
     }
   };
 
@@ -254,7 +254,7 @@ export default function BibleScreen() {
         setError('');
       } catch (e: any) {
         console.error(e);
-        setError(e?.message || 'Failed to open Bible database.');
+        setError(e?.message || 'We couldn’t open the Bible. Please try again.');
       } finally {
         setLoadingDb(false);
       }
@@ -274,7 +274,7 @@ export default function BibleScreen() {
         setHighlightVerse(p.verse); pendingTarget.current = p.verse;
       }
       setReady(true);
-    }).catch(() => setError('Could not restore reading position. Reopen Bible to retry.'));
+    }).catch(() => setError('We couldn’t restore your reading position. Reopen the Bible to try again.'));
     return () => { cancelled = true; };
     // Only hydrate once. Explicit navigation is handled below after hydration.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -341,7 +341,7 @@ export default function BibleScreen() {
         if (cancelled) return;
         console.error(e);
         setRows([]);
-        setError(e?.message || 'Failed to load verses.');
+        setError(e?.message || 'We couldn’t load these verses. Please try again.');
       } finally {
         if (!cancelled) setLoadingVerses(false);
       }
@@ -370,8 +370,8 @@ export default function BibleScreen() {
   return (
     <View style={styles.page}>
       <View style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 4 }}>
-        <Text style={{ color: '#b8bcc7' }}>King James Version · Bible text · available offline on device</Text>
-        <Text style={{ color: '#b8bcc7' }}>Tap a verse for bookmark, highlight, notes, Authors insight or chat.</Text>
+        <Text style={{ color: '#b8bcc7' }}>King James Version · Bible text · available offline on this device</Text>
+        <Text style={{ color: '#b8bcc7' }}>Tap a verse to bookmark it, highlight it, save a note, open Authors insight, or start a chat.</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open Authors insight for ${bookName} ${chapter}`}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 12 }}
           onPress={() => router.push({ pathname: '/(auth)/(drawer)/library', params: {
@@ -385,7 +385,7 @@ export default function BibleScreen() {
         {activePlan && <TouchableOpacity style={{ paddingVertical: 12 }} disabled={completedDays.includes(planIndex)}
           onPress={async () => {
             try { await completePlanDay(appDb, planIndex); setCompletedDays([...completedDays, planIndex]); setNotice('Plan reading completed. Return to Today for the next day.'); }
-            catch { setNotice('Could not complete this reading. Please try again.'); }
+            catch { setNotice('We couldn’t mark this reading as complete. Please try again.'); }
           }}>
           <Text style={{ color: '#57d99e', fontWeight: '700' }}>{completedDays.includes(planIndex) ? 'Reading completed' : `Mark day ${planIndex + 1} complete · ${planEntry?.reference}`}</Text>
         </TouchableOpacity>}
@@ -397,7 +397,12 @@ export default function BibleScreen() {
           headerStyle: { backgroundColor: Colors.header_bg },
           headerTintColor: Colors.header_txt,
           headerRight: () => (
-            <TouchableOpacity onPress={openSearch} style={{ marginRight: 16 }}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Search all Bible verses"
+              onPress={openSearch}
+              style={{ marginRight: 16 }}
+            >
               <Ionicons name="search-outline" size={22} color="#f3f4f6" />
             </TouchableOpacity>
           ),
@@ -427,7 +432,11 @@ export default function BibleScreen() {
               {/* Book (opens searchable picker) */}
               <View style={styles.field}>
                 <Text style={styles.label}>Book</Text>
-                <Pressable onPress={openLibrary}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Choose Bible book. Current book: ${bookName}`}
+                  onPress={openLibrary}
+                >
                   <View pointerEvents="none" style={styles.selectLike}>
                     <TextInput value={bookName} editable={false} style={styles.input} />
                   </View>
@@ -438,6 +447,7 @@ export default function BibleScreen() {
               <View style={styles.fieldSmall}>
                 <Text style={styles.label}>Chapter</Text>
                 <TextInput
+                  accessibilityLabel="Chapter number"
                   keyboardType="number-pad"
                   value={chapterInput}
                   onChangeText={(v) => {
@@ -464,6 +474,7 @@ export default function BibleScreen() {
               <View style={styles.chapterSearch}>
                 <Text style={styles.label}>Find in chapter</Text>
                 <TextInput
+                  accessibilityLabel="Find words in this chapter"
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Find words in this chapter…"
@@ -484,7 +495,7 @@ export default function BibleScreen() {
             <Pressable
               style={{ paddingHorizontal: 14 }}
               accessibilityRole="button"
-              accessibilityLabel={`${bookName} ${chapter}:${item.verse}. Verse actions`}
+              accessibilityLabel={`Open actions for ${bookName} ${chapter}:${item.verse}`}
               onPress={() => onVerseLongPress(item.verse, item.text)}
               onLongPress={() => onVerseLongPress(item.verse, item.text)}
             >
@@ -500,7 +511,7 @@ export default function BibleScreen() {
           loadingDb || loadingVerses ? (
             <View style={styles.loading}>
               <ActivityIndicator size="small" color={Colors.primary} />
-              <Text style={styles.dimText}>Loading KJV…</Text>
+              <Text style={styles.dimText}>Loading the Bible…</Text>
             </View>
           ) : null
         }
@@ -531,7 +542,7 @@ export default function BibleScreen() {
             <TouchableOpacity style={{ paddingVertical: 14 }} onPress={async () => {
               if (!actionVerse) return;
               try { await handleCopyVerse(actionVerse.verse, actionVerse.text); setNotice('Verse copied.'); setActionVerse(null); }
-              catch { setNotice('Could not copy verse. Please try again.'); }
+              catch { setNotice('We couldn’t copy the verse. Please try again.'); }
             }}><Text style={{ color: '#fff' }}>Copy verse</Text></TouchableOpacity>
             <TouchableOpacity style={{ paddingVertical: 14 }} onPress={async () => { if (actionVerse) await handleSaveVerse(actionVerse.verse, actionVerse.text); setActionVerse(null); }}><Text style={{ color: '#fff' }}>Save to notes</Text></TouchableOpacity>
             <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => setActionVerse(null)}><Text style={{ color: '#b8bcc7' }}>Close</Text></TouchableOpacity>
@@ -543,7 +554,7 @@ export default function BibleScreen() {
       {!!error && !loadingDb && !loadingVerses && (
         <View style={styles.errorBox}>
           <Text style={styles.dimText}>{error}</Text>
-          <TouchableOpacity onPress={() => setRetry(r => r + 1)}><Text style={{ color: '#57d99e', padding: 12 }}>Retry loading Bible</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Try loading the Bible again" onPress={() => setRetry(r => r + 1)}><Text style={{ color: '#57d99e', padding: 12 }}>Try again</Text></TouchableOpacity>
         </View>
       )}
 
@@ -564,7 +575,8 @@ export default function BibleScreen() {
 
           <View style={styles.drawerSearch}>
             <TextInput
-              placeholder="Search all verses (e.g. love one another)…"
+              placeholder="Search all verses (for example, love one another)…"
+              accessibilityLabel="Search all Bible verses"
               value={searchQuery}
               onChangeText={onSearchChange}
               autoFocus

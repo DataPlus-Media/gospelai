@@ -147,7 +147,7 @@ export default function VerseOfDay() {
         message: `"${verseText}" — ${entry.ref} (KJV)\n\nShared from GospelAI`,
       });
     } catch {
-      Alert.alert('Error', 'Could not open share sheet.');
+      Alert.alert('Couldn’t share verse', 'Please try again.');
     }
   };
 
@@ -177,13 +177,24 @@ export default function VerseOfDay() {
   };
 
   return (
-    <Pressable onPress={navigateToVerse} style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Open ${entry.ref} in the Bible`}
+      onPress={navigateToVerse}
+      style={styles.card}
+    >
       <View style={styles.topRow}>
         <View style={styles.labelWrap}>
           <Text style={styles.labelIcon}>✦</Text>
           <Text style={styles.label}>Verse of the Day</Text>
         </View>
-        <Pressable onPress={onShare} hitSlop={10} style={styles.shareBtn}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Share verse of the day"
+          onPress={onShare}
+          hitSlop={10}
+          style={styles.shareBtn}
+        >
           <Ionicons name="share-outline" size={19} color="#c8a951" />
         </Pressable>
       </View>

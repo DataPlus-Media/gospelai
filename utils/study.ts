@@ -13,7 +13,7 @@ export const READING_PLAN = [
 ];
 export const referenceOf = (p: Position) => `${p.book} ${p.chapter}:${p.verse}`;
 export const verseDraft = (reference: string, text: string) =>
-  `Help me understand ${reference} (KJV):\n\n"${text}"\n\n`;
+  `Help me understand ${reference} (KJV):\n\n"${text}"\n\nWhat does this verse mean in context?`;
 
 export async function getStudySummary(db: SQLiteDatabase) {
   const position = await db.getFirstAsync<Position>('SELECT book, chapter, verse FROM reading_position WHERE id = 1');

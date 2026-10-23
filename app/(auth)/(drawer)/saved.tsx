@@ -11,24 +11,24 @@ export default function SavedScreen() {
   const [error, setError] = useState('');
   const load = useCallback(async () => {
     try { setItems(await getSavedVerses(db)); setError(''); }
-    catch { setError('Could not load saved verses. Try again.'); }
+    catch { setError('We couldn’t load your saved verses. Try again.'); }
   }, [db]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
   async function remove(item: SavedVerse) {
     try { await toggleSavedVerse(db, item, true); await load(); }
-    catch { setError('Could not remove this saved verse. Try again.'); }
+    catch { setError('We couldn’t remove this saved verse. Try again.'); }
   }
   return <View style={s.page}>
-    <Text style={s.hint}>Bookmarks and highlights · saved on this device</Text>
+    <Text style={s.hint}>Your bookmarks and highlights are saved on this device.</Text>
     {!!error && <Pressable accessibilityRole="button" onPress={load}><Text style={s.error}>{error}</Text></Pressable>}
     <FlatList data={items} keyExtractor={i => `${referenceOf(i)}-${i.kind}`}
-      ListEmptyComponent={<Text style={s.hint}>No saved verses yet. Tap a Bible verse to bookmark or highlight it.</Text>}
+      ListEmptyComponent={<Text style={s.hint}>No saved verses yet. Tap a verse in the Bible to bookmark or highlight it.</Text>}
       renderItem={({ item }) => <View style={s.card}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Read ${referenceOf(item)}`}
           onPress={() => router.navigate({ pathname: '/(auth)/(drawer)/bible', params: { ref: referenceOf(item), jump: String(Date.now()) } })}>
           <Text style={s.ref}>{referenceOf(item)} · KJV · {item.kind}</Text>
           <Text style={s.text}>{item.text}</Text>
-          <Text style={s.link}>Open exact verse</Text>
+          <Text style={s.link}>Open this verse</Text>
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.kind} for ${referenceOf(item)}`}
           onPress={() => remove(item)} style={s.remove}><Text style={s.error}>Remove {item.kind}</Text></Pressable>

@@ -30,9 +30,9 @@ type ChatTurn = { role: 'user' | 'assistant'; content: string };
 type Idea = { title: string; text: string };
 
 const FALLBACK_IDEAS: Idea[] = [
-  { title: 'Like a mustard seed', text: "why is this significant" },
-  { title: 'Suggest godly activities', text: 'for the weekend with friends' },
-  { title: 'Provide three bible verses', text: "to say before a job interview" },
+  { title: 'Explain the mustard seed', text: 'and why Jesus used it' },
+  { title: 'Suggest Christian activities', text: 'to enjoy with friends this weekend' },
+  { title: 'Share three Bible verses', text: 'for encouragement before a job interview' },
 ];
 
 async function fetchIdeas(): Promise<Idea[]> {
@@ -109,7 +109,7 @@ const ChatPage = () => {
     if (id) {
       setChatId(id);
       getMessages(db, parseInt(id, 10)).then(rows => { if (!cancelled) setMessages(rows); })
-        .catch(() => { if (!cancelled) setChatError('Could not load this conversation. Reopen it to retry.'); });
+        .catch(() => { if (!cancelled) setChatError('We couldn’t load this conversation. Close and reopen it to try again.'); });
     } else {
       setChatId(undefined);
       setMessages([]);
@@ -128,7 +128,7 @@ const ChatPage = () => {
     } catch {
       setMessages(prev => prev.filter(m => !(m.role === Role.Bot && m.content === '')));
       setFailedTurn(turn);
-      setChatError('GospelAI could not finish this response. Check your connection and retry. Your message is saved on this device.');
+      setChatError('GospelAI couldn’t finish this reply. Check your connection and try again. Your message is saved on this device.');
     }
   };
 
@@ -168,7 +168,7 @@ const ChatPage = () => {
       await requestReply({ text: trimmed, history, chatId: currentId! });
       return true;
     } catch {
-      setChatError('Could not save your message on this device. Please try sending again.');
+      setChatError('We couldn’t save your message on this device. Please try sending it again.');
       return false;
     } finally {
       busy.current = false;
@@ -197,10 +197,10 @@ const ChatPage = () => {
         }}
       />
       <Text style={{ color: '#b8bcc7', backgroundColor: '#0b0b10', padding: 12, fontSize: 12 }}>
-        AI-generated explanations, not Bible text. AI requires an internet connection. Review verse drafts, then tap Send.
+        Chat replies are AI-generated, not Bible text. Chat needs an internet connection. Review and edit verse drafts before sending.
       </Text>
       {sourceDraft === '1' && <Text accessibilityRole="alert" style={{ color: '#D4B65F', backgroundColor: '#171710', padding: 12, fontSize: 12 }}>
-        Source draft: review and edit before tapping Send. Sending shares the scripture and source text in your message with the existing AI service. Its answer is AI-generated, not an original author quotation or a source-verified conclusion.
+        Review and edit this draft before sending. Sending shares its Scripture and source text with GospelAI’s AI service. The reply is AI-generated, not an original author quotation or a source-verified conclusion.
       </Text>}
 
       <View style={styles.page}>
@@ -265,7 +265,7 @@ const ChatPage = () => {
               busy.current = true; setPending(true); setChatError('');
               setMessages(prev => [...prev, { role: Role.Bot, content: '' }]);
               try { await requestReply(failedTurn); } finally { busy.current = false; setPending(false); }
-            }}><Text style={{ color: '#57d99e' }}>{pending ? 'Retrying…' : 'Retry response'}</Text></Pressable>
+            }}><Text style={{ color: '#57d99e' }}>{pending ? 'Trying again…' : 'Try again'}</Text></Pressable>
             <Pressable accessibilityRole="button" disabled={pending} style={{ paddingVertical: 12 }} onPress={() => { setFailedTurn(null); setChatError(''); }}><Text style={{ color: '#b8bcc7' }}>Dismiss</Text></Pressable>
           </View>}
         </View>}

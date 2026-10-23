@@ -13,7 +13,7 @@ async function main() {
     await page.getByText('Opening your local study…').waitFor({ state: 'hidden', timeout: 30000 });
   };
   const action = label => page.getByText(label, { exact: true }).click();
-  const verseButton = (ref) => page.getByRole('button', { name: `${ref}. Verse actions`, exact: true });
+  const verseButton = (ref) => page.getByRole('button', { name: `Open actions for ${ref}`, exact: true });
   await page.goto(base);
   await page.getByRole('button', { name: 'Start exploring. Continue without an account.', exact: true }).click();
   await page.getByText('Continue reading', { exact: true }).waitFor({ timeout: 60000 });
@@ -36,14 +36,14 @@ async function main() {
   await action('Add highlight');
   await verseButton('John 3:16').click();
   await action('Save to notes');
-  await page.getByText('Verse saved to notes.', { exact: true }).waitFor();
+  await page.getByText('Verse saved to your notes.', { exact: true }).waitFor();
   await go('/saved');
   await page.getByText('John 3:16 · KJV · bookmark', { exact: true }).waitFor();
   await page.getByText('John 3:16 · KJV · highlight', { exact: true }).waitFor();
   await page.getByRole('button', { name: 'Read John 3:16', exact: true }).first().click();
   await verseButton('John 3:16').waitFor();
   await page.waitForFunction(() => {
-    const verse = document.querySelector('[aria-label="John 3:16. Verse actions"]');
+    const verse = document.querySelector('[aria-label="Open actions for John 3:16"]');
     if (!verse) return false;
     const rect = verse.getBoundingClientRect();
     return rect.top >= 310 && rect.bottom <= innerHeight;
@@ -62,7 +62,7 @@ async function main() {
     else await route.fulfill({ json: { reply: 'Test explanation: read the surrounding passage.' } });
   });
   await action('Ask GospelAI · edit draft first');
-  const input = page.getByRole('textbox', { name: 'Message GospelAI. Editable draft' });
+  const input = page.getByRole('textbox', { name: 'Write a message' });
   await input.waitFor();
   assert.equal(chatRequests, 0);
   assert.ok((await input.inputValue()).includes('John 3:16 (KJV)'));
@@ -70,9 +70,9 @@ async function main() {
   assert.equal(await input.evaluate(el => el === document.activeElement), false);
   await input.fill((await input.inputValue()) + 'Explain this simply.');
   await page.getByRole('button', { name: 'Send message' }).click();
-  await page.getByText('Retry response', { exact: true }).waitFor();
+  await page.getByText('Try again', { exact: true }).waitFor();
   assert.equal(chatRequests, 1);
-  await page.getByRole('button', { name: 'Retry response' }).click();
+  await page.getByRole('button', { name: 'Try again' }).click();
   await page.getByText('Test explanation: read the surrounding passage.', { exact: true }).waitFor();
   assert.equal(chatRequests, 2);
   console.log('PASS actual verse draft, editable, no auto-focus/send; connection failure and retry (stubbed AI)');

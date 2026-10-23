@@ -77,12 +77,12 @@ export default function SettingsScreen() {
         }
 
         Alert.alert(
-          'Authentication',
-          'Additional steps are required to complete sign in.'
+          'Sign in',
+          'A few more steps are needed to finish signing in.'
         );
       } catch (e: any) {
-        const msg = e?.errors?.[0]?.message || e?.message || 'Sign in failed';
-        Alert.alert('Authentication', msg);
+        const msg = e?.errors?.[0]?.message || e?.message || 'We couldn’t sign you in. Please try again.';
+        Alert.alert('Sign in', msg);
       } finally {
         setBusy(false);
       }
@@ -96,7 +96,7 @@ export default function SettingsScreen() {
       await signOut();
       router.replace('/(auth)/(drawer)/(chat)/new'); // stay in app as guest
     } catch (e: any) {
-      Alert.alert('Sign out', e?.message || 'Unable to sign out.');
+      Alert.alert('Couldn’t sign out', e?.message || 'Please try again.');
     } finally {
       setBusy(false);
     }
@@ -107,7 +107,7 @@ export default function SettingsScreen() {
 
     const ok = deleteText.trim().toUpperCase() === 'DELETE';
     if (!ok) {
-      Alert.alert('Confirm', 'Type DELETE to confirm account deletion.');
+      Alert.alert('Confirm account deletion', 'Type DELETE to permanently delete your account.');
       return;
     }
 
@@ -120,12 +120,12 @@ export default function SettingsScreen() {
       // Clear local session
       await signOut();
 
-      Alert.alert('Account deleted', 'Your account has been permanently removed.');
+      Alert.alert('Account deleted', 'Your account has been deleted.');
       router.replace('/(auth)/(drawer)/(chat)/new');
     } catch (e: any) {
       Alert.alert(
-        'Delete account',
-        e?.errors?.[0]?.message || e?.message || 'Unable to delete account.'
+        'Couldn’t delete account',
+        e?.errors?.[0]?.message || e?.message || 'Please try again.'
       );
     } finally {
       setBusy(false);
@@ -317,8 +317,8 @@ export default function SettingsScreen() {
                   </View>
 
                   <Text style={styles.helperText}>
-                    You can keep using GospelAI as a guest — create an account only if
-                    you want sync.
+                    You can keep using GospelAI as a guest. Create an account if you want
+                    to sync across devices.
                   </Text>
                 </View>
               </>
@@ -336,7 +336,7 @@ export default function SettingsScreen() {
               onPress={() => {
                 Alert.alert(
                   'Why create an account?',
-                  'Creating an account lets you sync across devices and keep your history backed up. You can still use the app fully as a guest.'
+                  'An account lets you sync across devices and back up your history. You can still use GospelAI as a guest.'
                 );
               }}
             >
