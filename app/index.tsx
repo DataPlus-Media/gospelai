@@ -1,10 +1,7 @@
-import { useAuth, useOAuth } from '@clerk/clerk-expo';
+import { useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
-import { makeRedirectUri } from 'expo-auth-session';
 import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
 import {
-  Alert,
   Animated,
   Image,
   Pressable,
@@ -17,8 +14,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { welcomeStyles as styles } from '@/components/welcome/styles';
 import { useWelcomeMotion } from '@/hooks/useWelcomeMotion';
-
-WebBrowser.maybeCompleteAuthSession();
 
 const FEATURES = [
   {
@@ -57,31 +52,8 @@ export default function Index() {
   const { entrance, emeraldStyle, goldStyle, heroEntrance, scriptureEntrance } =
     useWelcomeMotion(FEATURES.length);
 
-  const google = useOAuth({ strategy: 'oauth_google' });
-  const apple = useOAuth({ strategy: 'oauth_apple' });
-  const redirectUrl = makeRedirectUri({
-    scheme: 'gospelai',
-    path: 'oauth-native-callback',
-  });
-
-  async function doOAuth(start: typeof google.startOAuthFlow) {
-    try {
-      const { createdSessionId, setActive, signIn, signUp } = await start({ redirectUrl });
-      const sid = createdSessionId || signIn?.createdSessionId || signUp?.createdSessionId;
-      if (sid) {
-        await setActive?.({ session: sid });
-        router.replace(WELCOME_ROUTE);
-        return;
-      }
-      Alert.alert('Sign in', 'A few more steps are needed to finish signing in.');
-    } catch (e: any) {
-      const msg =
-        e?.errors?.[0]?.longMessage ||
-        e?.errors?.[0]?.message ||
-        e?.message ||
-        'We couldn’t sign you in. Please try again.';
-      Alert.alert('Sign in', msg);
-    }
+  function startProviderSignIn(provider: 'apple' | 'google') {
+    router.push({ pathname: '/login', params: { type: 'login', provider } });
   }
 
   const wide = width >= 600 && fontScale < 1.5;
@@ -144,7 +116,7 @@ export default function Index() {
               accessible
               accessibilityLabel="GospelAI"
             />
-            <Text style={styles.eyebrow}>A QUIET PLACE TO READ AND REFLECT ON GOD's WORD</Text>
+            <Text style={styles.eyebrow}>A QUIET PLACE TO READ AND REFLECT ON GOD&apos;s WORD</Text>
             <Text style={styles.headline}>Come as you are.{'\n'}Begin with Scripture.</Text>
           </Animated.View>
 
@@ -236,7 +208,7 @@ export default function Index() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Continue with Apple"
-                    onPress={() => doOAuth(apple.startOAuthFlow)}
+                    onPress={() => startProviderSignIn('apple')}
                     style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
                   >
                     <Text style={styles.oauthText}>Apple</Text>
@@ -244,7 +216,7 @@ export default function Index() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Continue with Google"
-                    onPress={() => doOAuth(google.startOAuthFlow)}
+                    onPress={() => startProviderSignIn('google')}
                     style={({ pressed }) => [styles.oauthButton, pressed && styles.pressed]}
                   >
                     <Text style={styles.oauthText}>Google</Text>
