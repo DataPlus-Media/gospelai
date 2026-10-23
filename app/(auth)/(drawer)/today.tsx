@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import React, { useCallback, useState } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { spacing } from '@/constants/DesignTokens';
 import {
   ActivityIndicator,
   Modal,
@@ -34,6 +36,7 @@ function formatReference(position: StudySummary['position']) {
 export default function TodayScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [summary, setSummary] = useState<StudySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -123,7 +126,7 @@ export default function TodayScreen() {
   return (
     <View style={styles.screen}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg }]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
@@ -156,7 +159,7 @@ export default function TodayScreen() {
             style={({ pressed }) => [styles.continueButton, pressed && styles.pressed]}
           >
             <Text style={styles.continueText}>Open Bible</Text>
-            <Ionicons name="arrow-forward" size={17} color="#10231B" />
+            <Ionicons name="arrow-forward" size={17} color={Colors.onCoral} />
           </Pressable>
         </View>
 
@@ -167,7 +170,7 @@ export default function TodayScreen() {
             style={({ pressed }) => [styles.chatAction, pressed && styles.pressed]}
           >
             <View style={styles.chatIcon}>
-              <Ionicons name="sparkles-outline" size={19} color="#D6B96C" />
+              <Ionicons name="sparkles-outline" size={19} color={Colors.coral} />
             </View>
             <View style={styles.actionCopy}>
               <Text style={styles.actionTitle}>Start a chat</Text>
@@ -213,7 +216,7 @@ export default function TodayScreen() {
                 onPress={loadSummary}
                 style={styles.retryButton}
               >
-                <Ionicons name="refresh" size={18} color="#F2D694" />
+                <Ionicons name="refresh" size={18} color={Colors.coral} />
               </Pressable>
             </View>
           ) : (
@@ -238,7 +241,7 @@ export default function TodayScreen() {
                   </View>
                   {nextDay >= 0 && <Pressable accessibilityRole="button" onPress={() => openBible(READING_PLAN[nextDay].reference, nextDay)}
                     style={{ paddingTop: 14, paddingBottom: 6, minHeight: 44 }}>
-                    <Text style={{ color: '#91d7ae', fontWeight: '700' }}>Continue plan · {READING_PLAN[nextDay].reference}</Text>
+                    <Text style={{ color: Colors.coralSoft, fontWeight: '700' }}>Continue plan · {READING_PLAN[nextDay].reference}</Text>
                   </Pressable>}
                 </View>
               ) : (
@@ -253,7 +256,7 @@ export default function TodayScreen() {
                     onPress={beginPlan}
                     style={({ pressed }) => [styles.startButton, pressed && styles.pressed, busy && styles.disabled]}
                   >
-                    {busy ? <ActivityIndicator size="small" color="#10231B" /> : <Text style={styles.startButtonText}>Start plan</Text>}
+                    {busy ? <ActivityIndicator size="small" color={Colors.onCoral} /> : <Text style={styles.startButtonText}>Start plan</Text>}
                   </Pressable>
                 </View>
               )}
@@ -336,7 +339,7 @@ export default function TodayScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard} accessibilityViewIsModal accessibilityRole="alert">
             <View style={styles.modalIcon}>
-              <Ionicons name="refresh-outline" size={22} color="#F0C76A" />
+              <Ionicons name="refresh-outline" size={22} color={Colors.coral} />
             </View>
             <Text style={styles.modalTitle}>Reset your plan?</Text>
             <Text style={styles.modalBody}>
@@ -356,7 +359,7 @@ export default function TodayScreen() {
                 onPress={confirmReset}
                 style={[styles.confirmButton, busy && styles.disabled]}
               >
-                {busy ? <ActivityIndicator size="small" color="#1B1A16" /> : <Text style={styles.confirmText}>Reset plan</Text>}
+                {busy ? <ActivityIndicator size="small" color={Colors.onCoral} /> : <Text style={styles.confirmText}>Reset plan</Text>}
               </Pressable>
             </View>
           </View>
@@ -395,64 +398,64 @@ function Shortcut({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0A0A0A' },
-  content: { paddingTop: 18, paddingBottom: 40 },
+  screen: { flex: 1, backgroundColor: Colors.background },
+  content: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingTop: 18, paddingBottom: 40 },
   header: {
     paddingHorizontal: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  eyebrow: { color: '#9C8A59', fontSize: 10, fontWeight: '800', letterSpacing: 1.55 },
-  title: { marginTop: 5, color: '#F5F1E8', fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1 },
+  eyebrow: { color: Colors.coral, fontSize: 10, fontWeight: '800', letterSpacing: 1.55 },
+  title: { marginTop: 5, color: Colors.text, fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1 },
   mark: {
     width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#14241D', borderWidth: 1, borderColor: '#294334',
+    backgroundColor: Colors.plum, borderWidth: 1, borderColor: Colors.borderStrong,
   },
   intro: {
     marginHorizontal: 20, marginTop: 7, marginBottom: 20, maxWidth: 330,
-    color: '#9B9AA2', fontSize: 14, lineHeight: 21,
+    color: Colors.textMuted, fontSize: 14, lineHeight: 21,
   },
   readingCard: {
-    marginHorizontal: 16, padding: 17, borderRadius: 19, backgroundColor: '#14251D',
-    borderWidth: 1, borderColor: '#294537', overflow: 'hidden',
+    marginHorizontal: 16, padding: 17, borderRadius: 19, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: Colors.coralTint, overflow: 'hidden',
   },
   readingCopy: { marginBottom: 16 },
   kickerRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#70C597' },
-  kicker: { color: '#9CC5A9', fontSize: 9, fontWeight: '800', letterSpacing: 1.15 },
-  readingTitle: { marginTop: 10, color: '#F3F0E8', fontWeight: '700', fontSize: 21, letterSpacing: -0.4 },
-  readingRef: { color: '#A8C7B1', fontSize: 14, marginTop: 3, fontWeight: '500' },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.coral },
+  kicker: { color: Colors.coralSoft, fontSize: 9, fontWeight: '800', letterSpacing: 1.15 },
+  readingTitle: { marginTop: 10, color: Colors.text, fontWeight: '700', fontSize: 21, letterSpacing: -0.4 },
+  readingRef: { color: Colors.textMuted, fontSize: 14, marginTop: 3, fontWeight: '500' },
   continueButton: {
-    backgroundColor: '#80C59A', minHeight: 44, borderRadius: 12, paddingHorizontal: 15,
+    backgroundColor: Colors.coral, minHeight: 44, borderRadius: 12, paddingHorizontal: 15,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
   },
-  continueText: { color: '#10231B', fontWeight: '800', fontSize: 14 },
+  continueText: { color: Colors.onCoral, fontWeight: '800', fontSize: 14 },
   quickActions: { marginHorizontal: 16, marginTop: 10, marginBottom: 14 },
   chatAction: {
     flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12, borderRadius: 15,
-    backgroundColor: '#141318', borderWidth: 1, borderColor: '#302A28',
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
   },
-  chatIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: '#28231A', alignItems: 'center', justifyContent: 'center' },
+  chatIcon: { width: 38, height: 38, borderRadius: 12, backgroundColor: Colors.plum, alignItems: 'center', justifyContent: 'center' },
   actionCopy: { flex: 1 },
-  actionTitle: { color: '#F1EDE5', fontSize: 14, fontWeight: '700' },
-  actionSub: { color: '#929099', fontSize: 12, marginTop: 2 },
+  actionTitle: { color: Colors.text, fontSize: 14, fontWeight: '700' },
+  actionSub: { color: Colors.textMuted, fontSize: 12, marginTop: 2 },
   planSection: { marginTop: 23, marginHorizontal: 16 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  sectionEyebrow: { color: '#9C8A59', fontSize: 9, fontWeight: '800', letterSpacing: 1.35 },
-  sectionTitle: { color: '#F0EEE8', fontSize: 20, fontWeight: '700', letterSpacing: -0.45, marginTop: 4 },
+  sectionEyebrow: { color: Colors.coral, fontSize: 9, fontWeight: '800', letterSpacing: 1.35 },
+  sectionTitle: { color: Colors.text, fontSize: 20, fontWeight: '700', letterSpacing: -0.45, marginTop: 4 },
   planBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 7,
-    borderRadius: 20, borderWidth: 1, borderColor: '#30312D', backgroundColor: '#141613',
+    borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceRaised,
   },
-  planBadgeText: { color: '#A6B8A8', fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
-  planDescription: { color: '#9998A0', fontSize: 12, lineHeight: 18, marginTop: 8, marginBottom: 13, maxWidth: 340 },
+  planBadgeText: { color: Colors.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
+  planDescription: { color: Colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 8, marginBottom: 13, maxWidth: 520 },
   loadingPanel: {
-    backgroundColor: '#111217', borderRadius: 15, borderWidth: 1, borderColor: '#24252B',
+    backgroundColor: Colors.surface, borderRadius: 15, borderWidth: 1, borderColor: Colors.border,
     padding: 16, gap: 11,
   },
-  skeletonBarWide: { height: 13, width: '88%', borderRadius: 7, backgroundColor: '#25262D' },
-  skeletonBarShort: { height: 12, width: '55%', borderRadius: 7, backgroundColor: '#202127' },
+  skeletonBarWide: { height: 13, width: '88%', borderRadius: 7, backgroundColor: '#343031' },
+  skeletonBarShort: { height: 12, width: '55%', borderRadius: 7, backgroundColor: '#2A2728' },
   errorPanel: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 13, borderRadius: 14,
     backgroundColor: '#251818', borderWidth: 1, borderColor: '#54332E',
@@ -461,45 +464,45 @@ const styles = StyleSheet.create({
   errorTitle: { color: '#F2D8D3', fontSize: 13, fontWeight: '700' },
   errorText: { color: '#C3A29D', fontSize: 11, lineHeight: 16, marginTop: 3 },
   retryButton: { padding: 8, borderRadius: 10, backgroundColor: '#39231F' },
-  progressCard: { padding: 13, borderRadius: 14, backgroundColor: '#111713', borderWidth: 1, borderColor: '#28382E', marginBottom: 10 },
+  progressCard: { padding: 13, borderRadius: 14, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.coralTint, marginBottom: 10 },
   progressMeta: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 9 },
   progressLabel: { color: '#D7E1D7', fontSize: 12, fontWeight: '700' },
-  progressCount: { color: '#8FB79B', fontSize: 11, fontWeight: '700' },
-  progressTrack: { height: 5, backgroundColor: '#29332C', borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: '#73B98D', borderRadius: 4 },
+  progressCount: { color: Colors.coralSoft, fontSize: 11, fontWeight: '700' },
+  progressTrack: { height: 5, backgroundColor: Colors.border, borderRadius: 4, overflow: 'hidden' },
+  progressFill: { height: '100%', backgroundColor: Colors.coral, borderRadius: 4 },
   startPlanPanel: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 15,
-    backgroundColor: '#151A16', borderWidth: 1, borderColor: '#30392F', marginBottom: 10,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, marginBottom: 10,
   },
   startPlanText: { flex: 1 },
   startPlanTitle: { color: '#F0EEE6', fontSize: 13, fontWeight: '700' },
   startPlanSub: { color: '#96979A', fontSize: 11, lineHeight: 16, marginTop: 4 },
-  startButton: { backgroundColor: '#80C59A', borderRadius: 10, paddingHorizontal: 13, minHeight: 38, justifyContent: 'center', alignItems: 'center' },
-  startButtonText: { color: '#10231B', fontSize: 12, fontWeight: '800' },
-  planList: { borderRadius: 16, backgroundColor: '#111217', borderWidth: 1, borderColor: '#26272D', overflow: 'hidden' },
-  dayRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#292A30' },
-  dayRowDone: { backgroundColor: '#121914' },
-  dayNumber: { width: 31, height: 31, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#202127' },
-  dayNumberDone: { backgroundColor: '#80C59A' },
+  startButton: { backgroundColor: Colors.coral, borderRadius: 10, paddingHorizontal: 13, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  startButtonText: { color: Colors.onCoral, fontSize: 12, fontWeight: '800' },
+  planList: { borderRadius: 16, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  dayRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, gap: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: Colors.border },
+  dayRowDone: { backgroundColor: Colors.coralTint },
+  dayNumber: { width: 31, height: 31, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#302D2E' },
+  dayNumberDone: { backgroundColor: Colors.coral },
   dayNumberText: { color: '#B9B8C0', fontSize: 10, fontWeight: '800' },
   dayCopy: { flex: 1 },
-  dayTitle: { color: '#EAE8E2', fontSize: 13, fontWeight: '600' },
-  dayTitleDone: { color: '#C3D7C8' },
-  dayReference: { color: '#8D8D96', fontSize: 11, marginTop: 3 },
+  dayTitle: { color: Colors.text, fontSize: 13, fontWeight: '600' },
+  dayTitleDone: { color: Colors.coralSoft },
+  dayReference: { color: Colors.textMuted, fontSize: 11, marginTop: 3 },
   dayStatus: { color: '#666873', fontSize: 8, fontWeight: '800', letterSpacing: 0.8 },
-  dayStatusDone: { color: '#85B99A' },
+  dayStatusDone: { color: Colors.coralSoft },
   resetLink: { alignSelf: 'flex-end', paddingVertical: 12, paddingHorizontal: 2 },
-  resetText: { color: '#A59A85', fontSize: 11, textDecorationLine: 'underline' },
+  resetText: { color: Colors.textMuted, fontSize: 11, textDecorationLine: 'underline' },
   shortcuts: { marginTop: 22, marginHorizontal: 16 },
   shortcutHeading: { marginBottom: 12 },
   shortcutGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   shortcut: {
-    width: '48.5%', minHeight: 105, padding: 12, borderRadius: 15, backgroundColor: '#121318',
-    borderWidth: 1, borderColor: '#27282F',
+    width: '48.5%', minHeight: 105, padding: 12, borderRadius: 15, backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  shortcutIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#18221C', alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
+  shortcutIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: Colors.plum, alignItems: 'center', justifyContent: 'center', marginBottom: 9 },
   shortcutLabel: { color: '#ECEAE3', fontSize: 13, fontWeight: '700' },
-  shortcutHint: { color: '#85858E', fontSize: 10, marginTop: 3 },
+  shortcutHint: { color: Colors.textMuted, fontSize: 10, marginTop: 3 },
   shortcutArrow: { position: 'absolute', right: 12, top: 13 },
   deviceNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginHorizontal: 20, marginTop: 20 },
   deviceNoteText: { flex: 1, color: '#83858A', fontSize: 10, lineHeight: 15 },
@@ -513,6 +516,6 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 9, marginTop: 21 },
   cancelButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 13, borderRadius: 11, backgroundColor: '#25262A' },
   cancelText: { color: '#D0CFCA', fontSize: 12, fontWeight: '700' },
-  confirmButton: { minHeight: 42, minWidth: 94, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 13, borderRadius: 11, backgroundColor: '#D4B65F' },
-  confirmText: { color: '#211D12', fontSize: 12, fontWeight: '800' },
+  confirmButton: { minHeight: 44, minWidth: 94, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 13, borderRadius: 11, backgroundColor: Colors.coral },
+  confirmText: { color: Colors.onCoral, fontSize: 12, fontWeight: '800' },
 });

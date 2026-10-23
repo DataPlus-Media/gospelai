@@ -5,10 +5,13 @@ import { useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
 import { addNote } from '@/utils/Database';
 import { getLibraryPosition, readSection, saveLibraryPosition, sectionsForWork } from '@/utils/library';
 import type { LibraryWork, SectionSummary } from '@/utils/libraryTypes';
+import Colors from '@/constants/Colors';
+import { scriptureFontFamily, spacing } from '@/constants/DesignTokens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type ParagraphRow = { paragraph: number; text: string };
 type ReaderContent = { title: string; source_url: string; attribution: string; paragraphs: ParagraphRow[] };
-const C = { paper: '#0A0A0A', panel: '#121318', ink: '#F5F1E8', muted: '#9B9AA2', gold: '#D4B65F', line: '#292A30', green: '#80C59A' };
+const C = { paper: Colors.background, panel: Colors.surface, ink: Colors.text, muted: Colors.textMuted, gold: Colors.coral, line: Colors.border, green: Colors.coral };
 
 function clampParagraph(value: number | undefined, count: number) {
   if (value === undefined || !Number.isFinite(value)) return 0;
@@ -23,6 +26,7 @@ export default function LibraryReader({
   onClose: () => void; onPersistError: (message: string | null) => void;
 }) {
   const db = useSQLiteContext();
+  const insets = useSafeAreaInsets();
   const list = useRef<FlatList<ParagraphRow>>(null);
   const [sections, setSections] = useState<SectionSummary[]>([]);
   const [sectionIndex, setSectionIndex] = useState(0);
@@ -215,7 +219,7 @@ export default function LibraryReader({
       </View>
       {tocVisible ? (
         <View style={styles.tocPanel}>
-          <TextInput value={tocQuery} onChangeText={setTocQuery} placeholder="Search chapters or dates" placeholderTextColor="#777780" style={styles.tocInput} accessibilityLabel="Search table of contents" />
+          <TextInput value={tocQuery} onChangeText={setTocQuery} placeholder="Search chapters or dates" placeholderTextColor={C.muted} style={styles.tocInput} accessibilityLabel="Search table of contents" />
           <FlatList data={filteredSections} keyExtractor={item => item.id} keyboardShouldPersistTaps="handled" style={styles.tocList}
             renderItem={({ item }) => <Pressable onPress={() => changeSection(sections.findIndex(s => s.id === item.id))} style={styles.tocRow}><Text style={styles.tocText}>{item.title}</Text><Ionicons name="chevron-forward" size={15} color={C.muted} /></Pressable>}
             ListEmptyComponent={<Text style={styles.emptyToc}>No chapters or dates match that search.</Text>} />
@@ -249,7 +253,7 @@ export default function LibraryReader({
               </Pressable>
             )}
           />
-          <View style={styles.readerFooter}>
+          <View style={[styles.readerFooter, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
             <View style={styles.footerActions}>
               <Pressable accessibilityRole="button" disabled={sectionIndex === 0} onPress={() => move(-1)} style={styles.footerButton}><Ionicons name="chevron-back" size={16} color={sectionIndex === 0 ? '#55565C' : C.ink} /><Text style={styles.footerText}>Previous</Text></Pressable>
               <Text style={styles.footerCount}>{sectionIndex + 1} / {sections.length}</Text>
@@ -274,22 +278,22 @@ const styles = StyleSheet.create({
   back: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: C.panel },
   headerText: { flex: 1 }, eyebrow: { color: C.gold, fontSize: 9, fontWeight: '800', letterSpacing: 1.1 },
   headerTitle: { color: C.ink, fontWeight: '700', fontSize: 14, marginTop: 3 },
-  tocButton: { width: 40, height: 40, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#211F1A' },
+  tocButton: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.plum },
   tocPanel: { backgroundColor: C.panel, margin: 12, maxHeight: '48%', borderRadius: 14, borderWidth: 1, borderColor: C.line, padding: 10 },
-  tocInput: { color: C.ink, minHeight: 42, borderRadius: 10, backgroundColor: '#1A1B20', paddingHorizontal: 12, marginBottom: 5 },
+  tocInput: { color: C.ink, minHeight: 44, borderRadius: 10, backgroundColor: Colors.surfaceRaised, paddingHorizontal: 12, marginBottom: 5 },
   tocList: { flexGrow: 0 }, tocRow: { minHeight: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line, paddingHorizontal: 5 },
   tocText: { color: C.ink, flex: 1, fontSize: 13 }, emptyToc: { color: C.muted, padding: 12 },
   sectionBar: { paddingHorizontal: 22, paddingTop: 20, paddingBottom: 12 }, sectionTitle: { color: C.ink, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: -0.4 },
   attribution: { color: '#A3A09A', fontSize: 11, lineHeight: 16, marginTop: 7 },
-  paragraphList: { paddingHorizontal: 18, paddingBottom: 14 }, paragraph: { flexDirection: 'row', gap: 12, paddingVertical: 15, paddingHorizontal: 7, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#24252A' },
-  activeParagraph: { backgroundColor: '#121914', borderRadius: 10 }, paragraphNo: { width: 22, color: '#8F8056', fontSize: 10, fontWeight: '800', paddingTop: 3 },
-  paragraphText: { flex: 1, color: '#D6D1C7', fontSize: 16, lineHeight: 27, fontFamily: 'Georgia' },
-  readerFooter: { borderTopWidth: 1, borderTopColor: C.line, paddingHorizontal: 16, paddingTop: 9, paddingBottom: 12, backgroundColor: '#0D0E11' },
+  paragraphList: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingHorizontal: 18, paddingBottom: 14 }, paragraph: { flexDirection: 'row', gap: 12, paddingVertical: 15, paddingHorizontal: 7, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: C.line },
+  activeParagraph: { backgroundColor: Colors.coralTint, borderRadius: 10 }, paragraphNo: { width: 22, color: Colors.coralSoft, fontSize: 10, fontWeight: '800', paddingTop: 3 },
+  paragraphText: { flex: 1, color: Colors.scripture, fontSize: 17, lineHeight: 29, fontFamily: scriptureFontFamily },
+  readerFooter: { borderTopWidth: 1, borderTopColor: C.line, paddingHorizontal: 16, paddingTop: 9, paddingBottom: 12, backgroundColor: Colors.surfaceSubtle },
   footerActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, footerButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 5 },
   footerText: { color: C.ink, fontSize: 12, fontWeight: '600' }, footerCount: { color: C.muted, fontSize: 11, fontWeight: '700' },
-  noteButton: { alignSelf: 'center', minHeight: 38, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10 }, noteText: { color: C.gold, fontSize: 11, fontWeight: '700' },
+  noteButton: { alignSelf: 'center', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingHorizontal: 10 }, noteText: { color: C.gold, fontSize: 11, fontWeight: '700' },
   noteStatus: { color: C.muted, textAlign: 'center', fontSize: 10, paddingBottom: 3 },
   positionRetry: { paddingVertical: 5 }, positionError: { color: '#E0B9B1', fontSize: 10, textAlign: 'center', textDecorationLine: 'underline' },
-  loading: { padding: 22, gap: 14 }, skeleton: { height: 18, borderRadius: 7, width: '95%', backgroundColor: '#24252B' }, skeletonShort: { height: 18, borderRadius: 7, width: '67%', backgroundColor: '#202127' },
+  loading: { padding: 22, gap: 14 }, skeleton: { height: 18, borderRadius: 7, width: '95%', backgroundColor: '#343031' }, skeletonShort: { height: 18, borderRadius: 7, width: '67%', backgroundColor: '#2A2728' },
   readerError: { margin: 18, padding: 15, borderRadius: 14, backgroundColor: '#251818', borderWidth: 1, borderColor: '#54332E' }, errorText: { color: '#E0B9B1', fontSize: 13, lineHeight: 19 }, retry: { paddingTop: 10 }, retryText: { color: C.gold, fontWeight: '700' },
 });

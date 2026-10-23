@@ -8,6 +8,7 @@
 // ✅ Keeps your dark card / rounded style
 
 import UserAvatar from '@/components/UserAvatar';
+import Colors from '@/constants/Colors';
 import { useAuth, useOAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
@@ -161,7 +162,7 @@ export default function SettingsScreen() {
                 pressed && styles.pressed,
               ]}
             >
-              <Ionicons name="close-outline" size={24} color="#a8c4b7" />
+              <Ionicons name="close-outline" size={24} color={Colors.coral} />
             </Pressable>
           </View>
         )}
@@ -202,7 +203,7 @@ export default function SettingsScreen() {
                     onPress={onSignOut}
                     disabled={busy}
                   >
-                    <Ionicons name="log-out-outline" size={20} color="#ff6b6b" />
+                    <Ionicons name="log-out-outline" size={20} color={Colors.coral} />
                     <Text style={styles.rowBtnTextDanger}>Sign out</Text>
                     <View style={{ flex: 1 }} />
                     <Ionicons name="chevron-forward" size={18} color="#6b7280" />
@@ -224,7 +225,7 @@ export default function SettingsScreen() {
                   onPress={() => setDeleteOpen((v) => !v)}
                   disabled={busy}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#ff6b6b" />
+                  <Ionicons name="trash-outline" size={20} color={Colors.coral} />
                   <Text style={styles.rowBtnTextDanger}>Delete account</Text>
                   <View style={{ flex: 1 }} />
                   <Ionicons
@@ -429,7 +430,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={styles.footerNote}>GospelAI · Built with ❤️</Text>
+        <Text style={styles.footerNote}>GospelAI · Made for quiet study</Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -438,7 +439,7 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0b1116',
+    backgroundColor: Colors.background,
   },
   container: {
     width: '100%',
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   webHeaderTitle: {
-    color: '#edf3ef',
+    color: Colors.text,
     fontSize: 22,
     fontWeight: '800',
     letterSpacing: -0.3,
@@ -468,14 +469,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 19,
-    backgroundColor: '#172426',
+    backgroundColor: Colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: '#2b4140',
+    borderColor: Colors.border,
   },
 
   section: { marginTop: 18 },
   sectionTitle: {
-    color: '#94b9ae',
+    color: Colors.coral,
     fontWeight: '800',
     letterSpacing: 1.7,
     fontSize: 10,
@@ -484,12 +485,12 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: '#111c20',
+    backgroundColor: Colors.surface,
     borderRadius: 18,
     paddingVertical: 17,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: '#263a3c',
+    borderColor: Colors.border,
   },
 
   // Signed-in block
@@ -500,12 +501,12 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   signedTitle: {
-    color: '#edf3ef',
+    color: Colors.text,
     fontSize: 16,
     fontWeight: '800',
   },
   signedSub: {
-    color: '#a1b2ad',
+    color: Colors.textMuted,
     fontSize: 13,
     marginTop: 2,
   },
@@ -518,21 +519,21 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   guestBadge: {
-    backgroundColor: '#1a2b2b',
+    backgroundColor: Colors.plum,
     borderWidth: 1,
-    borderColor: '#3a5a51',
+    borderColor: Colors.borderStrong,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
   },
   guestBadgeText: {
-    color: '#b4d2c3',
+    color: Colors.coralSoft,
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.6,
   },
   guestTitle: {
-    color: '#edf3ef',
+    color: Colors.text,
     fontSize: 16,
     fontWeight: '800',
     flex: 1,
@@ -547,8 +548,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  authBtnLight: { backgroundColor: '#e7eee8' },
-  authBtnDark: { backgroundColor: '#1a292b', borderWidth: 1, borderColor: '#405653' },
+  authBtnLight: { backgroundColor: Colors.text },
+  authBtnDark: { backgroundColor: Colors.surfaceRaised, borderWidth: 1, borderColor: Colors.borderStrong },
   authBtnText: {
     fontSize: 15,
     fontWeight: '800',
@@ -571,21 +572,21 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 10,
   },
-  smallBtnSolid: { backgroundColor: '#20845e' },
+  smallBtnSolid: { backgroundColor: Colors.coralDeep },
   smallBtnOutline: {
     borderWidth: 1,
-    borderColor: '#526a63',
-    backgroundColor: '#182626',
+    borderColor: Colors.borderStrong,
+    backgroundColor: Colors.surfaceRaised,
   },
   smallBtnText: {
-    color: '#fff',
+    color: Colors.text,
     fontSize: 13,
     fontWeight: '800',
     letterSpacing: 0.1,
   },
 
   helperText: {
-    color: '#a5b5b0',
+    color: Colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
     textAlign: 'center',
@@ -602,22 +603,22 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 10,
     borderRadius: 12,
-    backgroundColor: '#172426',
+    backgroundColor: Colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: '#2b4140',
+    borderColor: Colors.border,
   },
   pressed: { opacity: 0.78 },
   focused: {
-    borderColor: '#7dbda2',
+    borderColor: Colors.coral,
     borderWidth: 2,
   },
   rowBtnText: {
-    color: '#e3ece7',
+    color: Colors.text,
     fontSize: 15,
     fontWeight: '700',
   },
   rowBtnTextDanger: {
-    color: '#ff6b6b',
+    color: Colors.coral,
     fontSize: 15,
     fontWeight: '800',
   },
@@ -625,7 +626,7 @@ const styles = StyleSheet.create({
   // Delete account panel
   dangerBox: {
     marginTop: 10,
-    backgroundColor: '#171f20',
+    backgroundColor: Colors.coralTint,
     borderWidth: 1,
     borderColor: '#634247',
     borderRadius: 14,
@@ -633,27 +634,27 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   dangerTitle: {
-    color: '#ff6b6b',
+    color: Colors.coral,
     fontWeight: '900',
     fontSize: 14,
     letterSpacing: 0.2,
   },
   dangerText: {
-    color: '#b0bfba',
+    color: '#D3B6B2',
     fontSize: 13,
     lineHeight: 18,
   },
   deleteInputWrap: {
     borderWidth: 1,
-    borderColor: '#405451',
-    backgroundColor: '#10191a',
+    borderColor: '#514849',
+    backgroundColor: Colors.surface,
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
     justifyContent: 'center',
   },
   deleteInput: {
-    color: '#eef2f8',
+    color: Colors.text,
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 0.4,
@@ -661,7 +662,7 @@ const styles = StyleSheet.create({
   deleteBtn: {
     height: 46,
     borderRadius: 999,
-    backgroundColor: '#a94750',
+    backgroundColor: Colors.coralDeep,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -675,7 +676,7 @@ const styles = StyleSheet.create({
 
   footerNote: {
     textAlign: 'center',
-    color: '#839a91',
+    color: '#A9A1A0',
     marginTop: 12,
     fontWeight: '600',
     fontSize: 12,

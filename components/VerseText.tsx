@@ -1,6 +1,7 @@
 import { Link, useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, Text } from 'react-native';
+import Colors from '@/constants/Colors';
 
 type Props = {
   text: string;
@@ -29,14 +30,14 @@ export default function VerseText({ text, hrefBase = '/bible', useLink = true }:
       parts.push(
         <Link key={`v-${start}`} href={href} asChild>
           <Pressable>
-            <Text style={{ color: '#2563eb', fontWeight: '600' }}>{ref}</Text>
+            <Text style={{ color: Colors.coral, fontWeight: '600' }}>{ref}</Text>
           </Pressable>
         </Link>
       );
     } else {
       parts.push(
         <Pressable key={`v-${start}`} onPress={() => router.push(href)}>
-            <Text style={{ color: '#2563eb', fontWeight: '600' }}>{ref}</Text>
+            <Text style={{ color: Colors.coral, fontWeight: '600' }}>{ref}</Text>
         </Pressable>
       );
     }

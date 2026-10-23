@@ -1,23 +1,44 @@
 export default {
-  primary: '#20AB6E',    // keep: vibrant accent green
-  deep_navy: '#0F172A',  // deep navy (twilight)
-  pink: '#E879F9',       // soft pink/violet highlight
-  slate: '#1E293B',      // slate / charcoal blue
-  sky: '#38BDF8',        // bright cyan / sky pop
-  teal: '#0A192F',       // midnight teal-blue
-  yellow: '#FACC15',     // golden yellow (contrast on dark)
-  orange: '#EF580B',     // keep: energetic orange
-  blue: '#93C5FD',       // soft light blue
-  green: '#064E3B',      // dark forest green
-  light: '#FDE68A',      // pale warm yellow for contrast
-  grey: '#242026',       // dark neutral grey
-  greyLight: '#B8B3BA',  // soft muted grey (labels / disabled)
-  input: '#1E1B26',      // darker input background
-  search_input: '#EEE9F0',
-  plum: '#3F1D38',   // plum highlight (selected state)
-  dark: '#0A0A0A',       // almost black
-  selected: '#F7F2F9',
-  clear: '#FFFCFF',
-  header_bg: '#0b0b10',
-  header_txt: '#FFFFFF',
+  // GospelAI · deep ocean night palette
+  primary: '#4C9AAA',
+  coral: '#8FD7E5', // Retain the legacy key while moving all accents to ocean blue.
+  coralSoft: '#B5EAF0',
+  deep_navy: '#0A1013',
+  pink: '#8FD7E5',
+  slate: '#18262C',
+  sky: '#72BED0',
+  teal: '#10252C',
+  yellow: '#C5D9D2',
+  orange: '#559BB0',
+  blue: '#A5C9D6',
+  green: '#72B8AA',
+  light: '#E6F1EF',
+  grey: '#26363B',
+  greyLight: '#B8C9CC',
+  input: '#18262C',
+  search_input: '#18262C',
+  plum: '#1C3038',
+  dark: '#0A1013',
+  selected: '#0A1013',
+  clear: '#F1F5F4',
+  header_bg: '#0A1013',
+  header_txt: '#F1F5F4',
+  background: '#0A1013',
+  surface: '#111B20',
+  surfaceSubtle: '#0D171B',
+  surfaceRaised: '#18262C',
+  border: '#293B43',
+  borderStrong: '#426571',
+  brass: '#BDA779',
+  brassSoft: '#D5C59F',
+  brassBorder: '#5B523D',
+  brassTint: '#211F19',
+  coralDeep: '#276273',
+  coralTint: '#16333D',
+  onCoral: '#07171A',
+  scrim: 'rgba(0,0,0,0.76)',
+  text: '#F1F5F4',
+  textMuted: '#B8C9CC',
+  textQuiet: '#8AA2A9',
+  scripture: '#E4EFED',
 };

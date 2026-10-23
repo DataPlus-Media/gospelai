@@ -1,4 +1,6 @@
 import { openBibleDb } from '@/utils/bibleDb';
+import Colors from '@/constants/Colors';
+import { scriptureFontFamily, spacing } from '@/constants/DesignTokens';
 import { getTodaysVerse, VotdEntry } from '@/utils/verseOfDay';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -7,6 +9,7 @@ import {
   ActionSheetIOS,
   AppState,
   Alert,
+  ImageBackground,
   Platform,
   Pressable,
   Share,
@@ -177,26 +180,28 @@ export default function VerseOfDay() {
   };
 
   return (
+    <View style={styles.frame}>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Open ${entry.ref} in the Bible`}
       onPress={navigateToVerse}
       style={styles.card}
     >
+      <View pointerEvents="none" style={styles.editorialBackdrop} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <ImageBackground
+          source={require('@/assets/images/scripture-forest.jpg')}
+          resizeMode="cover"
+          style={styles.editorialBackdrop}
+          imageStyle={styles.editorialImage}
+          accessible={false}
+        />
+      </View>
+      <View pointerEvents="none" style={styles.imageVeil} />
       <View style={styles.topRow}>
         <View style={styles.labelWrap}>
-          <Text style={styles.labelIcon}>✦</Text>
+          <Ionicons name="sparkles-outline" size={14} color={Colors.text} />
           <Text style={styles.label}>Verse of the Day</Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Share verse of the day"
-          onPress={onShare}
-          hitSlop={10}
-          style={styles.shareBtn}
-        >
-          <Ionicons name="share-outline" size={19} color="#c8a951" />
-        </Pressable>
       </View>
 
       {loading && !verseText ? (
@@ -211,55 +216,87 @@ export default function VerseOfDay() {
 
       <Text style={styles.ref}>{entry.ref} · KJV</Text>
     </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Share verse of the day"
+        onPress={onShare}
+        hitSlop={10}
+        style={styles.shareBtn}
+      >
+        <Ionicons name="share-outline" size={19} color={Colors.text} />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    marginHorizontal: 16,
+  frame: {
+    marginHorizontal: spacing.lg,
     marginBottom: 10,
-    backgroundColor: '#111217',
-    borderRadius: 16,
-    padding: 16,
+  },
+  card: {
+    overflow: 'hidden',
+    backgroundColor: Colors.surface,
+    borderRadius: 19,
+    padding: spacing.xl,
+    minHeight: 260,
     borderWidth: 1,
-    borderColor: '#3a2e14',
+    borderColor: Colors.border,
+  },
+  editorialBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  editorialImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageVeil: {
+    ...StyleSheet.absoluteFillObject,
+    // Even white pixels in the image remain dark enough for readable text.
+    backgroundColor: 'rgba(6, 26, 35, 0.72)',
   },
   topRow: {
+    minHeight: 44,
+    paddingRight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: spacing.xl,
   },
   labelWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
   },
-  labelIcon: {
-    color: '#c8a951',
-    fontSize: 12,
-  },
   label: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#c8a951',
+    color: Colors.text,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   shareBtn: {
-    padding: 4,
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.xl,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.2)',
   },
   verseText: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#f3f4f6',
-    fontStyle: 'italic',
-    marginBottom: 10,
+    fontSize: 23,
+    lineHeight: 34,
+    color: Colors.text,
+    fontFamily: scriptureFontFamily,
+    marginBottom: spacing.xl,
   },
   ref: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#c8a951',
+    color: Colors.text,
     textAlign: 'right',
   },
   skeleton: {
@@ -269,6 +306,6 @@ const styles = StyleSheet.create({
   skLine: {
     height: 14,
     borderRadius: 7,
-    backgroundColor: '#1e2030',
+    backgroundColor: Colors.border,
   },
 });

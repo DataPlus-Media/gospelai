@@ -21,6 +21,7 @@
     "test:insight:browser": "node scripts/check-insight-browser.cjs",
     "test:release-lock": "node scripts/check-release-lock.cjs",
     "test:drawer:browser": "node scripts/check-drawer-browser.cjs",
+    "test:restyle:browser": "node scripts/check-restyle-browser.cjs",
     "library:import": "python scripts/import-library.py",
     "library:upload": "node scripts/upload-library.cjs",
     "build:web": "node scripts/prepare-library-web.cjs && expo export --platform web && node scripts/check-library-web-output.cjs",

@@ -10,7 +10,7 @@ const HeaderDropDown = ({ title, onPress }: Props) => (
         style={{
           fontWeight: '700',
           fontSize: 18,
-          color: Colors.header_txt || '#f3f4f6',
+          color: Colors.header_txt,
         }}
       >
         {title}

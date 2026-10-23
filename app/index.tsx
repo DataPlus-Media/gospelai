@@ -14,29 +14,30 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { welcomeStyles as styles } from '@/components/welcome/styles';
 import { useWelcomeMotion } from '@/hooks/useWelcomeMotion';
+import Colors from '@/constants/Colors';
 
 const FEATURES = [
   {
     icon: 'chatbubble-ellipses-outline' as const,
-    iconColor: '#71D9A4',
+    iconColor: Colors.coral,
     title: 'Ask and explore',
     desc: 'Ask questions and explore Scripture in chat.',
   },
   {
     icon: 'book-outline' as const,
-    iconColor: '#E7C978',
+    iconColor: Colors.scripture,
     title: 'Read Scripture',
     desc: 'Browse and search the KJV Bible.',
   },
   {
     icon: 'sunny-outline' as const,
-    iconColor: '#E7C978',
+    iconColor: Colors.coral,
     title: 'A daily passage',
     desc: 'Start the day with a passage.',
   },
   {
     icon: 'journal-outline' as const,
-    iconColor: '#A8C6AE',
+    iconColor: Colors.coralSoft,
     title: 'Keep personal notes',
     desc: 'Write down reflections and prayers.',
   },
@@ -177,7 +178,7 @@ export default function Index() {
               <Text style={styles.primaryButtonText}>
                 {isSignedIn ? 'Return to Today' : 'Start exploring'}
               </Text>
-              <Ionicons name="arrow-forward" size={18} color="#173A2C" />
+              <Ionicons name="arrow-forward" size={18} color={Colors.onCoral} />
             </Pressable>
             {!isSignedIn && (
               <>

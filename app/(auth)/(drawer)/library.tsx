@@ -1,4 +1,5 @@
 import LibraryHome from '@/components/library/LibraryHome';
+import Colors from '@/constants/Colors';
 import { initLibrary } from '@/utils/library';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite';
@@ -41,8 +42,8 @@ function LibraryRouteContent({ appDb }: { appDb: SQLiteDatabase }) {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, backgroundColor: '#0A0A0A', justifyContent: 'center', paddingHorizontal: 24, gap: 12 },
-  loadingTitle: { color: '#F5F1E8', fontSize: 16, fontWeight: '700', marginBottom: 4 },
-  skeleton: { height: 16, width: '92%', borderRadius: 7, backgroundColor: '#24252B' },
-  skeletonShort: { height: 16, width: '62%', borderRadius: 7, backgroundColor: '#202127' },
+  loading: { flex: 1, backgroundColor: Colors.background, justifyContent: 'center', paddingHorizontal: 24, gap: 12 },
+  loadingTitle: { color: Colors.text, fontSize: 16, fontWeight: '700', marginBottom: 4 },
+  skeleton: { height: 16, width: '92%', borderRadius: 7, backgroundColor: Colors.surfaceRaised },
+  skeletonShort: { height: 16, width: '62%', borderRadius: 7, backgroundColor: Colors.surface },
 });

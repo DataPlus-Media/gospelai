@@ -13,8 +13,11 @@ import LibraryReader from '@/components/library/LibraryReader';
 import LibraryWorkCard from '@/components/library/LibraryWorkCard';
 import { downloadWork } from '@/utils/libraryDownload';
 import PassageInsight from '@/components/library/PassageInsight';
+import Colors from '@/constants/Colors';
+import { spacing } from '@/constants/DesignTokens';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const C = { ink: '#F5F1E8', muted: '#9B9AA2', gold: '#D4B65F', green: '#80C59A', panel: '#121318', line: '#292A30' };
+const C = { ink: Colors.text, muted: Colors.textMuted, gold: Colors.coral, green: Colors.coral, panel: Colors.surface, line: Colors.border };
 type DownloadProgress = { phase: 'downloading' | 'installing'; fraction: number | null; received: number; total: number };
 type LibraryListItem = { type: 'hit'; hit: LibraryHit } | { type: 'work'; work: LibraryWork };
 
@@ -30,6 +33,7 @@ export default function LibraryHome({
   setParams: (params: Record<string, string | undefined>) => void;
 }) {
   const db = useSQLiteContext();
+  const insets = useSafeAreaInsets();
   const [author, setAuthor] = useState<string>('All authors');
   const [selectedTitleId, setSelectedTitleId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -203,7 +207,7 @@ export default function LibraryHome({
     const title = selectedWork.title;
     return (
       <View style={styles.screen}>
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg }]} showsVerticalScrollIndicator={false}>
           <Pressable accessibilityRole="button" accessibilityLabel={params.book ? 'Return to selected passage' : 'Back to Authors insight'} onPress={() => setParams({ work: undefined, section: undefined, paragraph: undefined })} style={styles.backLink}><Ionicons name="arrow-back" size={17} color={C.green} /><Text style={styles.backText}>{params.book ? 'Return to selected passage' : 'Authors insight'}</Text></Pressable>
           <Text style={styles.eyebrow}>{selectedWork.author.toUpperCase()} · {selectedWork.kind.toUpperCase()}</Text>
           <Text style={styles.detailTitle}>{title}</Text>
@@ -215,7 +219,7 @@ export default function LibraryHome({
             <Pressable onPress={() => void Linking.openURL(selectedWork.rightsUrl)} style={styles.provenanceLink}><Ionicons name="open-outline" size={15} color={C.green} /><Text style={styles.linkText}>Open rights statement</Text></Pressable>
             {selectedWork.package ? <Text style={styles.packageMeta}>Verified package · {selectedWork.package.sections} sections · {formatBytes(selectedWork.package.bytes)}</Text> : null}
           </View>
-          {selectedWork.blocker ? <View style={styles.blocker}><Ionicons name="lock-closed-outline" size={18} color="#D5A78C" /><Text style={styles.blockerText}>{selectedWork.blocker}</Text><Text style={styles.blockerFoot}>This work cannot be downloaded in the app at this time.</Text></View> : null}
+          {selectedWork.blocker ? <View style={styles.blocker}><Ionicons name="lock-closed-outline" size={18} color="#E9A197" /><Text style={styles.blockerText}>{selectedWork.blocker}</Text><Text style={styles.blockerFoot}>This work cannot be downloaded in the app at this time.</Text></View> : null}
           {needsRepair ? <View style={styles.errorPanel}><Text style={styles.errorText}>This download is incomplete. Repairing it replaces only the source text. Your notes and reading position will stay here.</Text></View> : null}
           {!isInstalled && selectedWork.package && !selectedWork.blocker ? <Text style={styles.deviceNote}>Full work download · {formatBytes(selectedWork.package.bytes)}. After installation, the original text is available offline on this device.{params.book ? ' You will return to your selected passage automatically.' : ''}</Text> : null}
           {pageError ? <View style={styles.errorPanel}><Text style={styles.errorText}>{pageError}</Text><Pressable accessibilityRole="button" onPress={() => void refreshInstalled()}><Text style={styles.linkText}>Try again</Text></Pressable></View> : null}
@@ -224,13 +228,13 @@ export default function LibraryHome({
           {isInstalled ? (
             <>
               <View style={styles.offlineNote}><Ionicons name="cloud-offline-outline" size={17} color={C.green} /><Text style={styles.offlineCopy}>Downloaded for offline reading on this device.</Text></View>
-              <Pressable accessibilityRole="button" onPress={() => setParams({ work: selectedWork.id, section: detailPosition?.section_id ?? '__start__', paragraph: detailPosition ? String(detailPosition.paragraph) : undefined })} style={styles.primaryButton}><Text style={styles.primaryText}>{detailPosition ? 'Resume reading' : 'Read this work'}</Text><Ionicons name="arrow-forward" size={17} color="#10231B" /></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => setParams({ work: selectedWork.id, section: detailPosition?.section_id ?? '__start__', paragraph: detailPosition ? String(detailPosition.paragraph) : undefined })} style={styles.primaryButton}><Text style={styles.primaryText}>{detailPosition ? 'Resume reading' : 'Read this work'}</Text><Ionicons name="arrow-forward" size={17} color={Colors.onCoral} /></Pressable>
               {detailNotices.map((notice, index) => <View key={`${index}-${notice}`} style={styles.notice}><Ionicons name="information-circle-outline" size={16} color={C.gold} /><Text style={styles.noticeText}>{notice}</Text></View>)}
               <Pressable disabled={downloadBusy} onPress={() => setRemoveVisible(true)} style={styles.removeButton}><Text style={styles.removeText}>Remove download</Text></Pressable>
             </>
           ) : selectedWork.package && !selectedWork.blocker ? (
             <Pressable accessibilityRole="button" disabled={downloadBusy} onPress={() => void beginDownload(selectedWork)} style={[styles.primaryButton, downloadBusy && styles.disabled]}>
-              {downloadBusy ? <ActivityIndicator size="small" color="#10231B" /> : <><Ionicons name="download-outline" size={18} color="#10231B" /><Text style={styles.primaryText}>{needsRepair ? 'Repair download' : 'Download for offline use'}</Text></>}
+              {downloadBusy ? <ActivityIndicator size="small" color={Colors.onCoral} /> : <><Ionicons name="download-outline" size={18} color={Colors.onCoral} /><Text style={styles.primaryText}>{needsRepair ? 'Repair download' : 'Download for offline use'}</Text></>}
             </Pressable>
           ) : null}
           <Text style={styles.deviceNote}>Library text is stored locally. Removing a work never deletes notes or reading position.</Text>
@@ -239,7 +243,7 @@ export default function LibraryHome({
           <View style={styles.modalBackdrop}><View style={styles.modalCard}>
             <Text style={styles.modalTitle}>Remove this download?</Text>
             <Text style={styles.modalBody}>The text will be removed from this device. Your personal notes and reading position are kept and will remain if you download the work again.</Text>
-            <View style={styles.modalActions}><Pressable onPress={() => setRemoveVisible(false)} style={styles.cancelButton}><Text style={styles.cancelText}>Keep download</Text></Pressable><Pressable disabled={downloadBusy} onPress={() => void confirmRemove()} style={styles.confirmButton}>{downloadBusy ? <ActivityIndicator color="#211D12" /> : <Text style={styles.confirmText}>Remove</Text>}</Pressable></View>
+            <View style={styles.modalActions}><Pressable onPress={() => setRemoveVisible(false)} style={styles.cancelButton}><Text style={styles.cancelText}>Keep download</Text></Pressable><Pressable disabled={downloadBusy} onPress={() => void confirmRemove()} style={styles.confirmButton}>{downloadBusy ? <ActivityIndicator color={Colors.onCoral} /> : <Text style={styles.confirmText}>Remove</Text>}</Pressable></View>
           </View></View>
         </Modal>
       </View>
@@ -272,7 +276,7 @@ export default function LibraryHome({
         keyExtractor={item => item.type === 'hit'
           ? `${item.hit.work_id}:${item.hit.section_id}:${item.hit.paragraph}`
           : item.work.id}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg }]}
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View>
@@ -326,43 +330,43 @@ export default function LibraryHome({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#0A0A0A' },
-  content: { paddingTop: 17, paddingBottom: 38, paddingHorizontal: 16, flexGrow: 1 },
+  screen: { flex: 1, backgroundColor: Colors.background },
+  content: { width: '100%', maxWidth: 980, alignSelf: 'center', paddingTop: 17, paddingBottom: 38, paddingHorizontal: 16, flexGrow: 1 },
   header: { paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  eyebrow: { color: '#9C8A59', fontSize: 9, fontWeight: '800', letterSpacing: 1.45 },
+  eyebrow: { color: Colors.coral, fontSize: 9, fontWeight: '800', letterSpacing: 1.45 },
   title: { marginTop: 5, color: C.ink, fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1 },
-  headerMark: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: '#28231A', borderWidth: 1, borderColor: '#463B22' },
+  headerMark: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.plum, borderWidth: 1, borderColor: Colors.borderStrong },
   intro: { marginHorizontal: 4, marginTop: 8, marginBottom: 14, color: C.muted, fontSize: 14, lineHeight: 21, maxWidth: 330 },
-  localBanner: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 11, backgroundColor: '#111713', borderWidth: 1, borderColor: '#28382E', borderRadius: 12, marginBottom: 15 },
-  localText: { flex: 1, color: '#A8B9AA', fontSize: 11, lineHeight: 16 },
-  searchBox: { height: 48, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 13, backgroundColor: '#141318', borderWidth: 1, borderColor: '#302A28' },
+  localBanner: { flexDirection: 'row', gap: 8, alignItems: 'center', padding: 11, backgroundColor: Colors.coralTint, borderWidth: 1, borderColor: Colors.borderStrong, borderRadius: 12, marginBottom: 15 },
+  localText: { flex: 1, color: '#D3B6B2', fontSize: 11, lineHeight: 16 },
+  searchBox: { height: 48, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 9, borderRadius: 13, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   searchInput: { flex: 1, paddingVertical: 9, color: C.ink, fontSize: 14 },
   scope: { color: '#777780', fontSize: 10, marginTop: 7, marginBottom: 11, paddingHorizontal: 2 },
-  scopeLabel: { color: '#9C8A59', fontSize: 9, fontWeight: '800', letterSpacing: 1.1, marginBottom: 7, marginLeft: 2 },
+  scopeLabel: { color: Colors.coral, fontSize: 9, fontWeight: '800', letterSpacing: 1.1, marginBottom: 7, marginLeft: 2 },
   authorList: { gap: 7, paddingBottom: 18 },
-  authorChip: { minHeight: 34, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 18, backgroundColor: '#14151A', borderWidth: 1, borderColor: '#292A30' },
-  authorChipActive: { backgroundColor: '#242116', borderColor: '#67582E' }, authorChipText: { color: '#A4A3AA', fontSize: 11, fontWeight: '600' }, authorChipTextActive: { color: C.gold },
-  sectionHeading: { color: '#9C8A59', fontSize: 9, fontWeight: '800', letterSpacing: 1.35, marginHorizontal: 3, marginBottom: 10 },
+  authorChip: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 18, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+  authorChipActive: { backgroundColor: Colors.plum, borderColor: Colors.borderStrong }, authorChipText: { color: Colors.textMuted, fontSize: 11, fontWeight: '600' }, authorChipTextActive: { color: C.gold },
+  sectionHeading: { color: Colors.coral, fontSize: 9, fontWeight: '800', letterSpacing: 1.35, marginHorizontal: 3, marginBottom: 10 },
   resultsHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, resultCount: { color: C.muted, fontSize: 10, paddingBottom: 10 },
-  emptyState: { alignItems: 'center', paddingHorizontal: 23, paddingVertical: 28, backgroundColor: '#111217', borderRadius: 16, borderWidth: 1, borderColor: '#26272D' },
-  emptyMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#28231A', marginBottom: 10 },
+  emptyState: { alignItems: 'center', paddingHorizontal: 23, paddingVertical: 28, backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border },
+  emptyMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: Colors.plum, marginBottom: 10 },
   emptyTitle: { color: C.ink, fontWeight: '700', fontSize: 14, textAlign: 'center' }, emptyBody: { color: C.muted, fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 6, maxWidth: 290 },
   footer: { paddingHorizontal: 5, paddingTop: 25, paddingBottom: 5 }, footerTitle: { color: '#D9D1BE', fontSize: 12, fontWeight: '700' }, footerCopy: { color: '#818189', fontSize: 10, lineHeight: 15, marginTop: 5 },
   detailTitle: { marginTop: 5, marginBottom: 16, color: C.ink, fontSize: 28, lineHeight: 34, fontWeight: '700', letterSpacing: -0.6 },
   backLink: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 18, minHeight: 34 }, backText: { color: C.green, fontSize: 12, fontWeight: '700' },
-  sourcePanel: { padding: 15, borderRadius: 16, borderWidth: 1, borderColor: C.line, backgroundColor: '#121318' },
-  fieldLabel: { color: '#9C8A59', fontSize: 9, fontWeight: '800', letterSpacing: 1.1, marginTop: 11 }, fieldText: { color: '#C3C0B8', fontSize: 12, lineHeight: 18, marginTop: 4 },
+  sourcePanel: { padding: 15, borderRadius: 16, borderWidth: 1, borderColor: C.line, backgroundColor: Colors.surface },
+  fieldLabel: { color: Colors.coral, fontSize: 9, fontWeight: '800', letterSpacing: 1.1, marginTop: 11 }, fieldText: { color: '#D0C8C4', fontSize: 12, lineHeight: 18, marginTop: 4 },
   provenanceLink: { flexDirection: 'row', alignItems: 'center', gap: 7, minHeight: 38, marginTop: 5 }, linkText: { color: C.green, fontSize: 12, fontWeight: '700' },
   packageMeta: { borderTopWidth: 1, borderTopColor: C.line, paddingTop: 10, marginTop: 5, color: '#86868F', fontSize: 10 },
   blocker: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8, padding: 13, borderRadius: 13, marginTop: 12, backgroundColor: '#211815', borderWidth: 1, borderColor: '#49312B' },
   blockerText: { flex: 1, color: '#E0B9A9', fontSize: 12, lineHeight: 18 }, blockerFoot: { width: '100%', color: '#AA887C', fontSize: 10, lineHeight: 15 },
   primaryButton: { minHeight: 48, paddingHorizontal: 15, borderRadius: 12, backgroundColor: C.green, marginTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  primaryText: { flex: 1, color: '#10231B', fontWeight: '800', fontSize: 13 },
+  primaryText: { flex: 1, color: Colors.onCoral, fontWeight: '800', fontSize: 13 },
   offlineNote: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 16, paddingHorizontal: 3 }, offlineCopy: { color: '#A9B9AA', fontSize: 11 },
   notice: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: '#181711', borderRadius: 11, padding: 11, marginTop: 9 }, noticeText: { flex: 1, color: '#C9C1AD', fontSize: 11, lineHeight: 16 },
   removeButton: { alignSelf: 'center', padding: 13, marginTop: 7 }, removeText: { color: '#C09289', fontSize: 11, fontWeight: '700' },
-  progressPanel: { padding: 13, marginTop: 13, borderRadius: 13, backgroundColor: '#111713', borderWidth: 1, borderColor: '#28382E' },
-  progressLabel: { color: '#D7E1D7', fontSize: 12, fontWeight: '700' }, track: { height: 5, borderRadius: 4, backgroundColor: '#29332C', overflow: 'hidden', marginTop: 10 }, fill: { height: '100%', backgroundColor: C.green },
+  progressPanel: { padding: 13, marginTop: 13, borderRadius: 13, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.coralTint },
+  progressLabel: { color: Colors.text, fontSize: 12, fontWeight: '700' }, track: { height: 5, borderRadius: 4, backgroundColor: Colors.border, overflow: 'hidden', marginTop: 10 }, fill: { height: '100%', backgroundColor: C.green },
   progressMeta: { color: '#909A90', fontSize: 10, marginTop: 7 }, deviceNote: { color: '#83858A', fontSize: 10, lineHeight: 15, marginTop: 15, textAlign: 'center' },
   errorPanel: { padding: 13, borderRadius: 13, marginVertical: 9, backgroundColor: '#251818', borderWidth: 1, borderColor: '#54332E' }, errorText: { color: '#E0B9B1', fontSize: 12, lineHeight: 18 }, retryLink: { paddingTop: 9 },
   disabled: { opacity: 0.55 },
@@ -371,12 +375,12 @@ const styles = StyleSheet.create({
   modalTitle: { color: C.ink, fontSize: 20, fontWeight: '700' }, modalBody: { color: '#AAA8A0', fontSize: 13, lineHeight: 19, marginTop: 8 },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 9, marginTop: 21 },
   cancelButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 13, borderRadius: 11, backgroundColor: '#25262A' }, cancelText: { color: '#D0CFCA', fontSize: 12, fontWeight: '700' },
-  confirmButton: { minHeight: 42, minWidth: 94, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 13, borderRadius: 11, backgroundColor: '#D4B65F' }, confirmText: { color: '#211D12', fontSize: 12, fontWeight: '800' },
+  confirmButton: { minHeight: 44, minWidth: 94, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 13, borderRadius: 11, backgroundColor: Colors.coral }, confirmText: { color: Colors.onCoral, fontSize: 12, fontWeight: '800' },
   results: { marginBottom: 12, borderRadius: 14, borderWidth: 1, borderColor: C.line, backgroundColor: C.panel, padding: 12 },
   resultRow: { borderTopWidth: 1, borderTopColor: C.line, paddingVertical: 10 }, resultTitle: { color: C.ink, fontSize: 12, fontWeight: '700' }, resultMeta: { color: C.gold, fontSize: 10, marginTop: 4 },
   searchLoading: { flexDirection: 'row', alignItems: 'center', gap: 9, padding: 12 }, muted: { color: C.muted, fontSize: 11 },
   hitRow: { padding: 12, borderRadius: 12, marginBottom: 8, borderWidth: 1, borderColor: C.line, backgroundColor: C.panel }, hitWork: { color: C.green, fontWeight: '700', fontSize: 10 }, hitText: { color: '#D6D1C7', fontSize: 12, lineHeight: 18, marginTop: 5 }, hitMeta: { color: '#8E8D95', fontSize: 10, marginTop: 5 },
-  passageEmpty: { marginHorizontal: 15, marginBottom: 10, padding: 12, borderRadius: 13, backgroundColor: '#171711', borderWidth: 1, borderColor: '#413B29', flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' },
+  passageEmpty: { marginHorizontal: 15, marginBottom: 10, padding: 12, borderRadius: 13, backgroundColor: Colors.surfaceSubtle, borderWidth: 1, borderColor: Colors.brassBorder, flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' },
   passageEmptyText: { flex: 1, color: '#C9C1AD', fontSize: 11, lineHeight: 16 },
   emptyAction: { marginTop: 12, padding: 8 },
 });

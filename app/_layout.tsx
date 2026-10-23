@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { entryRedirect } from '@/utils/navigation';
+import Colors from '@/constants/Colors';
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -66,10 +67,10 @@ const InitialLayout = () => {
           presentation: 'modal',
           title: '',
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: '#101C17' },
-          headerTintColor: '#A8C6AE',
-          contentStyle: { backgroundColor: '#101C17' },
-          headerTitleStyle: { fontFamily: 'mon-sb', color: '#F4F1E8' },
+          headerStyle: { backgroundColor: Colors.background },
+          headerTintColor: Colors.coral,
+          contentStyle: { backgroundColor: Colors.background },
+          headerTitleStyle: { fontFamily: 'mon-sb', color: Colors.text },
           headerLeft: () => (
             <TouchableOpacity
               onPress={() => router.back()}
@@ -77,7 +78,7 @@ const InitialLayout = () => {
               accessibilityLabel="Close sign-in"
               hitSlop={10}
             >
-              <Ionicons name="close-outline" size={28} color="#A8C6AE" />
+              <Ionicons name="close-outline" size={28} color={Colors.coral} />
             </TouchableOpacity>
           ),
         }}

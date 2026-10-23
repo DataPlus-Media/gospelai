@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { LibraryWork } from '@/utils/libraryTypes';
 import type { CatalogState } from './PassageTypes';
 import { C, styles } from './PassageStyles';
+import Colors from '@/constants/Colors';
 
 export default function PassageCatalogRow({
   work,
@@ -60,7 +61,7 @@ export default function PassageCatalogRow({
       style={[styles.catalogAction, hasChapterCommentary && styles.catalogActionPrimary]}
     >
       <Text style={[styles.catalogActionText, hasChapterCommentary && styles.catalogActionPrimaryText]}>{actionLabel}</Text>
-      <Ionicons name="arrow-forward" size={14} color={hasChapterCommentary ? '#10231B' : C.green} />
+      <Ionicons name="arrow-forward" size={14} color={hasChapterCommentary ? Colors.onCoral : C.green} />
     </Pressable>
   );
   const badge = <View style={[styles.statusBadge, { borderColor: state === 'rights' ? '#53342D' : state === 'incomplete' ? '#51472D' : '#4A432D', alignSelf: 'flex-start' }]}>

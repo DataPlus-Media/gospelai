@@ -1,5 +1,6 @@
-import Colors from '@/constants/Colors';
 import { deleteNote, getNotes, Note } from '@/utils/Database';
+import Colors from '@/constants/Colors';
+import { spacing } from '@/constants/DesignTokens';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
@@ -12,9 +13,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotesScreen() {
   const db = useSQLiteContext();
+  const insets = useSafeAreaInsets();
   const [notes, setNotes] = useState<Note[]>([]);
 
   const loadNotes = useCallback(async () => {
@@ -84,7 +87,7 @@ export default function NotesScreen() {
           hitSlop={12}
           style={styles.deleteBtn}
         >
-          <Ionicons name="trash-outline" size={18} color="#ef4444" />
+          <Ionicons name="trash-outline" size={18} color={Colors.coral} />
         </Pressable>
       </View>
       <Text style={styles.content} numberOfLines={4}>
@@ -98,7 +101,7 @@ export default function NotesScreen() {
     <View style={styles.container}>
       {notes.length === 0 ? (
         <View style={styles.emptyWrap}>
-          <Ionicons name="document-text-outline" size={48} color="#3a3d4a" />
+          <Ionicons name="document-text-outline" size={48} color={Colors.borderStrong} />
           <Text style={styles.emptyText}>You haven’t saved any notes yet</Text>
           <Text style={styles.emptyHint}>
             Press and hold a chat message or Bible verse to save a note.
@@ -109,7 +112,10 @@ export default function NotesScreen() {
           data={notes}
           keyExtractor={(item) => String(item.id)}
           renderItem={renderNote}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[
+            styles.list,
+            { width: '100%', maxWidth: 840, alignSelf: 'center', paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg },
+          ]}
         />
       )}
     </View>
@@ -119,18 +125,18 @@ export default function NotesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark,
+    backgroundColor: Colors.background,
   },
   list: {
     padding: 14,
     gap: 10,
   },
   card: {
-    backgroundColor: '#111217',
+    backgroundColor: Colors.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: Colors.border,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -144,35 +150,39 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   badgeBible: {
-    backgroundColor: 'rgba(234,179,8,0.15)',
+    backgroundColor: 'rgba(143,215,229,0.14)',
   },
   badgeChat: {
-    backgroundColor: 'rgba(59,130,246,0.15)',
+    backgroundColor: 'rgba(201,170,165,0.13)',
   },
   badgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#d4d4d8',
+    color: Colors.coral,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   reference: {
     flex: 1,
     fontSize: 13,
-    color: '#8a90a2',
+    color: Colors.textMuted,
     fontWeight: '600',
   },
   deleteBtn: {
     padding: 4,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
     fontSize: 15,
-    color: '#f3f4f6',
+    color: Colors.text,
     lineHeight: 22,
   },
   date: {
     fontSize: 12,
-    color: '#555a6a',
+    color: Colors.textMuted,
     marginTop: 8,
   },
   emptyWrap: {
@@ -184,12 +194,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#555a6a',
+    color: Colors.textMuted,
     marginTop: 12,
   },
   emptyHint: {
     fontSize: 14,
-    color: '#3a3d4a',
+    color: '#A9A1A0',
     textAlign: 'center',
     marginTop: 6,
     lineHeight: 20,

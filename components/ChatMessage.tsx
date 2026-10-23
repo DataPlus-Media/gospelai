@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: '#000',
+    backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 8,
@@ -248,16 +248,16 @@ const styles = StyleSheet.create({
     maxWidth: '80%',
   },
   botBubble: {
-    backgroundColor: '#191b22',
+    backgroundColor: Colors.surfaceRaised,
     borderTopLeftRadius: 6,
   },
   userBubble: {
-    backgroundColor: '#1f2430',
+    backgroundColor: Colors.plum,
     borderTopRightRadius: 6,
   },
 
   text: {
-    color: '#f3f4f6',
+    color: Colors.text,
     fontSize: 16,
     lineHeight: 22,
   },
@@ -268,22 +268,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   textSegment: {
-    color: '#f3f4f6',
+    color: Colors.text,
     fontSize: 16,
     lineHeight: 22,
   },
 
   versePressable: {
-    backgroundColor: 'rgba(59,130,246,0.12)',
+    backgroundColor: 'rgba(143,215,229,0.13)',
     borderWidth: 1,
-    borderColor: '#23314f',
+    borderColor: '#754642',
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginHorizontal: 4,
   },
   verseRef: {
-    color: '#3b82f6',
+    color: Colors.coralSoft,
     fontWeight: '700',
   },
 

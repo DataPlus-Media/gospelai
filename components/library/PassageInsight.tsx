@@ -27,6 +27,7 @@ import PassageCatalogRow from '@/components/library/PassageCatalogRow';
 import PassageSourceReading from '@/components/library/PassageSourceReading';
 import { C, styles } from '@/components/library/PassageStyles';
 import type { CatalogState, LoadedSource } from '@/components/library/PassageTypes';
+import Colors from '@/constants/Colors';
 
 function rowKey(row: PassageMatch) {
   return `${row.work_id}:${row.id}`;
@@ -400,7 +401,7 @@ export default function PassageInsight({
                   onPress={() => toggleCompare(row)}
                   style={[styles.compareButton, isSelected && styles.compareButtonActive, !canSelect && styles.disabledButton]}
                 >
-                  <Ionicons name={isSelected ? 'checkmark' : 'git-compare-outline'} size={15} color={isSelected ? '#10231B' : C.gold} />
+                  <Ionicons name={isSelected ? 'checkmark' : 'git-compare-outline'} size={15} color={isSelected ? Colors.onCoral : C.gold} />
                   <Text style={[styles.compareText, isSelected && styles.compareTextActive]}>
                     {isSelected ? 'In comparison' : 'Compare'}
                   </Text>
@@ -425,7 +426,7 @@ export default function PassageInsight({
                   style={styles.openButton}
                 >
                   <Text style={styles.openButtonText}>Open original</Text>
-                  <Ionicons name="arrow-forward" size={14} color="#10231B" />
+                  <Ionicons name="arrow-forward" size={14} color={Colors.onCoral} />
                 </Pressable>
               </View>
               {isExpanded && mode === 'authors' ? (
@@ -583,7 +584,7 @@ export default function PassageInsight({
                 style={[styles.confirmButton, (!confirmSource || !scripture || !loadedSources[rowKey(confirmSource)]) && styles.disabledButton]}
               >
                 <Text style={styles.confirmText}>Review draft</Text>
-                <Ionicons name="arrow-forward" size={15} color="#211D12" />
+                <Ionicons name="arrow-forward" size={15} color={Colors.onCoral} />
               </Pressable>
             </View>
           </View>

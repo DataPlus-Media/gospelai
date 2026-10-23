@@ -1,6 +1,6 @@
-import Colors from '@/constants/Colors';
 import { useEffect, useRef } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Colors from '@/constants/Colors';
 
 type Idea = { title: string; text: string };
 
@@ -73,8 +73,8 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
             accessibilityLabel={`${item.title}${item.text ? `: ${item.text}` : ''}`}
             style={styles.card}
             onPress={() => onSelectCard(`${item.title} ${item.text}`)}>
-            <Text style={{ fontSize: 16, fontWeight: '500' }} numberOfLines={1}>{item.title}</Text>
-            <Text style={{ color: Colors.greyLight, fontSize: 14 }} numberOfLines={2}>{item.text}</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: Colors.text }} numberOfLines={1}>{item.title}</Text>
+            <Text style={{ color: Colors.textMuted, fontSize: 13, marginTop: 4 }} numberOfLines={2}>{item.text}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -89,9 +89,11 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   card: {
-    backgroundColor: Colors.search_input,
+    backgroundColor: Colors.surfaceRaised,
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
     width: 200,
   },
   skeletonCard: {
@@ -102,7 +104,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 14,
     borderRadius: 4,
-    backgroundColor: Colors.greyLight,
+    backgroundColor: '#494344',
     opacity: 0.3,
     marginBottom: 8,
   },
@@ -110,7 +112,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 12,
     borderRadius: 4,
-    backgroundColor: Colors.greyLight,
+    backgroundColor: '#494344',
     opacity: 0.2,
   },
 });

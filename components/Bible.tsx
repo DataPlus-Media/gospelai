@@ -27,6 +27,8 @@ import { addNote } from '@/utils/Database';
 import { openBibleDb } from '@/utils/bibleDb';
 import { bibleStorageBookId } from '@/utils/bibleBookIds';
 import { completePlanDay, getSavedVerses, getStudySummary, READING_PLAN, savePosition, SavedVerse, toggleSavedVerse, verseDraft } from '@/utils/study';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scriptureFontFamily, spacing } from '@/constants/DesignTokens';
 
 type VerseRow = { verse: number; text: string };
 type SearchResult = { book_id: number; chapter: number; verse: number; text: string };
@@ -57,6 +59,7 @@ function parseSimpleRef(refRaw: string | undefined): {
 export default function BibleScreen() {
   const { ref: refParam, jump, planDay } = useLocalSearchParams<{ ref?: string; jump?: string; planDay?: string }>();
   const appDb = useSQLiteContext();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState<SavedVerse[]>([]);
@@ -369,25 +372,25 @@ export default function BibleScreen() {
 
   return (
     <View style={styles.page}>
-      <View style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 4 }}>
-        <Text style={{ color: '#b8bcc7' }}>King James Version · Bible text · available offline on this device</Text>
-        <Text style={{ color: '#b8bcc7' }}>Tap a verse to bookmark it, highlight it, save a note, open Authors insight, or start a chat.</Text>
+      <View style={styles.pageIntro}>
+        <Text style={{ color: Colors.textMuted }}>King James Version · Bible text · available offline on this device</Text>
+        <Text style={{ color: Colors.textMuted }}>Tap a verse to bookmark it, highlight it, save a note, open Authors insight, or start a chat.</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open Authors insight for ${bookName} ${chapter}`}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', paddingVertical: 12 }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: 44, paddingVertical: 12 }}
           onPress={() => router.push({ pathname: '/(auth)/(drawer)/library', params: {
             book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), jump: String(Date.now()),
           } })}>
-          <Ionicons name="library-outline" size={19} color="#c8a951" />
-          <Text style={{ color: '#c8a951', fontWeight: '700' }}>Authors insight</Text>
-          <Ionicons name="arrow-forward" size={16} color="#c8a951" />
+          <Ionicons name="library-outline" size={19} color={Colors.coral} />
+          <Text style={{ color: Colors.coral, fontWeight: '700' }}>Authors insight</Text>
+          <Ionicons name="arrow-forward" size={16} color={Colors.coral} />
         </TouchableOpacity>
-        {!!notice && <Text accessibilityLiveRegion="polite" style={{ color: '#c8a951' }}>{notice}</Text>}
+        {!!notice && <Text accessibilityLiveRegion="polite" style={{ color: Colors.coralSoft }}>{notice}</Text>}
         {activePlan && <TouchableOpacity style={{ paddingVertical: 12 }} disabled={completedDays.includes(planIndex)}
           onPress={async () => {
             try { await completePlanDay(appDb, planIndex); setCompletedDays([...completedDays, planIndex]); setNotice('Plan reading completed. Return to Today for the next day.'); }
             catch { setNotice('We couldn’t mark this reading as complete. Please try again.'); }
           }}>
-          <Text style={{ color: '#57d99e', fontWeight: '700' }}>{completedDays.includes(planIndex) ? 'Reading completed' : `Mark day ${planIndex + 1} complete · ${planEntry?.reference}`}</Text>
+          <Text style={{ color: Colors.coralSoft, fontWeight: '700' }}>{completedDays.includes(planIndex) ? 'Reading completed' : `Mark day ${planIndex + 1} complete · ${planEntry?.reference}`}</Text>
         </TouchableOpacity>}
       </View>
       <Stack.Screen
@@ -401,9 +404,9 @@ export default function BibleScreen() {
               accessibilityRole="button"
               accessibilityLabel="Search all Bible verses"
               onPress={openSearch}
-              style={{ marginRight: 16 }}
+              style={{ width: 44, height: 44, marginRight: 8, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Ionicons name="search-outline" size={22} color="#f3f4f6" />
+              <Ionicons name="search-outline" size={22} color={Colors.header_txt} />
             </TouchableOpacity>
           ),
         }}
@@ -424,9 +427,9 @@ export default function BibleScreen() {
         keyExtractor={(item) => String(item.verse)}
         keyboardShouldPersistTaps="handled"
         stickyHeaderIndices={[0]}
-        contentContainerStyle={{ paddingBottom: 18 }}
+        contentContainerStyle={[styles.listContent, { paddingBottom: spacing.lg + insets.bottom }]}
         ListHeaderComponent={
-          <View style={{ backgroundColor: '#0f1016' }} onLayout={event => { headerHeight.current = event.nativeEvent.layout.height; }}>
+          <View style={{ backgroundColor: Colors.surfaceSubtle }} onLayout={event => { headerHeight.current = event.nativeEvent.layout.height; }}>
             {/* Controls */}
             <View style={styles.controls}>
               {/* Book (opens searchable picker) */}
@@ -502,7 +505,7 @@ export default function BibleScreen() {
               <View style={[styles.verseCard, saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'highlight') && { backgroundColor: '#3a3018' }, isHit && styles.verseCardHit]}>
                 <Text style={[styles.verseNum, isHit && styles.verseNumHit]}>{item.verse}</Text>
                 <Text style={[styles.verseText, isHit && styles.verseTextHit]}>{item.text}</Text>
-                {saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'bookmark') && <Ionicons name="bookmark" size={18} color="#c8a951" />}
+                {saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'bookmark') && <Ionicons name="bookmark" size={18} color={Colors.coral} />}
               </View>
             </Pressable>
           );
@@ -517,14 +520,14 @@ export default function BibleScreen() {
         }
       />
       <Modal visible={!!actionVerse} transparent animationType="fade" onRequestClose={() => setActionVerse(null)}>
-        <View style={{ flex: 1, backgroundColor: '#000b', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: '#111217', borderRadius: 16, padding: 20 }}>
-            <Text style={{ color: '#c8a951', fontSize: 18, fontWeight: '700' }}>{bookName} {chapter}:{actionVerse?.verse} · KJV</Text>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.78)', justifyContent: 'center', padding: 24 }}>
+          <View style={{ backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.coralTint, borderRadius: 18, padding: 20 }}>
+            <Text style={{ color: Colors.coral, fontSize: 18, fontWeight: '700' }}>{bookName} {chapter}:{actionVerse?.verse} · KJV</Text>
             {(['bookmark', 'highlight'] as const).map(kind => {
               const exists = saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === actionVerse?.verse && s.kind === kind);
-              return <TouchableOpacity key={kind} onPress={() => saveMark(kind)} style={{ paddingVertical: 14 }}><Text style={{ color: '#fff' }}>{exists ? 'Remove' : 'Add'} {kind}</Text></TouchableOpacity>;
+              return <TouchableOpacity key={kind} onPress={() => saveMark(kind)} style={styles.actionItem}><Text style={{ color: Colors.text }}>{exists ? 'Remove' : 'Add'} {kind}</Text></TouchableOpacity>;
             })}
-            <TouchableOpacity accessibilityRole="button" style={{ paddingVertical: 14 }} onPress={() => {
+            <TouchableOpacity accessibilityRole="button" style={styles.actionItem} onPress={() => {
               if (!actionVerse) return;
               const verse = actionVerse.verse;
               setActionVerse(null);
@@ -532,20 +535,20 @@ export default function BibleScreen() {
                 book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), verse: String(verse),
                 jump: String(Date.now()),
               } });
-            }}><Text style={{ color: '#c8a951' }}>Authors insight · this verse</Text></TouchableOpacity>
-            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => {
+            }}><Text style={{ color: Colors.coral }}>Authors insight · this verse</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.actionItem} onPress={() => {
               if (!actionVerse) return;
               const draft = verseDraft(`${bookName} ${chapter}:${actionVerse.verse}`, actionVerse.text);
               setActionVerse(null);
               router.push({ pathname: '/(auth)/(drawer)/(chat)/new', params: { draft, draftId: String(Date.now()) } });
-            }}><Text style={{ color: '#57d99e' }}>Ask GospelAI · edit draft first</Text></TouchableOpacity>
-            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={async () => {
+            }}><Text style={{ color: Colors.coralSoft }}>Ask GospelAI · edit draft first</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.actionItem} onPress={async () => {
               if (!actionVerse) return;
               try { await handleCopyVerse(actionVerse.verse, actionVerse.text); setNotice('Verse copied.'); setActionVerse(null); }
               catch { setNotice('We couldn’t copy the verse. Please try again.'); }
-            }}><Text style={{ color: '#fff' }}>Copy verse</Text></TouchableOpacity>
-            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={async () => { if (actionVerse) await handleSaveVerse(actionVerse.verse, actionVerse.text); setActionVerse(null); }}><Text style={{ color: '#fff' }}>Save to notes</Text></TouchableOpacity>
-            <TouchableOpacity style={{ paddingVertical: 14 }} onPress={() => setActionVerse(null)}><Text style={{ color: '#b8bcc7' }}>Close</Text></TouchableOpacity>
+            }}><Text style={{ color: Colors.text }}>Copy verse</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.actionItem} onPress={async () => { if (actionVerse) await handleSaveVerse(actionVerse.verse, actionVerse.text); setActionVerse(null); }}><Text style={{ color: Colors.text }}>Save to notes</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.actionItem} onPress={() => setActionVerse(null)}><Text style={{ color: Colors.textMuted }}>Close</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -554,7 +557,7 @@ export default function BibleScreen() {
       {!!error && !loadingDb && !loadingVerses && (
         <View style={styles.errorBox}>
           <Text style={styles.dimText}>{error}</Text>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Try loading the Bible again" onPress={() => setRetry(r => r + 1)}><Text style={{ color: '#57d99e', padding: 12 }}>Try again</Text></TouchableOpacity>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Try loading the Bible again" onPress={() => setRetry(r => r + 1)}><Text style={{ color: Colors.coralSoft, padding: 12 }}>Try again</Text></TouchableOpacity>
         </View>
       )}
 
@@ -581,7 +584,7 @@ export default function BibleScreen() {
               onChangeText={onSearchChange}
               autoFocus
               style={styles.drawerSearchInput}
-              placeholderTextColor="#555a6a"
+              placeholderTextColor={Colors.textMuted}
               clearButtonMode="while-editing"
               returnKeyType="search"
             />
@@ -652,6 +655,7 @@ export default function BibleScreen() {
           <View style={styles.drawerSearch}>
             <TextInput
               placeholder="Search books (e.g., John, Romans)…"
+              placeholderTextColor={Colors.textMuted}
               value={libSearch}
               onChangeText={setLibSearch}
               autoFocus
@@ -716,7 +720,20 @@ export default function BibleScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0b0b10', // --bg
+    backgroundColor: Colors.background,
+  },
+  pageIntro: {
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    gap: 4,
+  },
+  listContent: {
+    width: '100%',
+    maxWidth: 960,
+    alignSelf: 'center',
   },
 
   // top controls (sticky header)
@@ -725,9 +742,9 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     paddingBottom: 12,
     gap: 10,
-    backgroundColor: '#0f1016', // .bible-controls bg
+    backgroundColor: Colors.surfaceSubtle,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#171923', // .bible-controls border
+    borderBottomColor: Colors.border,
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'flex-end',
@@ -737,24 +754,24 @@ const styles = StyleSheet.create({
   chapterSearch: { width: '100%' },
   label: {
     fontSize: 12,
-    color: '#b8bcc7', // --ink-dim
+    color: Colors.textMuted,
     marginBottom: 6,
     fontWeight: '600',
   },
   selectLike: {
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#232633',
-    backgroundColor: '#14151b',
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceRaised,
   },
   input: {
     height: 44,
     paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#232633',
-    backgroundColor: '#14151b',
-    color: '#f3f4f6', // --ink
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceRaised,
+    color: Colors.text,
   },
 
   heading: {
@@ -762,7 +779,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 20,
     fontWeight: '800',
-    color: '#f3f4f6', // --ink
+    color: Colors.text,
   },
 
   verseCard: {
@@ -770,15 +787,15 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'flex-start',
     padding: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)', // --card
-    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)', // --border
+    borderColor: Colors.border,
     marginBottom: 8,
   },
   verseCardHit: {
-    backgroundColor: '#2a3a66', // similar to .bb-mark
-    borderColor: 'transparent',
+    backgroundColor: Colors.plum,
+    borderColor: Colors.borderStrong,
   },
   verseNum: {
     width: 26,
@@ -787,21 +804,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
     fontWeight: '800',
-    color: '#b8bcc7', // dim ink
-    backgroundColor: '#141826',
+    color: Colors.textMuted,
+    backgroundColor: Colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.10)',
+    borderColor: Colors.border,
   },
   verseNumHit: {
-    backgroundColor: '#3b82f6', // --accent
-    color: '#ffffff',
+    backgroundColor: Colors.coral,
+    color: Colors.onCoral,
     borderColor: 'transparent',
   },
   verseText: {
     flex: 1,
-    color: '#f3f4f6', // --ink
+    color: Colors.scripture,
     lineHeight: 22,
     fontSize: 16,
+    fontFamily: scriptureFontFamily,
   },
   verseTextHit: {
     fontWeight: '700',
@@ -814,10 +832,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dimText: {
-    color: '#b8bcc7', // --ink-dim
+    color: Colors.textMuted,
     fontSize: 14,
   },
   errorBox: { paddingHorizontal: 14, paddingVertical: 10 },
+  actionItem: { minHeight: 44, justifyContent: 'center', paddingVertical: 10 },
   code: {
     fontFamily: Platform.select({ ios: 'Menlo', android: 'monospace' }),
   },
@@ -825,7 +844,7 @@ const styles = StyleSheet.create({
   // ===== modal drawer styles =====
   drawerRoot: {
     flex: 1,
-    backgroundColor: '#111217', // --panel
+    backgroundColor: Colors.surface,
   },
   drawerHeader: {
     paddingHorizontal: 16,
@@ -834,15 +853,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#191e2b',
+    borderBottomColor: Colors.border,
   },
   drawerTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#f3f4f6', // --ink
+    color: Colors.text,
   },
   drawerClose: {
-    color: '#3b82f6', // --accent
+    minHeight: 44,
+    minWidth: 44,
+    textAlignVertical: 'center',
+    color: Colors.coral,
     fontWeight: '700',
   },
   drawerSearch: { padding: 12 },
@@ -850,24 +872,24 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#23283a',
+    borderColor: Colors.border,
     paddingHorizontal: 12,
-    backgroundColor: '#121522',
-    color: '#f3f4f6', // --ink
+    backgroundColor: Colors.surfaceRaised,
+    color: Colors.text,
   },
   drawerBody: { flex: 1, flexDirection: 'row' },
 
   booksPane: {
     width: 200,
     borderRightWidth: StyleSheet.hairlineWidth,
-    borderRightColor: '#191e2b',
-    backgroundColor: '#121522',
+    borderRightColor: Colors.border,
+    backgroundColor: Colors.surfaceSubtle,
   },
   bookRow: { paddingVertical: 12, paddingHorizontal: 12 },
-  bookRowActive: { backgroundColor: '#161a2a' },
+  bookRowActive: { backgroundColor: Colors.plum },
   bookText: {
     fontSize: 14,
-    color: '#f3f4f6', // --ink
+    color: Colors.text,
   },
   bookTextActive: { fontWeight: '700' },
 
@@ -876,27 +898,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 8,
     fontSize: 15,
-    color: '#f3f4f6', // --ink
+    color: Colors.text,
   },
   chaptersGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
 
   chip: {
+    minHeight: 44,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#23283a',
-    backgroundColor: '#121522',
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceRaised,
   },
   chipActive: {
-    backgroundColor: '#192035', // .lib-ch.active
+    backgroundColor: Colors.plum,
   },
   chipText: {
-    color: '#f3f4f6', // --ink
+    color: Colors.text,
     fontWeight: '600',
   },
   chipTextActive: {
-    color: '#f3f4f6',
+    color: Colors.text,
   },
 
   searchCenter: {
@@ -907,7 +930,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   searchDim: {
-    color: '#555a6a',
+    color: Colors.textMuted,
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -923,25 +946,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#191e2b',
+    borderBottomColor: Colors.border,
     gap: 6,
   },
   searchRefPill: {
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(59,130,246,0.12)',
+    backgroundColor: 'rgba(143,215,229,0.13)',
     borderWidth: 1,
-    borderColor: '#23314f',
+    borderColor: Colors.borderStrong,
     borderRadius: 8,
     paddingHorizontal: 8,
     paddingVertical: 3,
   },
   searchRefText: {
-    color: '#3b82f6',
+    color: Colors.coralSoft,
     fontWeight: '700',
     fontSize: 12,
   },
   searchVerseText: {
-    color: '#d4d4d8',
+    color: Colors.text,
     fontSize: 14,
     lineHeight: 20,
   },

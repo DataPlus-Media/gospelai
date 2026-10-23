@@ -269,7 +269,7 @@ export default function SupportScreen() {
             </Text>
           </Pressable>
 
-          <Text style={styles.note}>Built with ❤️ · KJV Scripture references only.</Text>
+          <Text style={styles.note}>Made for quiet study · KJV Scripture references only.</Text>
         </ScrollView>
       </SafeAreaView>
     </TouchableWithoutFeedback>
@@ -279,9 +279,12 @@ export default function SupportScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: '#0b1116',
+    backgroundColor: Colors.background,
   },
   container: {
+    width: '100%',
+    maxWidth: 760,
+    alignSelf: 'center',
     paddingHorizontal: 20,
     paddingTop: 24,
     paddingBottom: 36,
@@ -289,19 +292,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 29,
     fontWeight: '800',
-    color: '#e9edf5',
+    color: Colors.text,
     marginBottom: 10,
     letterSpacing: -0.5,
   },
   lede: {
-    color: '#aab9bd',
+    color: Colors.textMuted,
     lineHeight: 22,
     marginBottom: 22,
     fontSize: 15,
   },
   card: {
-    backgroundColor: '#121d24',
-    borderColor: '#26383d',
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: 19,
     paddingHorizontal: 16,
@@ -310,60 +313,61 @@ const styles = StyleSheet.create({
   },
   block: { marginTop: 1 },
   blockRow: { marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  label: { fontWeight: '800', color: '#e5eeec', marginBottom: 12, fontSize: 14 },
+  label: { fontWeight: '800', color: Colors.text, marginBottom: 12, fontSize: 14 },
   chips: { flexDirection: 'row', gap: 10, marginBottom: 13, flexWrap: 'wrap' },
   chip: {
     borderWidth: 1,
-    borderColor: '#395157',
-    backgroundColor: '#17242a',
+    borderColor: Colors.borderStrong,
+    backgroundColor: Colors.surfaceRaised,
     paddingVertical: 11,
     paddingHorizontal: 18,
     borderRadius: 13,
     minWidth: 72,
+    minHeight: 44,
     alignItems: 'center',
   },
   chipActive: {
-    backgroundColor: '#176b54',
-    borderColor: Colors.sky,
+    backgroundColor: Colors.plum,
+    borderColor: Colors.coral,
     borderWidth: 2,
   },
-  chipText: { color: '#b8c6c7', fontWeight: '700' },
-  chipTextActive: { color: '#fff' },
+  chipText: { color: Colors.textMuted, fontWeight: '700' },
+  chipTextActive: { color: Colors.text },
   amountWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#395157',
-    backgroundColor: '#10191e',
+    borderColor: Colors.borderStrong,
+    backgroundColor: Colors.surface,
     borderRadius: 13,
     paddingHorizontal: 14,
     height: 50,
   },
-  currency: { color: '#a8c5bf', fontWeight: '800', marginRight: 8, fontSize: 16 },
-  amountInput: { flex: 1, fontSize: 16, color: '#e9edf5' },
+  currency: { color: Colors.coralSoft, fontWeight: '800', marginRight: 8, fontSize: 16 },
+  amountInput: { flex: 1, fontSize: 16, color: Colors.text },
   placeholder: { color: '#8891a6' },
   segment: {
     flexDirection: 'row',
-    backgroundColor: '#10191e',
-    borderColor: '#31464c',
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: 13,
     padding: 4,
     alignSelf: 'flex-start',
   },
-  segBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
+  segBtn: { minHeight: 44, justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 },
   segBtnActive: {
-    backgroundColor: '#176b54',
+    backgroundColor: Colors.plum,
     borderWidth: 1,
-    borderColor: Colors.sky,
+    borderColor: Colors.coral,
   },
-  segText: { color: '#b2c0c2', fontWeight: '700' },
-  segTextActive: { color: '#fff' },
+  segText: { color: Colors.textMuted, fontWeight: '700' },
+  segTextActive: { color: Colors.text },
   coverText: { color: '#b2b9c9', flex: 1, fontSize: 14 },
   cta: {
     marginTop: 4,
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
+    backgroundColor: Colors.coral,
+    borderColor: Colors.coral,
     borderWidth: 1,
     borderRadius: 15,
     alignItems: 'center',
@@ -376,9 +380,9 @@ const styles = StyleSheet.create({
   ctaText: { color: '#fff', fontSize: 16, fontWeight: '800', textAlign: 'center' },
   pressed: { opacity: 0.78 },
   focused: {
-    borderColor: Colors.sky,
+    borderColor: Colors.coral,
     borderWidth: 2,
   },
-  note: { textAlign: 'center', marginTop: 20, color: '#91a5a7', lineHeight: 19 },
+  note: { textAlign: 'center', marginTop: 20, color: '#A9A1A0', lineHeight: 19 },
 });
 

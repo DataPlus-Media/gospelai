@@ -1,12 +1,16 @@
 import { getSavedVerses, referenceOf, SavedVerse, toggleSavedVerse } from '@/utils/study';
+import Colors from '@/constants/Colors';
+import { scriptureFontFamily, spacing, typography } from '@/constants/DesignTokens';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import React, { useCallback, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SavedScreen() {
   const db = useSQLiteContext();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [items, setItems] = useState<SavedVerse[]>([]);
   const [error, setError] = useState('');
   const load = useCallback(async () => {
@@ -22,6 +26,8 @@ export default function SavedScreen() {
     <Text style={s.hint}>Your bookmarks and highlights are saved on this device.</Text>
     {!!error && <Pressable accessibilityRole="button" onPress={load}><Text style={s.error}>{error}</Text></Pressable>}
     <FlatList data={items} keyExtractor={i => `${referenceOf(i)}-${i.kind}`}
+      style={s.list}
+      contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg }}
       ListEmptyComponent={<Text style={s.hint}>No saved verses yet. Tap a verse in the Bible to bookmark or highlight it.</Text>}
       renderItem={({ item }) => <View style={s.card}>
         <Pressable accessibilityRole="button" accessibilityLabel={`Read ${referenceOf(item)}`}
@@ -36,10 +42,11 @@ export default function SavedScreen() {
   </View>;
 }
 const s = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#0b0b10', padding: 16 },
-  hint: { color: '#b8bcc7', lineHeight: 22, marginBottom: 16 },
-  card: { padding: 16, backgroundColor: '#111217', borderRadius: 14, marginBottom: 12, borderColor: '#232633', borderWidth: 1 },
-  text: { color: '#f3f4f6', fontSize: 16, lineHeight: 25, marginVertical: 12 },
-  ref: { color: '#c8a951', fontWeight: '700' }, link: { color: '#57d99e', paddingVertical: 8 },
-  error: { color: '#ffa6a6', paddingVertical: 8 }, remove: { minHeight: 44, justifyContent: 'center' },
+  page: { flex: 1, backgroundColor: Colors.background, padding: spacing.lg },
+  list: { width: '100%', maxWidth: 840, alignSelf: 'center' },
+  hint: { width: '100%', maxWidth: 840, alignSelf: 'center', color: Colors.textMuted, lineHeight: 22, marginBottom: spacing.lg },
+  card: { padding: spacing.lg, backgroundColor: Colors.surface, borderRadius: 16, marginBottom: spacing.md, borderColor: Colors.border, borderWidth: 1 },
+  text: { color: Colors.scripture, fontSize: typography.reading, lineHeight: typography.readingLineHeight, marginVertical: spacing.md, fontFamily: scriptureFontFamily },
+  ref: { color: Colors.coral, fontWeight: '700' }, link: { color: Colors.coralSoft, paddingVertical: spacing.sm },
+  error: { color: Colors.coralSoft, paddingVertical: spacing.sm }, remove: { minHeight: 44, justifyContent: 'center' },
 });

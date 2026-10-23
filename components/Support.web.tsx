@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Colors from '@/constants/Colors';
 
 export default function SupportWebFallback() {
   return (
@@ -21,7 +22,7 @@ export default function SupportWebFallback() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0b1116' },
+  root: { flex: 1, backgroundColor: Colors.background },
   center: {
     flex: 1,
     alignItems: 'center',
@@ -34,8 +35,8 @@ const styles = StyleSheet.create({
   card: {
     width: '100%',
     alignItems: 'center',
-    backgroundColor: '#121d24',
-    borderColor: '#26383d',
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
     borderWidth: 1,
     borderRadius: 22,
     paddingHorizontal: 24,
@@ -45,11 +46,11 @@ const styles = StyleSheet.create({
     width: 42,
     height: 4,
     borderRadius: 2,
-    backgroundColor: '#45b78b',
+    backgroundColor: Colors.coral,
     marginBottom: 18,
   },
   eyebrow: {
-    color: '#8cb8a9',
+    color: Colors.coral,
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1.8,
@@ -58,13 +59,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 27,
     fontWeight: '800',
-    color: '#e9edf5',
+    color: Colors.text,
     marginBottom: 12,
     textAlign: 'center',
   },
   body: {
     fontSize: 15,
-    color: '#aab9bd',
+    color: Colors.textMuted,
     textAlign: 'center',
     lineHeight: 24,
   },

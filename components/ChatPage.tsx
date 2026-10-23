@@ -17,6 +17,7 @@ import Colors from '@/constants/Colors';
 import Constants from 'expo-constants';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ---- call your own backend (no client key) ----
 const RAW_API_BASE =
@@ -70,6 +71,7 @@ async function askServerChat(message: string, history: ChatTurn[]) {
 const ChatPage = () => {
   const db = useSQLiteContext();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id, draft, draftId, sourceDraft } = useLocalSearchParams<{ id: string; draft?: string; draftId?: string; sourceDraft?: string }>();
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -196,10 +198,10 @@ const ChatPage = () => {
           headerShadowVisible: false,
         }}
       />
-      <Text style={{ color: '#b8bcc7', backgroundColor: '#0b0b10', padding: 12, fontSize: 12 }}>
+      <Text style={{ width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.textMuted, backgroundColor: Colors.background, padding: 12, fontSize: 12 }}>
         Chat replies are AI-generated, not Bible text. Chat needs an internet connection. Review and edit verse drafts before sending.
       </Text>
-      {sourceDraft === '1' && <Text accessibilityRole="alert" style={{ color: '#D4B65F', backgroundColor: '#171710', padding: 12, fontSize: 12 }}>
+      {sourceDraft === '1' && <Text accessibilityRole="alert" style={{ width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.coralSoft, backgroundColor: Colors.coralTint, padding: 12, fontSize: 12 }}>
         Review and edit this draft before sending. Sending shares its Scripture and source text with GospelAI’s AI service. The reply is AI-generated, not an original author quotation or a source-verified conclusion.
       </Text>}
 
@@ -220,7 +222,7 @@ const ChatPage = () => {
             )}
             keyExtractor={(item) => item.key}
             {...({ estimatedItemSize: 300 } as any)}
-            contentContainerStyle={{ paddingTop: 30, paddingBottom: 260 }}
+            contentContainerStyle={{ width: '100%', maxWidth: 960, alignSelf: 'center', paddingTop: 30, paddingBottom: Math.max(260, insets.bottom + 180) }}
             keyboardDismissMode="on-drag"
           />
         ) : (
@@ -239,7 +241,7 @@ const ChatPage = () => {
             )}
             keyExtractor={(_: Message, i: number) => String(i)}
             {...({ estimatedItemSize: 400 } as any)}
-            contentContainerStyle={{ paddingTop: 30, paddingBottom: 200 }}
+            contentContainerStyle={{ width: '100%', maxWidth: 960, alignSelf: 'center', paddingTop: 30, paddingBottom: Math.max(200, insets.bottom + 160) }}
             keyboardDismissMode="on-drag"
           />
         )}
@@ -257,16 +259,16 @@ const ChatPage = () => {
             loading={ideasLoading}
           />
         )}
-        {!!chatError && <View style={{ padding: 14, backgroundColor: '#171922' }}>
-          <Text accessibilityRole="alert" style={{ color: '#ffa6a6', lineHeight: 20 }}>{chatError}</Text>
+        {!!chatError && <View style={{ maxWidth: 960, width: '100%', alignSelf: 'center', padding: 14, backgroundColor: Colors.coralTint }}>
+          <Text accessibilityRole="alert" style={{ color: Colors.coralSoft, lineHeight: 20 }}>{chatError}</Text>
           {!!failedTurn && <View style={{ flexDirection: 'row', gap: 24 }}>
             <Pressable accessibilityRole="button" disabled={pending} style={{ paddingVertical: 12 }} onPress={async () => {
               if (!failedTurn || busy.current) return;
               busy.current = true; setPending(true); setChatError('');
               setMessages(prev => [...prev, { role: Role.Bot, content: '' }]);
               try { await requestReply(failedTurn); } finally { busy.current = false; setPending(false); }
-            }}><Text style={{ color: '#57d99e' }}>{pending ? 'Trying again…' : 'Try again'}</Text></Pressable>
-            <Pressable accessibilityRole="button" disabled={pending} style={{ paddingVertical: 12 }} onPress={() => { setFailedTurn(null); setChatError(''); }}><Text style={{ color: '#b8bcc7' }}>Dismiss</Text></Pressable>
+            }}><Text style={{ color: Colors.coralSoft }}>{pending ? 'Trying again…' : 'Try again'}</Text></Pressable>
+            <Pressable accessibilityRole="button" disabled={pending} style={{ minHeight: 44, justifyContent: 'center', paddingVertical: 12 }} onPress={() => { setFailedTurn(null); setChatError(''); }}><Text style={{ color: Colors.textMuted }}>Dismiss</Text></Pressable>
           </View>}
         </View>}
         <MessageInput onShouldSend={getCompletion} onNewChat={handleNewChat} draft={draft} draftId={draftId} disabled={pending || !!failedTurn} />
@@ -279,7 +281,7 @@ const styles = StyleSheet.create({
   // Chat background
   page: {
     flex: 1,
-    backgroundColor: '#0b0b10', // --bg
+    backgroundColor: Colors.background,
   },
 
   // Centered logo when there are no messages
@@ -291,9 +293,9 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 80,
-    backgroundColor: '#111217', // --panel
+    backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: '#1b1e29',
+    borderColor: Colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.35,

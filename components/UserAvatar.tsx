@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Colors from '@/constants/Colors';
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 type UserAvatarProps = {
@@ -48,7 +49,7 @@ export default function UserAvatar({
       {initials ? (
         <Text style={[styles.initials, { fontSize: Math.max(12, size * 0.36) }]}>{initials}</Text>
       ) : (
-        <Ionicons name="person-outline" size={size * 0.52} color="#d5b579" />
+        <Ionicons name="person-outline" size={size * 0.52} color={Colors.coral} />
       )}
     </View>
   );
@@ -59,12 +60,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    backgroundColor: '#2a2223',
+    backgroundColor: Colors.plum,
     borderWidth: 1,
-    borderColor: '#594148',
+    borderColor: Colors.borderStrong,
   },
   initials: {
-    color: '#f2eee9',
+    color: Colors.text,
     fontWeight: '700',
     letterSpacing: 0.2,
   },

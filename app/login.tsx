@@ -1,6 +1,7 @@
 // login.tsx
 
 import { defaultStyles } from '@/constants/Styles';
+import Colors from '@/constants/Colors';
 import { useOAuth, useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
@@ -425,7 +426,7 @@ const Page = () => {
     >
       {loading && (
         <View style={defaultStyles.loadingOverlay}>
-          <ActivityIndicator size="large" color="#D8C176" />
+          <ActivityIndicator size="large" color={Colors.coral} />
         </View>
       )}
 
@@ -484,7 +485,7 @@ const Page = () => {
                         <TextInput
                           accessibilityLabel="First name"
                           placeholder="First name"
-                          placeholderTextColor="#A6B4A9"
+                          placeholderTextColor={Colors.textMuted}
                           value={signupFirstName}
                           onChangeText={setSignupFirstName}
                           style={styles.inputField}
@@ -495,7 +496,7 @@ const Page = () => {
                         <TextInput
                           accessibilityLabel="Last name"
                           placeholder="Last name"
-                          placeholderTextColor="#A6B4A9"
+                          placeholderTextColor={Colors.textMuted}
                           value={signupLastName}
                           onChangeText={setSignupLastName}
                           style={styles.inputField}
@@ -506,7 +507,7 @@ const Page = () => {
                         <TextInput
                           accessibilityLabel="Account password"
                           placeholder="Password"
-                          placeholderTextColor="#A6B4A9"
+                          placeholderTextColor={Colors.textMuted}
                           value={signupPassword}
                           onChangeText={setSignupPassword}
                           secureTextEntry
@@ -518,7 +519,7 @@ const Page = () => {
                     <TextInput
                       accessibilityLabel="Verification code"
                       placeholder="Verification code"
-                      placeholderTextColor="#A6B4A9"
+                      placeholderTextColor={Colors.textMuted}
                       value={verificationCode}
                       onChangeText={setVerificationCode}
                       keyboardType="number-pad"
@@ -569,7 +570,7 @@ const Page = () => {
                 blurOnSubmit={false}
                 onSubmitEditing={() => passwordRef.current?.focus()}
                 placeholder="Email address"
-                placeholderTextColor="#A6B4A9"
+                placeholderTextColor={Colors.textMuted}
                 value={emailAddress}
                 onChangeText={setEmailAddress}
                 style={styles.inputField}
@@ -578,7 +579,7 @@ const Page = () => {
                 ref={passwordRef}
                 accessibilityLabel="Password"
                 placeholder="Password"
-                placeholderTextColor="#A6B4A9"
+                placeholderTextColor={Colors.textMuted}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -642,7 +643,7 @@ const Page = () => {
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
               >
-                <Ionicons name="logo-google" size={18} color="#D8C176" />
+                <Ionicons name="logo-google" size={18} color={Colors.coral} />
                 <Text style={styles.oauthButtonText}>Google</Text>
               </TouchableOpacity>
             </View>
@@ -658,7 +659,7 @@ const Page = () => {
                 keyboardType="email-address"
                 returnKeyType="send"
                 placeholder="Email address"
-                placeholderTextColor="#A6B4A9"
+                placeholderTextColor={Colors.textMuted}
                 value={emailAddress}
                 onChangeText={setEmailAddress}
                 style={styles.inputField}
@@ -675,7 +676,7 @@ const Page = () => {
                 ref={resetCodeRef}
                 accessibilityLabel="Six-digit reset code"
                 placeholder="6-digit code"
-                placeholderTextColor="#A6B4A9"
+                placeholderTextColor={Colors.textMuted}
                 value={resetCode}
                 onChangeText={setResetCode}
                 keyboardType="number-pad"
@@ -688,7 +689,7 @@ const Page = () => {
                 ref={newPasswordRef}
                 accessibilityLabel="New password"
                 placeholder="New password"
-                placeholderTextColor="#A6B4A9"
+                placeholderTextColor={Colors.textMuted}
                 value={newPassword}
                 onChangeText={setNewPassword}
                 secureTextEntry
@@ -722,7 +723,7 @@ const Page = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#101C17',
+    backgroundColor: Colors.background,
     paddingHorizontal: 20,
   },
   scroll: {
@@ -749,7 +750,7 @@ const styles = StyleSheet.create({
     marginBottom: 13,
   },
   eyebrow: {
-    color: '#D3B86D',
+    color: Colors.coral,
     fontSize: 9,
     fontWeight: '700',
     letterSpacing: 1.8,
@@ -761,11 +762,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(213, 226, 213, 0.13)',
-    backgroundColor: 'rgba(243, 245, 235, 0.055)',
+    borderColor: 'rgba(244, 240, 235, 0.12)',
+    backgroundColor: Colors.surface,
   },
   title: {
-    color: '#F4F1E8',
+    color: Colors.text,
     fontSize: 29,
     lineHeight: 36,
     letterSpacing: -0.7,
@@ -773,7 +774,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    color: '#B4C0B6',
+    color: Colors.textMuted,
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center',
@@ -787,11 +788,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     height: 54,
     borderWidth: 1,
-    borderColor: 'rgba(220, 230, 219, 0.18)',
+    borderColor: Colors.border,
     borderRadius: 14,
     paddingHorizontal: 15,
-    backgroundColor: 'rgba(8, 18, 13, 0.38)',
-    color: '#F4F1E8',
+    backgroundColor: Colors.surfaceRaised,
+    color: Colors.text,
     fontSize: 15,
   },
   forgotWrap: {
@@ -799,18 +800,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   forgotText: {
-    color: '#DCC77F',
+    color: Colors.coral,
     fontWeight: '700',
     fontSize: 14,
   },
   btnPrimary: {
     minHeight: 54,
-    backgroundColor: '#D8C176',
+    backgroundColor: Colors.coral,
     borderRadius: 15,
     marginVertical: 3,
   },
   btnPrimaryText: {
-    color: '#173A2C',
+    color: Colors.onCoral,
     fontSize: 16,
     fontWeight: '700',
     letterSpacing: 0.1,
@@ -825,10 +826,10 @@ const styles = StyleSheet.create({
   oauthRule: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(220, 201, 130, 0.35)',
+    backgroundColor: 'rgba(143, 215, 229, 0.32)',
   },
   oauthDividerText: {
-    color: '#D3B86D',
+    color: Colors.coral,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1.2,
@@ -845,9 +846,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 9,
     borderWidth: 1,
-    borderColor: 'rgba(220, 230, 219, 0.15)',
+    borderColor: Colors.border,
     borderRadius: 13,
-    backgroundColor: 'rgba(8, 18, 13, 0.2)',
+    backgroundColor: Colors.surfaceRaised,
   },
   oauthButtonText: {
     color: '#E1E6DD',
@@ -856,12 +857,12 @@ const styles = StyleSheet.create({
   },
   secondaryBtn: {
     minHeight: 50,
-    backgroundColor: 'rgba(8, 18, 13, 0.2)',
+    backgroundColor: Colors.surfaceRaised,
     borderRadius: 14,
     marginTop: 12,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(220, 230, 219, 0.15)',
+    borderColor: '#514241',
   },
   secondaryText: {
     color: '#E1E6DD',

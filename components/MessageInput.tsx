@@ -9,6 +9,7 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  useReducedMotion,
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,19 +30,20 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
   useEffect(() => { setMessage(draft || ''); }, [draft, draftId]);
   const { bottom } = useSafeAreaInsets();
   const expanded = useSharedValue(0);
+  const reducedMotion = useReducedMotion();
   const inputRef = useRef<TextInput>(null);
 
   const expandItems = () => {
-    expanded.value = withTiming(1, { duration: 400 });
+    expanded.value = withTiming(1, { duration: reducedMotion ? 0 : 400 });
   };
 
   const collapseItems = () => {
-    expanded.value = withTiming(0, { duration: 400 });
+    expanded.value = withTiming(0, { duration: reducedMotion ? 0 : 400 });
   };
 
   const expandButtonStyle = useAnimatedStyle(() => {
     const opacityInterpolation = interpolate(expanded.value, [0, 1], [1, 0], Extrapolation.CLAMP);
-    const widthInterpolation = interpolate(expanded.value, [0, 1], [30, 0], Extrapolation.CLAMP);
+    const widthInterpolation = interpolate(expanded.value, [0, 1], [44, 0], Extrapolation.CLAMP);
     return { opacity: opacityInterpolation, width: widthInterpolation };
   });
 
@@ -73,7 +75,7 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
           onPress={expandItems}
           style={[styles.roundBtn, expandButtonStyle]}
         >
-          <Ionicons name="add" size={24} color={Colors.grey} />
+          <Ionicons name="add" size={24} color={Colors.coral} />
         </ATouchableOpacity>
 
         {/* Animated area: now just "New chat" */}
@@ -86,7 +88,7 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
               onNewChat?.();
             }}
           >
-            <Ionicons name="create-outline" size={18} color="#f3f4f6" />
+            <Ionicons name="create-outline" size={18} color="#F4F0EB" />
             <Text style={styles.newChatText}>New chat</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -94,6 +96,7 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
         <TextInput
           ref={inputRef}
           placeholder="Write a message"
+          placeholderTextColor={Colors.textMuted}
           accessibilityLabel="Write a message"
           autoFocus={false}
           editable={!disabled}
@@ -106,7 +109,7 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
 
         {message.length > 0 ? (
           <TouchableOpacity accessibilityRole="button" accessibilityLabel="Send message" disabled={disabled} onPress={onSend} style={{ padding: 10, opacity: disabled ? 0.4 : 1 }}>
-            <Ionicons name="arrow-up-circle" size={24} color={Colors.header_txt} />
+            <Ionicons name="arrow-up-circle" size={24} color={Colors.coral} />
           </TouchableOpacity>
         ) : (
           <TouchableOpacity>
@@ -130,14 +133,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
     color: Colors.header_txt,
-    borderColor: Colors.greyLight,
-    backgroundColor: Colors.header_bg,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceRaised,
   },
   roundBtn: {
-    width: 30,
-    height: 30,
+    width: 44,
+    height: 44,
     borderRadius: 20,
-    backgroundColor: Colors.search_input,
+    backgroundColor: Colors.plum,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -147,15 +150,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   newChatBtn: {
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
-    backgroundColor: '#171922',
+    backgroundColor: Colors.surfaceRaised,
     borderWidth: 1,
-    borderColor: '#262a36',
+    borderColor: Colors.border,
   },
   newChatText: {
     color: '#f3f4f6',

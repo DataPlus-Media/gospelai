@@ -14,12 +14,12 @@ export default function AuthLayout() {
 
   return (
     <LocalDatabaseBoundary>
-    <Suspense fallback={<View style={{ flex: 1, backgroundColor: '#0b0b10', alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color="#20AB6E" /><Text style={{ color: '#fff', margin: 16 }}>Opening your local study…</Text></View>}>
+    <Suspense fallback={<View style={{ flex: 1, backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator color={Colors.coral} /><Text style={{ color: Colors.text, margin: 16 }}>Opening your local study…</Text></View>}>
     <SQLiteProvider databaseName="chat.db" onInit={migrateDbIfNeeded} useSuspense>
       <Stack
         screenOptions={{
           headerShadowVisible: false,
-          contentStyle: { backgroundColor: Colors.selected },
+          contentStyle: { backgroundColor: Colors.background },
         }}
       >
         {/* Drawer navigator (chat, bible, etc.) */}
@@ -31,10 +31,10 @@ export default function AuthLayout() {
           options={{
             presentation: 'modal',
             title: 'Settings',
-            headerTintColor: '#dce9e1',
+          headerTintColor: Colors.coral,
             headerShadowVisible: false,
-            headerStyle: { backgroundColor: '#0b1116' },
-            headerTitleStyle: { color: '#edf3ef', fontWeight: '700' },
+            headerStyle: { backgroundColor: Colors.background },
+            headerTitleStyle: { color: Colors.text, fontWeight: '700' },
             headerTitleAlign: 'center',
             headerLeft: () => (
               <TouchableOpacity
@@ -43,7 +43,7 @@ export default function AuthLayout() {
                 hitSlop={10}
                 style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}
               >
-                <Ionicons name="close-outline" size={25} color="#a8c4b7" />
+                <Ionicons name="close-outline" size={25} color={Colors.coral} />
               </TouchableOpacity>
             ),
           }}
