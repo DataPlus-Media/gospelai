@@ -33,6 +33,8 @@ const {
   clerkErrorMessage,
   getSignInFactorPlan,
   getSignUpNextStep,
+  requireAuthResponseState,
+  signUpRecoveryMessage,
 } = helper.exports;
 
 async function run() {
@@ -107,6 +109,64 @@ async function run() {
     'Clerk authentication errors should remain actionable'
   );
   assert.equal(clerkErrorMessage(new Error('Network unavailable'), 'Fallback'), 'Network unavailable');
+
+  assert.deepEqual(
+    getSignUpNextStep({
+      status: 'missing_requirements',
+      missingFields: [],
+      unverifiedFields: ['email_address'],
+      verifications: { emailAddress: { status: null, supportedStrategies: [] } },
+    }),
+    { kind: 'email_code' },
+    'unverifiedFields must trigger email verification before supported strategies are populated'
+  );
+  assert.equal(
+    getSignUpNextStep({
+      unverifiedFields: ['email_address'],
+      verifications: { emailAddress: { status: 'unverified', supportedStrategies: ['email_link'] } },
+    }),
+    null,
+    'a link-only instance must not silently attempt an unsupported code strategy'
+  );
+  assert.match(
+    signUpRecoveryMessage({ verifications: { emailAddress: { supportedStrategies: ['email_link'] } } }),
+    /email verification codes/
+  );
+  assert.equal(
+    getSignUpNextStep({
+      status: 'complete',
+      unverifiedFields: [],
+      verifications: { emailAddress: { status: 'verified', supportedStrategies: ['email_code'] } },
+    }),
+    null,
+    'verified accounts must not be sent another code'
+  );
+  const safeSummary = signUpRecoveryMessage({
+    status: 'missing_requirements',
+    missingFields: ['username', 'private@example.invalid'],
+    unverifiedFields: ['email_address', 'token_do_not_log'],
+  });
+  assert.match(safeSummary, /username/);
+  assert.match(safeSummary, /email_address/);
+  assert.doesNotMatch(safeSummary, /private@|token_do_not_log/);
+  for (const status of [null, undefined, '']) {
+    assert.throws(
+      () => requireAuthResponseState({ status }),
+      (error) => {
+        assert.equal(error.code, 'auth_service_unavailable');
+        assert.match(clerkErrorMessage(error, 'Fallback'), /couldn’t reach the sign-in service/);
+        return true;
+      },
+      'an empty native resource must be treated as a service failure, not a verification step'
+    );
+  }
+  assert.doesNotThrow(() => requireAuthResponseState({ status: 'missing_requirements' }));
+  assert.match(clerkErrorMessage({ code: 'network_error' }, 'Fallback'), /DNS/);
+  assert.match(clerkErrorMessage(new TypeError('Network request failed'), 'Fallback'), /DNS/);
+  assert.match(clerkErrorMessage({ errors: [{ code: 'native_api_disabled' }] }, 'Fallback'), /Native API/);
+  const layoutSource = fs.readFileSync(path.resolve(__dirname, '../app/_layout.tsx'), 'utf8');
+  assert.match(layoutSource, /rethrowOfflineNetworkErrors:\s*true/,
+    'native networking failures must not be swallowed by Clerk');
 
   const scheme = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8')).expo.scheme;
   const loginSource = fs.readFileSync(path.resolve(__dirname, '../app/login.tsx'), 'utf8');
@@ -185,8 +245,13 @@ async function run() {
   }
   await assert.rejects(
     oauthScenario({ status: 'needs_first_factor', firstFactorVerification: { externalVerificationRedirectURL: null } }),
-    /Google did not return a sign-in link/,
+    /Google sign-in could not start/,
     'missing redirect must produce a useful error, not null.toString'
+  );
+  await assert.rejects(
+    oauthScenario({ status: null }),
+    (error) => error.code === 'auth_service_unavailable',
+    'an empty OAuth resource must not blame saved provider credentials'
   );
   await assert.rejects(
     oauthScenario(redirectState, { type: 'success', url: redirectUrl }),

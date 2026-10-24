@@ -27,6 +27,8 @@ import {
   getSignInFactorPlan,
   getSignUpNextStep,
   hasSessionId,
+  requireAuthResponseState,
+  signUpRecoveryMessage,
   type SignInFactorPlan,
 } from '@/utils/clerkAuth';
 import { runClerkOAuthFlow } from '@/utils/clerkOAuth';
@@ -129,6 +131,7 @@ const Page = () => {
     }
 
     setVerificationCode('');
+    requireAuthResponseState(prepared);
     setPendingChallenge({ kind: 'signIn', resource: prepared, plan });
     if (plan.strategy === 'email_code' || plan.strategy === 'phone_code') {
       Alert.alert('Verification code sent', 'Enter the code to finish signing in.');
@@ -152,7 +155,7 @@ const Page = () => {
       }
       Alert.alert(
         'More account details needed',
-        'Clerk requires additional account information that this screen cannot collect. Contact support or try another sign-in option.'
+        signUpRecoveryMessage(resource)
       );
       return;
     }
@@ -161,6 +164,7 @@ const Page = () => {
       const prepared = await resource.prepareEmailAddressVerification({
         strategy: 'email_code',
       });
+      requireAuthResponseState(prepared);
       setVerificationCode('');
       setPendingChallenge({ kind: 'signUpEmail', resource: prepared });
       Alert.alert(
@@ -172,7 +176,7 @@ const Page = () => {
 
     Alert.alert(
       'Sign-up needs another step',
-      'Clerk did not finish creating the account. Return to sign in and try again, or contact support if this continues.'
+      signUpRecoveryMessage(resource)
     );
   };
 
@@ -180,6 +184,7 @@ const Page = () => {
     resource: SignInResource,
     activate?: (params: { session: string }) => Promise<unknown>
   ) => {
+    requireAuthResponseState(resource);
     if (await activateAndContinue(resource.createdSessionId, activate ?? setActive)) {
       setPendingChallenge(null);
       return;
@@ -188,6 +193,7 @@ const Page = () => {
   };
 
   const finishSignUp = async (resource: SignUpResource) => {
+    requireAuthResponseState(resource);
     if (await activateAndContinue(resource.createdSessionId, signupSetActive)) {
       setPendingChallenge(null);
       return;
@@ -250,7 +256,7 @@ const Page = () => {
 
     try {
       const result = await signUp.create({
-        emailAddress,
+        emailAddress: emailAddress.trim(),
         password,
       });
       await finishSignUp(result);

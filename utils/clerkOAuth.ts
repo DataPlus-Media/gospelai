@@ -1,5 +1,5 @@
 import type { useSignIn, useSignUp } from '@clerk/clerk-expo';
-import { getSignInFactorPlan } from './clerkAuth';
+import { getSignInFactorPlan, requireAuthResponseState } from './clerkAuth';
 
 type SignIn = NonNullable<ReturnType<typeof useSignIn>['signIn']>;
 type SignUp = NonNullable<ReturnType<typeof useSignUp>['signUp']>;
@@ -29,6 +29,7 @@ export async function runClerkOAuthFlow({
   ) => Promise<{ type: string; url?: string }>;
 }): Promise<OAuthResult> {
   let resource = await signIn.create({ strategy, redirectUrl });
+  requireAuthResponseState(resource);
 
   const continueWithResource = async (): Promise<OAuthResult> => {
     if (resource.firstFactorVerification?.status === 'transferable') {
@@ -51,7 +52,7 @@ export async function runClerkOAuthFlow({
     if (getSignInFactorPlan(resource)) return continueWithResource();
     const provider = strategy === 'oauth_apple' ? 'Apple' : 'Google';
     throw new Error(
-      `${provider} did not return a sign-in link. Check that ${provider} is enabled in the Clerk instance used by this build and that its native return URL uses the gospelsai scheme.`
+      `${provider} sign-in could not start because the sign-in service did not provide a browser link. Check the provider settings in the Clerk instance used by this build. This is separate from the app’s return URL.`
     );
   }
 
@@ -67,5 +68,6 @@ export async function runClerkOAuthFlow({
     throw new Error('The sign-in return link is incomplete. Please start sign-in again.');
   }
   resource = await resource.reload({ rotatingTokenNonce: nonce });
+  requireAuthResponseState(resource);
   return continueWithResource();
 }
