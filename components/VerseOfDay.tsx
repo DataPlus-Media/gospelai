@@ -1,5 +1,6 @@
 import { openBibleDb } from '@/utils/bibleDb';
 import Colors from '@/constants/Colors';
+import TodayTheme from '@/constants/TodayTheme';
 import { scriptureFontFamily, spacing } from '@/constants/DesignTokens';
 import { getTodaysVerse, VotdEntry } from '@/utils/verseOfDay';
 import { Ionicons } from '@expo/vector-icons';
@@ -89,7 +90,7 @@ function safeGetTodaysVerse(): VotdEntry {
   }
 }
 
-export default function VerseOfDay() {
+export default function VerseOfDay({ variant = 'default' }: { variant?: 'default' | 'today' }) {
   const router = useRouter();
   const [entry, setEntry] = useState<VotdEntry>(safeGetTodaysVerse);
   const refreshDay = useCallback(() => {
@@ -180,27 +181,31 @@ export default function VerseOfDay() {
   };
 
   return (
-    <View style={styles.frame}>
+    <View style={[styles.frame, variant === 'today' && styles.todayFrame]}>
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`Open ${entry.ref} in the Bible`}
       onPress={navigateToVerse}
-      style={styles.card}
+      style={[styles.card, variant === 'today' && styles.todayCard]}
     >
-      <View pointerEvents="none" style={styles.editorialBackdrop} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <ImageBackground
-          source={require('@/assets/images/scripture-forest.jpg')}
-          resizeMode="cover"
-          style={styles.editorialBackdrop}
-          imageStyle={styles.editorialImage}
-          accessible={false}
-        />
-      </View>
-      <View pointerEvents="none" style={styles.imageVeil} />
+      {variant === 'default' ? (
+        <>
+          <View pointerEvents="none" style={styles.editorialBackdrop} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <ImageBackground
+              source={require('@/assets/images/scripture-forest.jpg')}
+              resizeMode="cover"
+              style={styles.editorialBackdrop}
+              imageStyle={styles.editorialImage}
+              accessible={false}
+            />
+          </View>
+          <View pointerEvents="none" style={styles.imageVeil} />
+        </>
+      ) : null}
       <View style={styles.topRow}>
         <View style={styles.labelWrap}>
-          <Ionicons name="sparkles-outline" size={14} color={Colors.text} />
-          <Text style={styles.label}>Verse of the Day</Text>
+          {variant === 'default' ? <Ionicons name="sparkles-outline" size={14} color={Colors.text} /> : null}
+          <Text style={[styles.label, variant === 'today' && styles.todayLabel]}>Verse of the Day</Text>
         </View>
       </View>
 
@@ -211,19 +216,19 @@ export default function VerseOfDay() {
           <View style={[styles.skLine, { width: '70%' }]} />
         </View>
       ) : (
-        <Text style={styles.verseText}>{`"${verseText}"`}</Text>
+        <Text style={[styles.verseText, variant === 'today' && styles.todayVerseText]}>{`"${verseText}"`}</Text>
       )}
 
-      <Text style={styles.ref}>{entry.ref} · KJV</Text>
+      <Text style={[styles.ref, variant === 'today' && styles.todayRef]}>{entry.ref} · KJV</Text>
     </Pressable>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Share verse of the day"
         onPress={onShare}
         hitSlop={10}
-        style={styles.shareBtn}
+        style={[styles.shareBtn, variant === 'today' && styles.todayShareBtn]}
       >
-        <Ionicons name="share-outline" size={19} color={Colors.text} />
+        <Ionicons name="share-outline" size={19} color={variant === 'today' ? TodayTheme.mint : Colors.text} />
       </Pressable>
     </View>
   );
@@ -231,6 +236,10 @@ export default function VerseOfDay() {
 
 const styles = StyleSheet.create({
   frame: {
+    marginHorizontal: spacing.lg,
+    marginBottom: 10,
+  },
+  todayFrame: {
     marginHorizontal: spacing.lg,
     marginBottom: 10,
   },
@@ -242,6 +251,13 @@ const styles = StyleSheet.create({
     minHeight: 260,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  todayCard: {
+    backgroundColor: TodayTheme.surfaceDeep,
+    borderColor: TodayTheme.borderStrong,
+    borderRadius: 20,
+    minHeight: 228,
+    padding: spacing.xl,
   },
   editorialBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -275,6 +291,12 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
+  todayLabel: {
+    color: TodayTheme.mint,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 2,
+  },
   shareBtn: {
     position: 'absolute',
     top: spacing.xl,
@@ -286,6 +308,11 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: 'rgba(0,0,0,0.2)',
   },
+  todayShareBtn: {
+    backgroundColor: 'transparent',
+    top: spacing.lg,
+    right: spacing.lg,
+  },
   verseText: {
     fontSize: 23,
     lineHeight: 34,
@@ -293,11 +320,23 @@ const styles = StyleSheet.create({
     fontFamily: scriptureFontFamily,
     marginBottom: spacing.xl,
   },
+  todayVerseText: {
+    color: TodayTheme.text,
+    fontSize: 20,
+    lineHeight: 27,
+    marginBottom: spacing.lg,
+  },
   ref: {
     fontSize: 13,
     fontWeight: '700',
     color: Colors.text,
     textAlign: 'right',
+  },
+  todayRef: {
+    color: TodayTheme.textMuted,
+    fontSize: 15,
+    fontWeight: '500',
+    textAlign: 'left',
   },
   skeleton: {
     gap: 8,

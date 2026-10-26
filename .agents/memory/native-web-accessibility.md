@@ -30,3 +30,14 @@ configured native title or close control.
 
 **How to apply:** Verify modal routes on both native and web; do not assume
 `Stack.Screen` header options are rendered by React Native Web.
+
+For a right-side web drawer, clip the navigator's outer viewport with CSS
+`overflow: clip`, not `overflow: hidden`; retain native-compatible clipping on native.
+
+**Why:** An off-screen right drawer can widen the browser document. Hidden overflow
+prevents that but still allows modal focus restoration to scroll the clipping
+container sideways, leaving the screen shifted after conversation options close.
+CSS clip prevents the container from becoming programmatically scrollable.
+
+**How to apply:** Check both document width and closing drawer-owned modals before
+accepting changes to the shared navigator's browser clipping.

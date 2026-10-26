@@ -23,7 +23,7 @@ async function main() {
   };
   const closed = () => page.waitForFunction(() => {
     const search = document.querySelector('[aria-label="Search conversation history"]');
-    return !search || !!search.closest('[aria-hidden="true"]') || search.getBoundingClientRect().right <= 0;
+    return !search || !!search.closest('[aria-hidden="true"]') || search.getBoundingClientRect().right <= 1 || search.getBoundingClientRect().left >= innerWidth - 1;
   });
   const route = async (label, path) => {
     await open();
@@ -140,7 +140,7 @@ async function main() {
     await page.screenshot({ path: 'generated-artifacts/drawer/small-phone.png' });
     await page.setViewportSize({ width: 1024, height: 768 });
     const todayBox = await button('Today').boundingBox();
-    assert.ok(todayBox && todayBox.x + todayBox.width <= 420);
+    assert.ok(todayBox && todayBox.x >= 1024 - 420 && todayBox.width <= 420);
     await page.screenshot({ path: 'generated-artifacts/drawer/tablet.png' });
     console.log('PASS small-phone scrolling, tablet width cap and reachable guest footer');
 

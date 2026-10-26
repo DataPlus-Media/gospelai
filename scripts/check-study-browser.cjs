@@ -19,15 +19,6 @@ async function main() {
   await page.getByText('Continue reading', { exact: true }).waitFor({ timeout: 60000 });
   console.log('PASS guest welcome -> Today');
   assert.ok(await page.getByText('Verse of the Day', { exact: true }).count());
-  await page.getByRole('button', { name: 'Start plan', exact: true }).click();
-  await page.getByText('0/7', { exact: true }).waitFor();
-  await page.getByRole('button', { name: /^Day 1:/ }).click();
-  await verseButton('John 1:1').waitFor();
-  await page.getByText('Mark day 1 complete', { exact: false }).click();
-  await page.getByText('Reading completed', { exact: true }).waitFor();
-  await go('/today');
-  await page.getByText('1/7', { exact: true }).waitFor();
-  console.log('PASS plan start, read, complete and reload persistence');
 
   await go('/bible?ref=John%203%3A16&jump=1');
   await verseButton('John 3:16').click();
@@ -89,16 +80,11 @@ async function main() {
   await page.getByText('No saved verses yet.', { exact: false }).waitFor();
   console.log('PASS explicit saved-item removals persist');
   await go('/today');
-  await page.getByText('John 3:16', { exact: true }).waitFor();
-  await page.getByText('Reset plan progress', { exact: true }).click();
-  await page.getByRole('button', { name: 'Keep progress', exact: true }).click();
-  await page.getByText('1/7', { exact: true }).waitFor();
-  await page.getByText('Reset plan progress', { exact: true }).click();
-  await page.getByRole('button', { name: 'Reset plan', exact: true }).click();
-  await page.getByRole('button', { name: 'Start plan', exact: true }).waitFor();
-  await go('/today');
-  await page.getByRole('button', { name: 'Start plan', exact: true }).waitFor();
-  console.log('PASS reading position restart persistence and cancel/confirm reset');
+  await page.getByRole('button', { name: 'Continue reading John 3:16', exact: true }).waitFor();
+  assert.equal(await page.getByText('Seven days in the Word', { exact: true }).count(), 0);
+  assert.equal(await page.getByRole('button', { name: 'Start plan', exact: true }).count(), 0);
+  assert.equal(await page.getByText('Reset plan progress', { exact: true }).count(), 0);
+  console.log('PASS reading position restart persistence; reading plan is absent from Today');
   assert.deepEqual(errors, []);
   await browser.close();
 }
