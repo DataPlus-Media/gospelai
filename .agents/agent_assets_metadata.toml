@@ -42,3 +42,199 @@ mtime_ms = 1792172561736
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/a844f44e-63cc-46d6-b0ef-16ade4ce4bc9/640e17eb-930d-4417-9679-d48b98567410"
 storage_version_token = "1792172602853432"
 content_type = "image/png"
+
+[[outputs]]
+id = "mDr2qMsAdFuv6ZZuISAc4"
+uri = "file://screenshots/today-iphone.jpg"
+type = "image"
+title = "GospelAI Today — iPhone preview"
+description = "Responsive preview capture of the Today screen at 402 × 874. This is not a native iOS simulator screenshot."
+logical_id = "dbc9d902-eb4e-4ece-8438-29f9ac8a970a"
+content_hash = "sha256:a72ef6e322178e8b4533a73b38f53305b53e22ff81d4e39cdec0207857f296e4"
+size = 53699
+mtime_ms = 1793041633891
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/dbc9d902-eb4e-4ece-8438-29f9ac8a970a/5455ce72-51c8-45cd-a545-d3200b32e965"
+storage_version_token = "1793041644837526"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "p9rjL7dpxPW0fFmXdjvrN"
+uri = "file://screenshots/today-ipad.jpg"
+type = "image"
+title = "GospelAI Today — iPad preview"
+description = "Responsive preview capture of the Today screen at 1024 × 1366. This is not a native iOS simulator screenshot."
+logical_id = "7533e992-f458-4581-b0c6-f3971e078961"
+content_hash = "sha256:99c2e30f7b62661d23bcd545af32dbfafb89fc6912b44cc666980c8b91a5f987"
+size = 87574
+mtime_ms = 1793041638009
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/7533e992-f458-4581-b0c6-f3971e078961/f368b80f-d021-4627-8ae9-b9448f3a3a80"
+storage_version_token = "1793041645585846"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "zZFfHIPjwsLdSo85m0Zhf"
+uri = "file://app-screenshots/iphone-today.jpg"
+type = "image"
+title = "GospelAI — iPhone — Today"
+description = "Responsive preview capture, 402 × 874. Not a native iOS simulator screenshot."
+logical_id = "59ff4cd9-e2fa-4ce5-a820-bbc4c65ee8bd"
+content_hash = "sha256:1b46a1e0e22906af12bed666fe875769689cb5f449781aa6374c846e9a79d1de"
+size = 53705
+mtime_ms = 1793041696402
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/59ff4cd9-e2fa-4ce5-a820-bbc4c65ee8bd/7d4d2b3e-53dc-42d7-9824-fce4ccbc56af"
+storage_version_token = "1793041784367965"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "jgHFn-stjP46tnX-qly3E"
+uri = "file://app-screenshots/ipad-today.jpg"
+type = "image"
+title = "GospelAI — iPad — Today"
+description = "Responsive preview capture, 1024 × 1366. Not a native iOS simulator screenshot."
+logical_id = "62de01ea-1b13-4784-9ff0-9c4bc334a0d6"
+content_hash = "sha256:bac91905db61e702e934dece7a9b46c6eba538459462d5b10fd11cde60689cc2"
+size = 87550
+mtime_ms = 1793041701065
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/62de01ea-1b13-4784-9ff0-9c4bc334a0d6/c2bc3320-a1bc-4942-9e8e-71f1ee82e566"
+storage_version_token = "1793041784992744"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "qdBBvLHiYgHOOFXP7ZG07"
+uri = "file://app-screenshots/iphone-bible.jpg"
+type = "image"
+title = "GospelAI — iPhone — Bible"
+description = "Responsive preview capture, 402 × 874. Not a native iOS simulator screenshot."
+logical_id = "3aed809c-92f0-4af0-910d-cefa69e4253d"
+content_hash = "sha256:904c60c5ea8be30bf2afbb931aa18f42601c0aeb5b874a7881384a38e12ee357"
+size = 49367
+mtime_ms = 1793041705093
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/3aed809c-92f0-4af0-910d-cefa69e4253d/b08cb5ae-42b0-43b1-b1d4-49be5ff9b0c9"
+storage_version_token = "1793041785649391"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "EqNgnM7ujANXDpOlPMh74"
+uri = "file://app-screenshots/ipad-bible.jpg"
+type = "image"
+title = "GospelAI — iPad — Bible"
+description = "Responsive preview capture, 1024 × 1366. Not a native iOS simulator screenshot."
+logical_id = "94aa9906-a1f8-4c95-9252-c15a258d117c"
+content_hash = "sha256:b24f84bdebd1883bde94b6906bfc56c6657e8dc09c2b6ba4f56b038ab4a0746b"
+size = 176997
+mtime_ms = 1793041710153
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/94aa9906-a1f8-4c95-9252-c15a258d117c/be9faad4-8631-4ad6-bb99-ec7bbbbfe6df"
+storage_version_token = "1793041786315354"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "T_EyqEFLa7QgKNXm8CD9H"
+uri = "file://app-screenshots/iphone-ask-gospelai.jpg"
+type = "image"
+title = "GospelAI — iPhone — Ask GospelAI"
+description = "Responsive preview capture, 402 × 874. Not a native iOS simulator screenshot."
+logical_id = "5ad3d6b3-3c6b-424b-9e7f-d69bc07959b9"
+content_hash = "sha256:7026483f39e709b7981c8f0987a8e8157b6963b272fcc18cf2e08412f3bfc16e"
+size = 52101
+mtime_ms = 1793041715413
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/5ad3d6b3-3c6b-424b-9e7f-d69bc07959b9/8125d4c9-7a2f-49d6-adc2-32e0087fee4b"
+storage_version_token = "1793041786882595"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "nbAqRDAfl2TFx3KtTbPC6"
+uri = "file://app-screenshots/ipad-ask-gospelai.jpg"
+type = "image"
+title = "GospelAI — iPad — Ask GospelAI (updated)"
+description = "Completed responsive preview capture, 1024 × 1366. Not a native iOS simulator screenshot."
+logical_id = "b6db1934-f38d-43ce-aa25-a92da2e92a03"
+content_hash = "sha256:7f9ef4b264c04448ae06740deac1d5ba8581daec059e78505f655d499955f757"
+size = 80796
+mtime_ms = 1793041758565
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/b6db1934-f38d-43ce-aa25-a92da2e92a03/1a1023b9-7e8c-49b1-9102-22fe72241690"
+storage_version_token = "1793041808700180"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "9ISHrS8Ob__9oijAHwvm2"
+uri = "file://app-screenshots/iphone-saved.jpg"
+type = "image"
+title = "GospelAI — iPhone — Saved"
+description = "Responsive preview capture, 402 × 874. Empty-state view in the current guest preview. Not a native iOS simulator screenshot."
+logical_id = "2f8bbe7c-3348-4345-8155-a7604fa7dedc"
+content_hash = "sha256:be3d203a3e377d8712f99faeb91ce55798c25fd5f22322af2f57a0c4cde3d67d"
+size = 17409
+mtime_ms = 1793041721081
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/2f8bbe7c-3348-4345-8155-a7604fa7dedc/525f4029-1416-416f-8f9d-1d01acff508b"
+storage_version_token = "1793041788040997"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "UZfHfRZDu0cy5D0laxFMy"
+uri = "file://app-screenshots/ipad-saved.jpg"
+type = "image"
+title = "GospelAI — iPad — Saved"
+description = "Responsive preview capture, 1024 × 1366. Empty-state view in the current guest preview. Not a native iOS simulator screenshot."
+logical_id = "d97e395e-b2c3-40b9-a009-509520a8aeae"
+content_hash = "sha256:71cb94b28a32459ca1bae7fabad5f36d16530efd121274fc07664752eeed86ed"
+size = 25838
+mtime_ms = 1793041724349
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/d97e395e-b2c3-40b9-a009-509520a8aeae/051cdff7-d71d-4cda-b53a-40733fa64ec3"
+storage_version_token = "1793041788663987"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "03hhFhqKtbNCPdfyadXeu"
+uri = "file://app-screenshots/iphone-notes.jpg"
+type = "image"
+title = "GospelAI — iPhone — Notes"
+description = "Responsive preview capture, 402 × 874. Empty-state view in the current guest preview. Not a native iOS simulator screenshot."
+logical_id = "979a6416-6f92-4751-beb6-122cd753ad40"
+content_hash = "sha256:4b2a4b1bf4995d8e48574971eeaa986da5b149b9759a124ea0698f6f2c21ba85"
+size = 13410
+mtime_ms = 1793041727741
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/979a6416-6f92-4751-beb6-122cd753ad40/bd9e17d8-36b5-4e77-80e3-16b88a3e3bc2"
+storage_version_token = "1793041789269458"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "0g0fMkWaEB0GPqvJaPtyD"
+uri = "file://app-screenshots/ipad-notes.jpg"
+type = "image"
+title = "GospelAI — iPad — Notes"
+description = "Responsive preview capture, 1024 × 1366. Empty-state view in the current guest preview. Not a native iOS simulator screenshot."
+logical_id = "e92a4ec5-27d0-4498-831a-ecbfb72d17e6"
+content_hash = "sha256:37292fd38137b89ae607b84b79b38b5fd3d3eb4c7a47a4fe6c783f01d3997529"
+size = 21055
+mtime_ms = 1793041731109
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/e92a4ec5-27d0-4498-831a-ecbfb72d17e6/0c17b614-0eee-4e2d-ac56-799d308b96dc"
+storage_version_token = "1793041789835620"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "EwZFiplF9jG7UmJGo5gpW"
+uri = "file://app-screenshots/iphone-authors-insight.jpg"
+type = "image"
+title = "GospelAI — iPhone — Authors insight"
+description = "Responsive preview capture, 402 × 874. Not a native iOS simulator screenshot."
+logical_id = "47978b3a-d088-4f8e-b17f-2109a68c7f6a"
+content_hash = "sha256:21075c897cea574e16fe2e4d19116bbf2ab99f677fb417a53d8ee4bc8617baa8"
+size = 46899
+mtime_ms = 1793041734433
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/47978b3a-d088-4f8e-b17f-2109a68c7f6a/408b1625-cd61-4c28-9dca-928a45e8507c"
+storage_version_token = "1793041790400771"
+content_type = "image/jpeg"
+
+[[outputs]]
+id = "6RlWIy_H82XEIXGYDVA7j"
+uri = "file://app-screenshots/ipad-authors-insight.jpg"
+type = "image"
+title = "GospelAI — iPad — Authors insight (updated)"
+description = "Completed responsive preview capture, 1024 × 1366. Not a native iOS simulator screenshot."
+logical_id = "0ea52259-7b3a-469c-9540-96e5f274e659"
+content_hash = "sha256:a129f284a9414e35c523f7fef2352b90e9cac45c8b0948f8c0df7913838786c6"
+size = 85364
+mtime_ms = 1793041762851
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/0ea52259-7b3a-469c-9540-96e5f274e659/1333804b-0663-4b91-a212-e635895190cd"
+storage_version_token = "1793041809325983"
+content_type = "image/jpeg"
