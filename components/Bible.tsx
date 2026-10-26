@@ -2,6 +2,8 @@ import * as Clipboard from 'expo-clipboard';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import * as SQLite from 'expo-sqlite';
 import { useSQLiteContext } from 'expo-sqlite';
+import { useAuth } from '@clerk/clerk-expo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -23,7 +25,8 @@ import { Ionicons } from '@expo/vector-icons';
 import HeaderDropDown from '@/components/HeaderDropDown';
 import { BOOKS, BOOK_ID_TO_NAME, BOOK_NAME_TO_ID } from '@/constants/bibleBooks';
 import Colors from '@/constants/Colors';
-import { addNote } from '@/utils/Database';
+import StudyNoteEditor from '@/components/StudyNoteEditor';
+import { saveStudyNote } from '@/utils/studyNotes';
 import { openBibleDb } from '@/utils/bibleDb';
 import { bibleStorageBookId } from '@/utils/bibleBookIds';
 import { completePlanDay, getSavedVerses, getStudySummary, READING_PLAN, savePosition, SavedVerse, toggleSavedVerse, verseDraft } from '@/utils/study';
@@ -61,12 +64,21 @@ export default function BibleScreen() {
   const appDb = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { isSignedIn, getToken } = useAuth();
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState<SavedVerse[]>([]);
   const [actionVerse, setActionVerse] = useState<VerseRow | null>(null);
+  const [noteVerse, setNoteVerse] = useState<VerseRow | null>(null);
+  const [fontSize, setFontSize] = useState(17);
   const [notice, setNotice] = useState('');
   const [completedDays, setCompletedDays] = useState<number[]>([]);
   const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    AsyncStorage.getItem('bible.readingFontSize.v1').then(value => {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed) && parsed >= 14 && parsed <= 28) setFontSize(parsed);
+    }).catch(() => {});
+  }, []);
   const planIndex = planDay === undefined ? -1 : Number(planDay);
   const planEntry = Number.isInteger(planIndex) ? READING_PLAN[planIndex] : undefined;
   const pendingTarget = useRef<number | null>(null);
@@ -97,12 +109,18 @@ export default function BibleScreen() {
     if (!actionVerse) return;
     const item: SavedVerse = { book: bookName, chapter, ...actionVerse, kind };
     const remove = saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === kind);
+    setSaved(current => remove
+      ? current.filter(s => !(s.book === item.book && s.chapter === item.chapter && s.verse === item.verse && s.kind === kind))
+      : [...current.filter(s => !(s.book === item.book && s.chapter === item.chapter && s.verse === item.verse && s.kind === kind)), item]);
     try {
       await toggleSavedVerse(appDb, item, remove);
       setSaved(await getSavedVerses(appDb));
       setNotice(`${kind === 'bookmark' ? 'Bookmark' : 'Highlight'} ${remove ? 'removed' : 'saved'}.`);
       setActionVerse(null);
-    } catch { setNotice('We couldn’t save that change. Please try again.'); }
+    } catch {
+      setSaved(await getSavedVerses(appDb).catch(() => saved));
+      setNotice('We couldn’t save that change. Please try again.');
+    }
   }
 
   // ===== Full Bible Search =====
@@ -177,15 +195,23 @@ export default function BibleScreen() {
     Alert.alert('Copied', 'Verse copied.');
   };
 
-  const handleSaveVerse = async (verseNum: number, text: string) => {
+  const handleSaveVerse = async (verseNum: number, content: string) => {
     const reference = `${bookName} ${chapter}:${verseNum}`;
     try {
-      await addNote(appDb, text, 'bible', reference);
-      setNotice('Verse saved to your notes.');
-      Alert.alert('Saved', 'Verse saved to your notes.');
-    } catch {
-      Alert.alert('Couldn’t save note', 'Please try again.');
+      await saveStudyNote(appDb, !!isSignedIn, getToken, { content, source: 'bible', reference });
+      setNotice(isSignedIn ? 'Note synced to your account.' : 'Note saved on this device.');
+    } catch (caught) {
+      setNotice(caught instanceof Error ? caught.message : 'Couldn’t save note. Please try again.');
+      throw caught;
     }
+  };
+
+  const updateFontSize = (next: number) => {
+    const value = Math.max(14, Math.min(28, next));
+    setFontSize(value);
+    void AsyncStorage.setItem('bible.readingFontSize.v1', String(value)).catch(() =>
+      setNotice('Font size changed for this session but could not be saved.'),
+    );
   };
 
   const onVerseLongPress = (verseNum: number, text: string) => {
@@ -474,6 +500,28 @@ export default function BibleScreen() {
               </View>
 
               {/* In-chapter search */}
+              <View style={styles.fieldSmall}>
+                <Text style={styles.label}>Version</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel="Bible version: King James Version, the only available version"
+                  accessibilityState={{ disabled: true }} disabled style={[styles.selectLike, styles.versionChoice]}>
+                  <Text style={styles.versionText}>KJV</Text>
+                </Pressable>
+              </View>
+              <View style={styles.fontControls}>
+                <Text style={styles.label}>Text size</Text>
+                <View style={styles.fontControlRow}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Decrease Bible text size" disabled={fontSize <= 14}
+                    onPress={() => updateFontSize(fontSize - 1)} style={[styles.fontButton, fontSize <= 14 && styles.controlDisabled]}>
+                    <Text style={styles.fontButtonText}>A−</Text>
+                  </Pressable>
+                  <Text accessibilityLabel={`Bible text size ${fontSize}`} style={styles.fontSizeLabel}>{fontSize}</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Increase Bible text size" disabled={fontSize >= 28}
+                    onPress={() => updateFontSize(fontSize + 1)} style={[styles.fontButton, fontSize >= 28 && styles.controlDisabled]}>
+                    <Text style={styles.fontButtonText}>A+</Text>
+                  </Pressable>
+                </View>
+              </View>
+              {/* In-chapter search */}
               <View style={styles.chapterSearch}>
                 <Text style={styles.label}>Find in chapter</Text>
                 <TextInput
@@ -504,7 +552,7 @@ export default function BibleScreen() {
             >
               <View style={[styles.verseCard, saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'highlight') && { backgroundColor: '#3a3018' }, isHit && styles.verseCardHit]}>
                 <Text style={[styles.verseNum, isHit && styles.verseNumHit]}>{item.verse}</Text>
-                <Text style={[styles.verseText, isHit && styles.verseTextHit]}>{item.text}</Text>
+                <Text style={[styles.verseText, { fontSize, lineHeight: Math.round(fontSize * 1.42) }, isHit && styles.verseTextHit]}>{item.text}</Text>
                 {saved.some(s => s.book === bookName && s.chapter === chapter && s.verse === item.verse && s.kind === 'bookmark') && <Ionicons name="bookmark" size={18} color={Colors.coral} />}
               </View>
             </Pressable>
@@ -547,11 +595,22 @@ export default function BibleScreen() {
               try { await handleCopyVerse(actionVerse.verse, actionVerse.text); setNotice('Verse copied.'); setActionVerse(null); }
               catch { setNotice('We couldn’t copy the verse. Please try again.'); }
             }}><Text style={{ color: Colors.text }}>Copy verse</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.actionItem} onPress={async () => { if (actionVerse) await handleSaveVerse(actionVerse.verse, actionVerse.text); setActionVerse(null); }}><Text style={{ color: Colors.text }}>Save to notes</Text></TouchableOpacity>
+            <TouchableOpacity accessibilityRole="button" style={styles.actionItem} onPress={() => {
+              if (!actionVerse) return;
+              setNoteVerse(actionVerse);
+              setActionVerse(null);
+            }}><Text style={{ color: Colors.text }}>Write a note</Text></TouchableOpacity>
             <TouchableOpacity style={styles.actionItem} onPress={() => setActionVerse(null)}><Text style={{ color: Colors.textMuted }}>Close</Text></TouchableOpacity>
           </View>
         </View>
       </Modal>
+      <StudyNoteEditor
+        visible={!!noteVerse}
+        reference={noteVerse ? `${bookName} ${chapter}:${noteVerse.verse}` : undefined}
+        scriptureText={noteVerse?.text}
+        onClose={() => setNoteVerse(null)}
+        onSave={content => noteVerse ? handleSaveVerse(noteVerse.verse, content) : Promise.resolve()}
+      />
 
       {/* Non-blocking error box */}
       {!!error && !loadingDb && !loadingVerses && (
@@ -751,6 +810,14 @@ const styles = StyleSheet.create({
   },
   field: { flex: 1, minWidth: 140 },
   fieldSmall: { width: 84 },
+  fontControls: { minWidth: 128 },
+  fontControlRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  fontButton: { minWidth: 40, minHeight: 40, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceRaised, alignItems: 'center', justifyContent: 'center' },
+  fontButtonText: { color: Colors.text, fontWeight: '800', fontSize: 14 },
+  fontSizeLabel: { minWidth: 24, textAlign: 'center', color: Colors.textMuted, fontWeight: '700' },
+  controlDisabled: { opacity: 0.45 },
+  versionChoice: { height: 44, justifyContent: 'center', paddingHorizontal: 12 },
+  versionText: { color: Colors.text, fontSize: 14, fontWeight: '700' },
   chapterSearch: { width: '100%' },
   label: {
     fontSize: 12,

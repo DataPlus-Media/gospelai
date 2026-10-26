@@ -2,6 +2,7 @@
 // integrity checks. Imported local packages are an explicit opt-in fallback.
 const { readFile } = require('node:fs/promises');
 const { createLibraryPackageHandler } = require('./library-package-handler.cjs');
+const handleStudyNotes = require('./study-notes-handler.cjs');
 
 let storageClient;
 
@@ -25,5 +26,6 @@ async function loadDevelopmentPackage(id, entry) {
 const handleLibraryPackage = createLibraryPackageHandler({ loadPackage: loadDevelopmentPackage });
 
 module.exports = async (req, res, next) => {
+  if (await handleStudyNotes(req, res)) return;
   if (!await handleLibraryPackage(req, res)) next();
 };

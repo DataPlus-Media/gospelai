@@ -1,6 +1,6 @@
 import Colors from '@/constants/Colors';
 import UserAvatar from '@/components/UserAvatar';
-import { addNote } from '@/utils/Database';
+import { saveStudyNote } from '@/utils/studyNotes';
 import { Message, Role } from '@/utils/Interfaces';
 import { useAuth, useUser } from '@clerk/clerk-expo';
 import * as Clipboard from 'expo-clipboard';
@@ -15,17 +15,17 @@ import {
   StyleSheet,
   Text,
   View,
+  Linking,
 } from 'react-native';
 
-function VerseLinkedText({ text }: { text: string }) {
+function VerseLinkedText({ text, isUserMessage }: { text: string; isUserMessage: boolean }) {
   const router = useRouter();
   const parts: React.ReactNode[] = [];
 
   const re =
-    /\[\[([^\]]+)\]\]|([1-3]?\s?[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\s\d+:\d+(?:-\d+)?)/g;
+    /(https:\/\/[^\s<>()]+)|\[\[([^\]]+)\]\]|([1-3]?\s?[A-Z][a-z]+(?:\s[A-Z][a-z]+)*\s\d+:\d+(?:-\d+)?)/g;
   let last = 0;
   let m: RegExpExecArray | null;
-
   while ((m = re.exec(text))) {
     const start = m.index;
     const end = re.lastIndex;
@@ -38,7 +38,25 @@ function VerseLinkedText({ text }: { text: string }) {
       );
     }
 
-    const ref = (m[1] || m[2] || '').trim();
+    if (m[1]) {
+      const url = m[1].replace(/[.,;:]+$/, '');
+      const trailing = m[1].slice(url.length);
+      if (isUserMessage) {
+        parts.push(
+          <Pressable key={`url-${start}`} accessibilityRole="link" accessibilityLabel={`Open source citation ${url}`}
+            onPress={() => void Linking.openURL(url).catch(() => Alert.alert('Couldn’t open source', 'Check your internet connection and try again.'))}>
+            <Text style={styles.verseRef}>{url}</Text>
+          </Pressable>,
+        );
+      } else {
+        parts.push(<Text key={`t-${start}`} style={styles.textSegment}>{url}</Text>);
+      }
+      if (trailing) parts.push(<Text key={`u-${end}`} style={styles.textSegment}>{trailing}</Text>);
+      last = end;
+      continue;
+    }
+
+    const ref = (m[2] || m[3] || '').trim();
     parts.push(
       <Pressable
         key={`v-${start}`}
@@ -76,7 +94,7 @@ const ChatMessage = ({
   loading,
 }: Message & { loading?: boolean }) => {
   const router = useRouter();
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
   const { user } = useUser();
   const db = useSQLiteContext();
   const isBot = role === Role.Bot;
@@ -97,10 +115,10 @@ const ChatMessage = ({
 
   const handleSaveNote = async (text: string) => {
     try {
-      await addNote(db, text, 'chat', 'AI Response');
-      Alert.alert('Saved', 'Note saved.');
-    } catch {
-      Alert.alert('Couldn’t save note', 'Please try again.');
+      await saveStudyNote(db, !!isSignedIn, getToken, { content: text, source: 'chat', reference: 'AI Response' });
+      Alert.alert('Saved', isSignedIn ? 'Note synced to your account.' : 'Note saved on this device.');
+    } catch (error) {
+      Alert.alert('Couldn’t save note', error instanceof Error ? error.message : 'Please try again.');
     }
   };
 
@@ -177,7 +195,7 @@ const ChatMessage = ({
                   ]);
                 }}
               >
-                <VerseLinkedText text={p} />
+                <VerseLinkedText text={p} isUserMessage={false} />
               </Pressable>
             </View>
           );
@@ -189,7 +207,7 @@ const ChatMessage = ({
               style={[styles.bubble, styles.userBubble]}
               onLongPress={() => handleCopy(p)}
             >
-              <Text style={styles.text}>{p}</Text>
+              <VerseLinkedText text={p} isUserMessage />
             </Pressable>
             <UserAvatar {...avatarProps} />
           </View>

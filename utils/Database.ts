@@ -2,11 +2,12 @@ import { Message, Role } from '@/utils/Interfaces';
 import { type SQLiteDatabase } from 'expo-sqlite';
 
 export interface Note {
-  id: number;
+  id: number | string;
   content: string;
   source: string;
   reference: string;
   created_at: string;
+  updated_at?: string;
 }
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
@@ -126,6 +127,10 @@ export const addNote = async (
     source,
     reference
   );
+};
+
+export const updateNote = async (db: SQLiteDatabase, noteId: number, content: string) => {
+  return await db.runAsync('UPDATE notes SET content = ? WHERE id = ?', content, noteId);
 };
 
 export const getNotes = async (db: SQLiteDatabase): Promise<Note[]> => {

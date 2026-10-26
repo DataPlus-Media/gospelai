@@ -3,6 +3,7 @@ const { createReadStream } = require('node:fs');
 const { stat } = require('node:fs/promises');
 const path = require('node:path');
 const { createLibraryPackageHandler } = require('./library-package-handler.cjs');
+const handleStudyNotes = require('./study-notes-handler.cjs');
 
 const distRoot = path.resolve(__dirname, '../dist');
 const libraryHandler = createLibraryPackageHandler();
@@ -59,6 +60,7 @@ async function findStaticFile(urlPath) {
 const server = http.createServer(async (req, res) => {
   setIsolationHeaders(res);
   try {
+    if (await handleStudyNotes(req, res)) return;
     if (await libraryHandler(req, res)) return;
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {

@@ -93,8 +93,25 @@ async function main() {
       await mkdir('generated-artifacts/today', { recursive: true });
       await page.screenshot({ path: `generated-artifacts/today/${width}.png` });
     }
+    const orb = page.getByTestId('today-ambient-primary');
+    await orb.waitFor();
+    const beforeMotion = await orb.evaluate(element => getComputedStyle(element).transform);
+    await page.waitForTimeout(1200);
+    const afterMotion = await orb.evaluate(element => getComputedStyle(element).transform);
+    assert.notEqual(afterMotion, beforeMotion, 'Today background subtly animates without reduced-motion preference');
+    const reducedContext = await browser.newContext({ viewport: { width: 402, height: 874 }, reducedMotion: 'reduce' });
+    const reducedPage = await reducedContext.newPage();
+    await reducedPage.goto(`${base}/today`, { waitUntil: 'networkidle' });
+    await reducedPage.getByRole('button', { name: 'Continue reading Genesis 1:1' }).waitFor();
+    const reducedOrb = reducedPage.getByTestId('today-ambient-primary');
+    await reducedOrb.waitFor();
+    const reducedBefore = await reducedOrb.evaluate(element => getComputedStyle(element).transform);
+    await reducedPage.waitForTimeout(1200);
+    const reducedAfter = await reducedOrb.evaluate(element => getComputedStyle(element).transform);
+    assert.equal(reducedAfter, reducedBefore, 'reduced motion stops the ambient animation on cold launch');
+    await reducedContext.close();
     assert.deepEqual(errors, []);
-    console.log('PASS Today phone/tablet layouts, persistent navigation, selected states, current conversation, exact reading position, removed reading plan, library and right drawer');
+    console.log('PASS Today phone/tablet layouts, persistent navigation, exact reading position, visible motion, and reduced-motion cold launch');
   } finally {
     await browser.close();
   }

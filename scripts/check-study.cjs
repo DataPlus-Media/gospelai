@@ -133,6 +133,12 @@ async function main() {
       assert.equal(summary.plan.completed.length, 0);
       assert.equal(summary.position.verse, 16);
       assert.equal((await study.getSavedVerses(db)).length, 1);
+      const createdNote = await api.addNote(db, 'Original note', 'bible', 'Matthew 10:2');
+      await api.updateNote(db, createdNote.lastInsertRowId, 'Edited note');
+      const editedNote = (await api.getNotes(db)).find(note => note.id === createdNote.lastInsertRowId);
+      assert.equal(editedNote.content, 'Edited note');
+      assert.equal(editedNote.reference, 'Matthew 10:2');
+      await api.deleteNote(db, createdNote.lastInsertRowId);
       if (version === 2) assert.equal((await api.getNotes(db))[0].content, 'Existing note');
       console.log(`PASS v${version} upgrade, preserve content, reading position, independent saved items/removal, all plan days and reset`);
     } finally { db.close(); }

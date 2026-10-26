@@ -10,6 +10,7 @@
 
     "extra": {
       "router": {},
+      "notesApiBase": "https://gospelai-1.replit.app",
       "eas": { "projectId": "bfed3b7e-5104-428d-bf14-175ec4baa880" }
     },
 

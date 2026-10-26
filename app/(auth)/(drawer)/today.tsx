@@ -5,7 +5,16 @@ import { useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scriptureFontFamily, spacing } from '@/constants/DesignTokens';
 import {
@@ -47,6 +56,48 @@ export default function TodayScreen() {
   const [summary, setSummary] = useState<StudySummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const reducedMotionPreference = useReducedMotion();
+  const [reduceMotion, setReduceMotion] = useState(true);
+  const ambient = useSharedValue(0);
+  const secondaryAmbient = useSharedValue(0);
+
+  useEffect(() => {
+    let active = true;
+    setReduceMotion(true);
+    AccessibilityInfo.isReduceMotionEnabled().then(value => {
+      if (active) setReduceMotion(value);
+    }).catch(() => {
+      if (active) setReduceMotion(reducedMotionPreference);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      active = false;
+      subscription.remove();
+      cancelAnimation(ambient);
+      cancelAnimation(secondaryAmbient);
+    };
+  }, [ambient, reducedMotionPreference, secondaryAmbient]);
+
+  useEffect(() => {
+    cancelAnimation(ambient);
+    cancelAnimation(secondaryAmbient);
+    if (!reduceMotion) {
+      ambient.value = withRepeat(withTiming(1, { duration: 18000 }), -1, true);
+      secondaryAmbient.value = withRepeat(withTiming(1, { duration: 24000 }), -1, true);
+    } else {
+      ambient.value = 0;
+      secondaryAmbient.value = 0;
+    }
+  }, [ambient, reduceMotion, secondaryAmbient]);
+
+  const ambientStyle = useAnimatedStyle(() => ({
+    opacity: 0.045 + ambient.value * 0.035,
+    transform: [{ translateX: ambient.value * -24 }, { translateY: ambient.value * 20 }],
+  }));
+  const secondaryAmbientStyle = useAnimatedStyle(() => ({
+    opacity: 0.035 + secondaryAmbient.value * 0.035,
+    transform: [{ translateX: secondaryAmbient.value * 25 }, { translateY: secondaryAmbient.value * -18 }],
+  }));
 
   const loadSummary = useCallback(async () => {
     setLoading(true);
@@ -96,6 +147,10 @@ export default function TodayScreen() {
 
   return (
     <View style={styles.screen}>
+      <Animated.View testID="today-ambient-primary" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+        style={[styles.ambientOrb, styles.ambientOrbPrimary, ambientStyle]} />
+      <Animated.View testID="today-ambient-secondary" pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants"
+        style={[styles.ambientOrb, styles.ambientOrbSecondary, secondaryAmbientStyle]} />
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.xl }]}
         showsVerticalScrollIndicator={false}
@@ -218,6 +273,9 @@ function Shortcut({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: TodayTheme.background },
+  ambientOrb: { position: 'absolute', width: 300, height: 300, borderRadius: 150, backgroundColor: TodayTheme.mint, zIndex: 0 },
+  ambientOrbPrimary: { top: 90, right: -190 },
+  ambientOrbSecondary: { top: 430, left: -220 },
   content: { width: '100%', maxWidth: 860, alignSelf: 'center', paddingTop: 26, paddingBottom: 40 },
   introduction: { paddingHorizontal: 20, marginBottom: 19 },
   eyebrow: { color: TodayTheme.mint, fontSize: 11, fontWeight: '800', letterSpacing: 2.1 },
