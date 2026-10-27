@@ -132,8 +132,9 @@ export async function runClerkOAuthFlow({
   }
   const nonce = callback.searchParams.get('rotating_token_nonce');
   if (!nonce) {
+    const provider = strategy === 'oauth_apple' ? 'Apple' : 'Google';
     throw new AuthFlowError(
-      `The sign-in return link is incomplete. Please start sign-in again. Safe diagnostics: ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
+      `The sign-in return link is incomplete. Please start sign-in again. Safe diagnostics: provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
     );
   }
   resource = await resource.reload({ rotatingTokenNonce: nonce });

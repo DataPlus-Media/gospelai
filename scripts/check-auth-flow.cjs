@@ -270,7 +270,7 @@ async function run() {
   );
   assert.match(oauthCallbackDiagnostics(redirectUrl, 'not a url', 'success'), /returned=invalid/);
 
-  async function oauthScenario(initial, browserResult, reloaded) {
+  async function oauthScenario(initial, browserResult, reloaded, strategy = 'oauth_google') {
     let opens = 0;
     let reloads = 0;
     let transfers = 0;
@@ -285,10 +285,10 @@ async function run() {
       },
     };
     const result = await runClerkOAuthFlow({
-      strategy: 'oauth_google',
+      strategy,
       redirectUrl,
       signIn: { create: async (params) => {
-        assert.deepEqual(params, { strategy: 'oauth_google', redirectUrl });
+        assert.deepEqual(params, { strategy, redirectUrl });
         return resource;
       } },
       signUp: { create: async (params) => {
@@ -349,13 +349,34 @@ async function run() {
     (error) => error.code === 'auth_service_unavailable',
     'an empty OAuth resource must not blame saved provider credentials'
   );
+  for (const [strategy, provider] of [
+    ['oauth_apple', 'Apple'],
+    ['oauth_google', 'Google'],
+  ]) {
+    await assert.rejects(
+      oauthScenario(redirectState, { type: 'success', url: redirectUrl }, undefined, strategy),
+      (error) => error.message.includes(`provider=${provider}`) &&
+        /return link is incomplete/.test(error.message) &&
+        /callback_match=yes/.test(error.message) &&
+        /rotating_token_nonce=no/.test(error.message) &&
+        !/secret_nonce/.test(error.message),
+      `incomplete ${provider} callbacks should report safe markers without reloading or leaking tokens`
+    );
+  }
   await assert.rejects(
-    oauthScenario(redirectState, { type: 'success', url: redirectUrl }),
-    (error) => /return link is incomplete/.test(error.message) &&
-      /callback_match=yes/.test(error.message) &&
-      /rotating_token_nonce=no/.test(error.message) &&
-      !/secret_nonce/.test(error.message),
-    'incomplete callbacks should report safe markers without reloading or leaking tokens'
+    oauthScenario(redirectState, {
+      type: 'success',
+      url: `${redirectUrl}?error=access_denied&state=private_state`,
+    }),
+    (error) => /error=yes/.test(error.message) &&
+      !/access_denied|private_state/.test(error.message),
+    'provider error details must be reported without exposing parameter values'
+  );
+  await assert.rejects(
+    oauthScenario(redirectState, { type: 'success', url: 'invalid callback secret' }),
+    (error) => /returned=invalid/.test(error.message) &&
+      !/callback secret/.test(error.message),
+    'malformed callback URLs must be reported without echoing raw input'
   );
 
   console.log('Authentication continuation checks passed.');

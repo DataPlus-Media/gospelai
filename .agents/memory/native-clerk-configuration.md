@@ -21,6 +21,14 @@ Keep Clerk's `rethrowOfflineNetworkErrors` enabled and treat an empty authentica
 Use a supported full JavaScript app reload for a stalled native startup, preserving
 SecureStore. Do not rely on remounting the provider as a retry.
 
+## Native OAuth callback configuration
+
+Clerk's mobile SSO redirect allowlist must contain the exact app return URL for the SDK to include `rotating_token_nonce`. Social sign-in provider setup belongs under SSO connections; the separate OAuth applications page is not required for Apple or Google sign-in.
+
+**Why:** The user's Production instance has the iOS bundle ID registered and `gospelsai://oauth-native-callback` allowlisted, but TestFlight still returned without the nonce. The OAuth applications page was empty, which is not itself a missing Apple/Google provider configuration.
+
+**How to apply:** Verify the Native API, registered iOS bundle ID, and exact mobile redirect before diagnosing the returned URL. If the nonce is still absent with those settings, capture sanitized callback diagnostics; never bypass nonce validation or ask the user to create an OAuth application for social SSO.
+
 **Why:** Expo Clerk holds its native client in a module-level singleton; remounting
 the React provider can reuse the failed client instead of restarting startup.
 Expo's public app reload works in release builds without requiring an OTA update.
