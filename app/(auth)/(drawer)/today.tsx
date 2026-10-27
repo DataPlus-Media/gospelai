@@ -206,12 +206,12 @@ export default function TodayScreen() {
         <View style={styles.quickActions}>
           <Pressable
             accessibilityRole="link"
-            accessibilityLabel="Ask GospelAI about Scripture"
+            accessibilityLabel="Ask GospelAI for More Information"
             onPress={() => router.push(ROUTES.chat)}
             style={({ pressed }) => [styles.chatAction, pressed && styles.pressed]}
           >
             <Ionicons name="sparkles-outline" size={17} color={TodayTheme.mintInk} />
-            <Text style={styles.chatActionText}>Ask GospelAI about Scripture</Text>
+            <Text style={styles.chatActionText}>Ask GospelAI for More Information</Text>
           </Pressable>
         </View>
 

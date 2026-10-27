@@ -339,7 +339,7 @@ export default function SupportScreen() {
           <Text style={styles.title}>Support GospelAI</Text>
           <Text style={styles.lede}>
             Gifts are handled as secure in-app “tips”. Your support helps us share
-            clear, Bible-based answers (KJV only) and Christ-centred resources with
+            clear, Bible-based answers and Christ-centred resources with
             more people.
           </Text>
 
@@ -485,7 +485,7 @@ export default function SupportScreen() {
             </View>
           ) : null}
 
-          <Text style={styles.note}>Made for quiet study · KJV Scripture references only.</Text>
+          <Text style={styles.note}>Made for You · GospelAI.</Text>
         </ScrollView>
       </SafeAreaView>
     </TouchableWithoutFeedback>

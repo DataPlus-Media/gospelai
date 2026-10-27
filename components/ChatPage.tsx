@@ -198,9 +198,7 @@ const ChatPage = () => {
         }}
       />
       <View style={Platform.OS === 'web' ? styles.webNotice : undefined}>
-        <Text style={Platform.OS === 'web' ? styles.webNoticeText : { width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.textMuted, backgroundColor: Colors.background, padding: 12, fontSize: 12 }}>
-          Chat replies are AI-generated, not Bible text. Chat needs an internet connection. Review and edit verse drafts before sending.
-        </Text>
+        <Text style={Platform.OS === 'web' ? styles.webNoticeText : { width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.textMuted, backgroundColor: Colors.background, padding: 12, fontSize: 12 }}></Text>
       </View>
       {sourceDraft === '1' && (
         <View style={Platform.OS === 'web' ? [styles.webNotice, styles.webDraftNotice] : undefined}>
