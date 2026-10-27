@@ -167,9 +167,23 @@ async function run() {
   const layoutSource = fs.readFileSync(path.resolve(__dirname, '../app/_layout.tsx'), 'utf8');
   assert.match(layoutSource, /rethrowOfflineNetworkErrors:\s*true/,
     'native networking failures must not be swallowed by Clerk');
+  assert.doesNotMatch(layoutSource, /return\s*<Slot\s*\/>/,
+    'the root navigator must not switch from Slot to Stack after Clerk initialization');
+  assert.match(layoutSource, /return\s*\(\s*<Stack>/,
+    'the root Stack should remain mounted while Clerk initializes');
 
   const scheme = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../app.json'), 'utf8')).expo.scheme;
   const loginSource = fs.readFileSync(path.resolve(__dirname, '../app/login.tsx'), 'utf8');
+  assert.match(loginSource, /Connecting to the sign-in service/,
+    'the auth screen should show progress while Clerk initializes');
+  assert.match(loginSource, /Sign-in is taking longer than expected/,
+    'the auth screen should give a recovery message if Clerk initialization stalls');
+  assert.match(loginSource, /Please wait…/,
+    'authentication submissions should show a readable progress state');
+  assert.match(loginSource, /disabled=\{loading \|\| !isLoaded\}/,
+    'sign-in submission should be disabled until the Clerk sign-in resource is ready');
+  assert.match(loginSource, /disabled=\{loading \|\| !signUpLoaded\}/,
+    'sign-up submission should be disabled until the Clerk sign-up resource is ready');
   assert.ok(loginSource.includes(`scheme: '${scheme}'`), 'OAuth return scheme must match the installed app');
   assert.ok(loginSource.includes("strategy: 'password'"), 'email sign-in must explicitly attempt the password factor');
 

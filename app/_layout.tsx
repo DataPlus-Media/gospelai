@@ -1,7 +1,7 @@
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import { Slot, SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
+import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { useEffect } from 'react';
 import { Platform, TouchableOpacity } from 'react-native';
@@ -52,10 +52,6 @@ const InitialLayout = () => {
     const destination = entryRedirect(isLoaded, isSignedIn, first);
     if (destination) router.replace(destination);
   }, [isLoaded, isSignedIn, segments, router]);
-
-  if (!loaded || !isLoaded) {
-    return <Slot />;
-  }
 
   return (
     <Stack>

@@ -64,6 +64,7 @@ const Page = () => {
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
+  const [authWaitExpired, setAuthWaitExpired] = useState(false);
   const startedProvider = useRef<string | null>(null);
 
   // reset-password specific
@@ -74,6 +75,15 @@ const Page = () => {
     scheme: 'gospelsai',
     path: 'oauth-native-callback',
   });
+  const authReady = isLoaded && signUpLoaded;
+
+  useEffect(() => {
+    setAuthWaitExpired(false);
+    if (authReady) return;
+
+    const timeout = setTimeout(() => setAuthWaitExpired(true), 12000);
+    return () => clearTimeout(timeout);
+  }, [authReady]);
 
   const activateAndContinue = async (
     sessionId: unknown,
@@ -450,8 +460,13 @@ const Page = () => {
       style={styles.container}
     >
       {loading && (
-        <View style={defaultStyles.loadingOverlay}>
+        <View
+          style={defaultStyles.loadingOverlay}
+          accessibilityRole="alert"
+          accessibilityLabel="Submitting your authentication request"
+        >
           <ActivityIndicator size="large" color={Colors.coral} />
+          <Text style={styles.loadingText}>Please wait…</Text>
         </View>
       )}
 
@@ -482,6 +497,21 @@ const Page = () => {
                 ? 'Sign in to continue your study.'
                 : 'Create an account to get started with GospelAI.'}
             </Text>
+
+        {!authReady && (
+          <View
+            style={styles.authStatus}
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+          >
+            {!authWaitExpired && <ActivityIndicator size="small" color={Colors.coral} />}
+            <Text style={styles.authStatusText}>
+              {authWaitExpired
+                ? 'Sign-in is taking longer than expected. Check your internet connection, then close and reopen the app to try again.'
+                : 'Connecting to the sign-in service… You can enter your details while it loads.'}
+            </Text>
+          </View>
+        )}
 
         {mode === 'auth' ? (
           <>
@@ -649,7 +679,7 @@ const Page = () => {
               <TouchableOpacity
                 style={[defaultStyles.btn, styles.btnPrimary]}
                 onPress={onSignInPress}
-                disabled={loading}
+                disabled={loading || !isLoaded}
                 accessibilityRole="button"
                 accessibilityLabel="Sign in"
               >
@@ -659,7 +689,7 @@ const Page = () => {
               <TouchableOpacity
                 style={[defaultStyles.btn, styles.btnPrimary]}
                 onPress={onSignUpPress}
-                disabled={loading}
+                disabled={loading || !signUpLoaded}
                 accessibilityRole="button"
                 accessibilityLabel="Create account"
               >
@@ -677,7 +707,7 @@ const Page = () => {
               <TouchableOpacity
                 style={styles.oauthButton}
                 onPress={() => doOAuth('oauth_apple')}
-                disabled={loading}
+                disabled={loading || !authReady}
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Apple"
               >
@@ -687,7 +717,7 @@ const Page = () => {
               <TouchableOpacity
                 style={styles.oauthButton}
                 onPress={() => doOAuth('oauth_google')}
-                disabled={loading}
+                disabled={loading || !authReady}
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
               >
@@ -716,6 +746,7 @@ const Page = () => {
               <TouchableOpacity
                 style={[defaultStyles.btn, styles.secondaryBtn]}
                 onPress={onRequestResetCode}
+                disabled={loading || !isLoaded}
               >
                 <Text style={styles.secondaryText}>Send reset code</Text>
               </TouchableOpacity>
@@ -749,6 +780,7 @@ const Page = () => {
             <TouchableOpacity
               style={[defaultStyles.btn, styles.btnPrimary]}
               onPress={onCompleteReset}
+              disabled={loading || !isLoaded}
             >
               <Text style={styles.btnPrimaryText}>Update password & sign in</Text>
             </TouchableOpacity>
@@ -828,6 +860,30 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 7,
     marginBottom: 20,
+  },
+  authStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 12,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    backgroundColor: Colors.surfaceRaised,
+  },
+  authStatusText: {
+    flex: 1,
+    color: Colors.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  loadingText: {
+    color: Colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 12,
   },
   fieldGroup: {
     marginBottom: 20,
