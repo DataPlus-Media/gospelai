@@ -10,3 +10,4 @@
 - [Offline library cleanup timing](library-cleanup-timing.md) — allow longer than a brief browser wait when removing a large downloaded commentary.
 - [Library delivery verification](library-delivery-verification.md) — verify large packages through the published HTTP endpoint, not only bucket integrity and local mocks.
 - [Native Clerk configuration](native-clerk-configuration.md) — EAS uses external Clerk; workspace management detection does not establish native build configuration.
+- [Native store billing](native-store-billing.md) — use Apple and Google store purchases for GospelAI support subscriptions, not RevenueCat.
