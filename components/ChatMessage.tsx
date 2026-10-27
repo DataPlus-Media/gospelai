@@ -16,6 +16,7 @@ import {
   Text,
   View,
   Linking,
+  Platform,
 } from 'react-native';
 
 function VerseLinkedText({ text, isUserMessage }: { text: string; isUserMessage: boolean }) {
@@ -140,7 +141,7 @@ const ChatMessage = ({
 
   if (loading) {
     return (
-      <View style={styles.loadingRow}>
+      <View style={[styles.loadingRow, Platform.OS === 'web' && styles.webBotRow]}>
         {isBot && (
           <View style={styles.botAvatarWrap}>
             <Image
@@ -156,7 +157,7 @@ const ChatMessage = ({
 
   if (imageUrl && content === '') {
     return (
-      <View style={isBot ? styles.rowBot : styles.rowUser}>
+      <View style={isBot ? [styles.rowBot, Platform.OS === 'web' && styles.webBotRow] : styles.rowUser}>
         {isBot && (
           <View style={styles.botAvatarWrap}>
             <Image
@@ -178,7 +179,7 @@ const ChatMessage = ({
       {paragraphs.map((p, idx) => {
         if (isBot) {
           return (
-            <View key={idx} style={styles.rowBot}>
+            <View key={idx} style={[styles.rowBot, Platform.OS === 'web' && styles.webBotRow]}>
               <View style={styles.botAvatarWrap}>
                 <Image
                   source={require('@/assets/images/logo-white.png')}
@@ -223,6 +224,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 14,
     marginVertical: 6,
+  },
+  webBotRow: {
+    justifyContent: 'center',
   },
   rowUser: {
     flexDirection: 'row',
@@ -289,6 +293,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     fontSize: 16,
     lineHeight: 22,
+    textAlign: 'left',
   },
 
   versePressable: {
@@ -303,6 +308,7 @@ const styles = StyleSheet.create({
   verseRef: {
     color: Colors.coralSoft,
     fontWeight: '700',
+    textAlign: 'left',
   },
 
   previewImage: {

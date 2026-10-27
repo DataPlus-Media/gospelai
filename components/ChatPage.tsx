@@ -3,7 +3,6 @@ import ChatMessage from '@/components/ChatMessage';
 import HeaderDropDown from '@/components/HeaderDropDown';
 import MessageIdeas from '@/components/MessageIdeas';
 import MessageInput from '@/components/MessageInput';
-import VerseOfDay from '@/components/VerseOfDay';
 
 import { defaultStyles } from '@/constants/Styles';
 import { addChat, addMessage, getMessages } from '@/utils/Database';
@@ -184,7 +183,7 @@ const ChatPage = () => {
   };
 
   return (
-    <View style={defaultStyles.pageContainer}>
+    <View style={[defaultStyles.pageContainer, Platform.OS === 'web' && styles.webScreen]}>
       <Stack.Screen
         options={{
           headerTitle: () => (
@@ -198,31 +197,44 @@ const ChatPage = () => {
           headerShadowVisible: false,
         }}
       />
-      <Text style={{ width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.textMuted, backgroundColor: Colors.background, padding: 12, fontSize: 12 }}>
-        Chat replies are AI-generated, not Bible text. Chat needs an internet connection. Review and edit verse drafts before sending.
-      </Text>
-      {sourceDraft === '1' && <Text accessibilityRole="alert" style={{ width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.coralSoft, backgroundColor: Colors.coralTint, padding: 12, fontSize: 12 }}>
-        Review and edit this draft before sending. Sending shares its Scripture and source text with GospelAI’s AI service. The reply is AI-generated, not an original author quotation or a source-verified conclusion.
-      </Text>}
+      <View style={Platform.OS === 'web' ? styles.webNotice : undefined}>
+        <Text style={Platform.OS === 'web' ? styles.webNoticeText : { width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.textMuted, backgroundColor: Colors.background, padding: 12, fontSize: 12 }}>
+          Chat replies are AI-generated, not Bible text. Chat needs an internet connection. Review and edit verse drafts before sending.
+        </Text>
+      </View>
+      {sourceDraft === '1' && (
+        <View style={Platform.OS === 'web' ? [styles.webNotice, styles.webDraftNotice] : undefined}>
+          <Text accessibilityRole="alert" style={Platform.OS === 'web' ? styles.webDraftNoticeText : { width: '100%', maxWidth: 960, alignSelf: 'center', color: Colors.coralSoft, backgroundColor: Colors.coralTint, padding: 12, fontSize: 12 }}>
+            Review and edit this draft before sending. Sending shares its Scripture and source text with GospelAI’s AI service. The reply is AI-generated, not an original author quotation or a source-verified conclusion.
+          </Text>
+        </View>
+      )}
 
-      <View style={styles.page}>
+      <View style={[styles.page, Platform.OS === 'web' && styles.webPage]}>
         {messages.length === 0 ? (
           <FlashList<{ key: string }>
             data={[{ key: 'empty-home' }]}
             renderItem={() => (
-              <View>
-                <View style={styles.logoContainer}>
+              <View style={[styles.emptyState, Platform.OS === 'web' && styles.webEmptyState]}>
+                <View style={[styles.logoContainer, Platform.OS === 'web' && styles.webLogoContainer]}>
                   <Image
                     source={require('@/assets/images/logo-white.png')}
                     style={styles.image}
                   />
                 </View>
-                <VerseOfDay />
+                {Platform.OS === 'web' && (
+                  <View style={styles.emptyCopy}>
+                    <Text style={styles.emptyTitle}>What would you like to explore?</Text>
+                    <Text style={styles.emptySubtitle}>Ask a question about Scripture, faith, or everyday life.</Text>
+                  </View>
+                )}
               </View>
             )}
             keyExtractor={(item) => item.key}
             {...({ estimatedItemSize: 300 } as any)}
-            contentContainerStyle={{ width: '100%', maxWidth: 960, alignSelf: 'center', paddingTop: 30, paddingBottom: Math.max(260, insets.bottom + 180) }}
+            contentContainerStyle={Platform.OS === 'web'
+              ? styles.webEmptyListContent
+              : { width: '100%', maxWidth: 960, alignSelf: 'center', paddingTop: 30, paddingBottom: Math.max(260, insets.bottom + 180) }}
             keyboardDismissMode="on-drag"
           />
         ) : (
@@ -241,7 +253,9 @@ const ChatPage = () => {
             )}
             keyExtractor={(_: Message, i: number) => String(i)}
             {...({ estimatedItemSize: 400 } as any)}
-            contentContainerStyle={{ width: '100%', maxWidth: 960, alignSelf: 'center', paddingTop: 30, paddingBottom: Math.max(200, insets.bottom + 160) }}
+            contentContainerStyle={Platform.OS === 'web'
+              ? styles.webMessageListContent
+              : { width: '100%', maxWidth: 960, alignSelf: 'center', paddingTop: 30, paddingBottom: Math.max(200, insets.bottom + 160) }}
             keyboardDismissMode="on-drag"
           />
         )}
@@ -250,7 +264,7 @@ const ChatPage = () => {
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={70}
-        style={styles.kav}
+        style={Platform.OS === 'web' ? styles.webKav : styles.kav}
       >
         {messages.length === 0 && !draft && (
           <MessageIdeas
@@ -259,7 +273,7 @@ const ChatPage = () => {
             loading={ideasLoading}
           />
         )}
-        {!!chatError && <View style={{ maxWidth: 960, width: '100%', alignSelf: 'center', padding: 14, backgroundColor: Colors.coralTint }}>
+        {!!chatError && <View style={{ maxWidth: Platform.OS === 'web' ? 860 : 960, width: '100%', alignSelf: 'center', padding: 14, backgroundColor: Colors.coralTint }}>
           <Text accessibilityRole="alert" style={{ color: Colors.coralSoft, lineHeight: 20 }}>{chatError}</Text>
           {!!failedTurn && <View style={{ flexDirection: 'row', gap: 24 }}>
             <Pressable accessibilityRole="button" disabled={pending} style={{ paddingVertical: 12 }} onPress={async () => {
@@ -278,10 +292,94 @@ const ChatPage = () => {
 };
 
 const styles = StyleSheet.create({
+  webScreen: {
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+
   // Chat background
   page: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  webPage: {
+    minHeight: 0,
+  },
+
+  webNotice: {
+    width: '100%',
+    backgroundColor: Colors.background,
+  },
+  webNoticeText: {
+    width: '100%',
+    maxWidth: 860,
+    alignSelf: 'center',
+    color: Colors.textMuted,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+  },
+  webDraftNotice: {
+    backgroundColor: Colors.coralTint,
+  },
+  webDraftNoticeText: {
+    width: '100%',
+    maxWidth: 860,
+    alignSelf: 'center',
+    color: Colors.coralSoft,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+  },
+  webEmptyState: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  webEmptyListContent: {
+    width: '100%',
+    maxWidth: 860,
+    alignSelf: 'center',
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingVertical: 18,
+  },
+  webMessageListContent: {
+    width: '100%',
+    maxWidth: 860,
+    alignSelf: 'center',
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 24,
+  },
+  webLogoContainer: {
+    marginTop: 0,
+  },
+  emptyCopy: {
+    alignItems: 'center',
+    maxWidth: 520,
+    marginTop: 18,
+  },
+  emptyTitle: {
+    color: Colors.text,
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    color: Colors.textMuted,
+    fontSize: 14,
+    lineHeight: 21,
+    marginTop: 8,
+    textAlign: 'center',
   },
 
   // Centered logo when there are no messages
@@ -317,6 +415,12 @@ const styles = StyleSheet.create({
     width: '100%',
     // slight fade like .composer background
     backgroundColor: 'rgba(0, 0, 0, 0.0)',
+  },
+  webKav: {
+    flexShrink: 0,
+    width: '100%',
+    zIndex: 1,
+    backgroundColor: Colors.background,
   },
 });
 

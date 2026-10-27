@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Colors from '@/constants/Colors';
 
 type Idea = { title: string; text: string };
@@ -41,13 +41,29 @@ const SkeletonCard = () => {
 };
 
 const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
+  const [webRailWidth, setWebRailWidth] = useState(0);
+  const itemCount = loading ? 3 : ideas?.length ?? 0;
+  const contentWidth = itemCount * 200 + Math.max(0, itemCount - 1) * 16 + 40;
+  const webContentFits = webRailWidth >= contentWidth;
+  const webContentStyle = [
+    styles.scrollContent,
+    styles.webScrollContent,
+    webContentFits ? styles.webScrollCentered : styles.webScrollStart,
+  ];
+  const handleRailLayout = (event: { nativeEvent: { layout: { width: number } } }) => {
+    setWebRailWidth(event.nativeEvent.layout.width);
+  };
+
   if (loading) {
     return (
-      <View>
+      <View
+        onLayout={Platform.OS === 'web' ? handleRailLayout : undefined}
+        style={Platform.OS === 'web' ? styles.webRail : undefined}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
+          style={Platform.OS === 'web' ? styles.webScroll : undefined}
+          contentContainerStyle={Platform.OS === 'web' ? webContentStyle : styles.scrollContent}>
           {[0, 1, 2].map((i) => (
             <SkeletonCard key={i} />
           ))}
@@ -61,11 +77,14 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
   if (items.length === 0) return null;
 
   return (
-    <View>
+    <View
+      onLayout={Platform.OS === 'web' ? handleRailLayout : undefined}
+      style={Platform.OS === 'web' ? styles.webRail : undefined}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        style={Platform.OS === 'web' ? styles.webScroll : undefined}
+        contentContainerStyle={Platform.OS === 'web' ? webContentStyle : styles.scrollContent}>
         {items.map((item, index) => (
           <TouchableOpacity
             key={index}
@@ -87,6 +106,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     gap: 16,
+  },
+  webRail: {
+    width: '100%',
+    maxWidth: 860,
+    alignSelf: 'center',
+    backgroundColor: Colors.background,
+  },
+  webScroll: {
+    backgroundColor: Colors.background,
+  },
+  webScrollContent: {
+    flexGrow: 1,
+    minWidth: '100%',
+  },
+  webScrollCentered: {
+    justifyContent: 'center',
+  },
+  webScrollStart: {
+    justifyContent: 'flex-start',
   },
   card: {
     backgroundColor: Colors.surfaceRaised,
