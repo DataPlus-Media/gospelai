@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Tab = 'bookmarks' | 'notes' | 'highlights';
@@ -79,6 +79,12 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
     () => items.filter(item => item.kind === (tab === 'highlights' ? 'highlight' : 'bookmark')),
     [items, tab],
   );
+  const bookmarkItems = useMemo(() => items.filter(item => item.kind === 'bookmark'), [items]);
+  const highlightItems = useMemo(() => items.filter(item => item.kind === 'highlight'), [items]);
+  const visibleHighlights = useMemo(
+    () => highlightItems.filter(item => highlightsBook === 'All books' || item.book === highlightsBook),
+    [highlightItems, highlightsBook],
+  );
   const visibleNotes = useMemo(
     () => notes.filter(note => notesBook === 'All books' || noteBook(note.reference) === notesBook),
     [notes, notesBook],
@@ -130,15 +136,64 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
     : tab === 'highlights'
       ? `No highlights for ${highlightsBook === 'All books' ? 'any book' : highlightsBook} yet.`
       : 'No bookmarks yet. Tap a verse in the Bible to bookmark it.';
+  const stackedNativeLayout = Platform.OS !== 'web' && !notesOnly;
+  const modalFilter = filterTarget === 'notes' ? notesBook
+    : filterTarget === 'highlights' ? highlightsBook
+      : activeFilter;
+
+  const renderVerseCard = (item: SavedVerse) => (
+    <View style={s.card}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Read ${referenceOf(item)}`}
+        onPress={() => router.navigate({ pathname: '/(auth)/(drawer)/bible', params: { ref: referenceOf(item), jump: String(Date.now()) } })}>
+        <Text style={s.ref}>{referenceOf(item)} · KJV · {item.kind}</Text>
+        <Text style={s.text}>{item.text}</Text>
+        <Text style={s.link}>Open this verse</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.kind} for ${referenceOf(item)}`}
+        onPress={() => void removeVerse(item)} style={s.remove}>
+        <Ionicons name="trash-outline" size={16} color={Colors.coralSoft} /><Text style={s.error}>Remove {item.kind}</Text>
+      </Pressable>
+    </View>
+  );
+
+  const renderNoteCard = (note: Note) => (
+    <View style={s.card}>
+      <Text style={s.ref}>{note.reference || 'Personal note'} · {note.source === 'bible' ? 'Bible' : note.source === 'chat' ? 'Chat' : note.source}</Text>
+      {!!passageRef(note.reference) && (
+        <Pressable accessibilityRole="link" accessibilityLabel={`Open ${passageRef(note.reference)} in Bible`}
+          onPress={() => router.navigate({ pathname: '/(auth)/(drawer)/bible', params: { ref: passageRef(note.reference)!, jump: String(Date.now()) } })}>
+          <Text style={s.link}>Open this passage</Text>
+        </Pressable>
+      )}
+      <Text style={s.text}>{note.content}</Text>
+      <View style={s.noteActions}>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Edit note${note.reference ? ` for ${note.reference}` : ''}`}
+          onPress={() => setEditing(note)} style={s.actionButton}><Ionicons name="create-outline" size={17} color={Colors.coralSoft} /><Text style={s.actionText}>Edit</Text></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel={`Delete note${note.reference ? ` for ${note.reference}` : ''}`}
+          onPress={() => void deleteNote(note)} style={s.actionButton}><Ionicons name="trash-outline" size={17} color={Colors.coralSoft} /><Text style={s.actionText}>Delete</Text></Pressable>
+      </View>
+    </View>
+  );
+
+  const nativeBookFilter = (which: 'notes' | 'highlights', value: string) => (
+    <View style={s.nativeFilter}>
+      <Text style={s.nativeFilterLabel}>Filter {which} by Bible book</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${which === 'notes' ? 'Notes' : 'Highlights'} book filter: ${value}`}
+        onPress={() => setFilterTarget(which)} style={s.nativeFilterButton}>
+        <Text style={s.nativeFilterText}>{value}</Text>
+        <Ionicons name="chevron-down" size={18} color={Colors.textMuted} />
+      </Pressable>
+    </View>
+  );
 
   return (
     <View style={s.page}>
-      <Text style={s.hint}>
+      {!stackedNativeLayout && <Text style={s.hint}>
         {isSignedIn
           ? 'Your notes sync with your account. Bookmarks and highlights stay on this device.'
           : 'Your notes, bookmarks and highlights are saved on this device.'}
-      </Text>
-      {!notesOnly && <View style={s.tabs}>
+      </Text>}
+      {!stackedNativeLayout && !notesOnly && <View style={s.tabs}>
         {(['bookmarks', 'notes', 'highlights'] as const).map(value => (
           <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: tab === value }}
             onPress={() => setTab(value)} style={[s.tab, tab === value && s.tabActive]}>
@@ -156,44 +211,47 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
         </View>
       )}
       {!!error && <Pressable accessibilityRole="button" onPress={() => void load()}><Text accessibilityRole="alert" style={s.error}>{error} Tap to retry.</Text></Pressable>}
-      {!filterReady ? <Text style={s.hint}>Loading saved items…</Text> : (
+      {stackedNativeLayout ? (
+        <ScrollView style={s.nativeScroll} contentContainerStyle={s.nativeContent}>
+          <View style={s.nativePageWidth}>
+            <Text style={s.eyebrow}>YOUR STUDY COLLECTION</Text>
+            <Text style={s.nativeTitle}>Saved</Text>
+            {!filterReady ? <Text style={s.hint}>Loading saved items…</Text> : (
+              <>
+                <View style={s.nativeSection}>
+                  <View style={s.sectionHeadingRow}>
+                    <Text style={s.nativeSectionTitle}>Bookmarks</Text>
+                    <Text style={s.sectionCount}>{bookmarkItems.length}</Text>
+                  </View>
+                  {bookmarkItems.length === 0 && <Text style={s.nativeEmpty}>Bookmark a verse from the Bible to find it here.</Text>}
+                  {bookmarkItems.map(item => <View key={`${referenceOf(item)}-${item.kind}`}>{renderVerseCard(item)}</View>)}
+                </View>
+                <View style={s.nativeSection}>
+                  <Text style={s.nativeSectionTitle}>Notes</Text>
+                  {nativeBookFilter('notes', notesBook)}
+                  {visibleNotes.length === 0
+                    ? <Text style={s.nativeEmpty}>No notes saved in {notesBook === 'All books' ? 'any book' : notesBook}.</Text>
+                    : visibleNotes.map(note => <View key={`note-${note.id}`}>{renderNoteCard(note)}</View>)}
+                </View>
+                <View style={s.nativeSection}>
+                  <Text style={s.nativeSectionTitle}>Highlights</Text>
+                  {nativeBookFilter('highlights', highlightsBook)}
+                  {visibleHighlights.length === 0
+                    ? <Text style={s.nativeEmpty}>No highlights saved in {highlightsBook === 'All books' ? 'any book' : highlightsBook}.</Text>
+                    : visibleHighlights.map(item => <View key={`${referenceOf(item)}-${item.kind}`}>{renderVerseCard(item)}</View>)}
+                </View>
+              </>
+            )}
+          </View>
+        </ScrollView>
+      ) : !filterReady ? <Text style={s.hint}>Loading saved items…</Text> : (
         <FlatList
           data={listItems}
           keyExtractor={item => item.type === 'verse' ? `${referenceOf(item.verse)}-${item.verse.kind}` : `note-${item.note.id}`}
           style={s.list}
           contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg }}
           ListEmptyComponent={<Text style={s.empty}>{emptyText}</Text>}
-          renderItem={({ item }) => item.type === 'verse' ? (
-            <View style={s.card}>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Read ${referenceOf(item.verse)}`}
-                onPress={() => router.navigate({ pathname: '/(auth)/(drawer)/bible', params: { ref: referenceOf(item.verse), jump: String(Date.now()) } })}>
-                <Text style={s.ref}>{referenceOf(item.verse)} · KJV · {item.verse.kind}</Text>
-                <Text style={s.text}>{item.verse.text}</Text>
-                <Text style={s.link}>Open this verse</Text>
-              </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Remove ${item.verse.kind} for ${referenceOf(item.verse)}`}
-                onPress={() => void removeVerse(item.verse)} style={s.remove}>
-                <Ionicons name="trash-outline" size={16} color={Colors.coralSoft} /><Text style={s.error}>Remove {item.verse.kind}</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <View style={s.card}>
-              <Text style={s.ref}>{item.note.reference || 'Personal note'} · {item.note.source === 'bible' ? 'Bible' : item.note.source === 'chat' ? 'Chat' : item.note.source}</Text>
-              {!!passageRef(item.note.reference) && (
-                <Pressable accessibilityRole="link" accessibilityLabel={`Open ${passageRef(item.note.reference)} in Bible`}
-                  onPress={() => router.navigate({ pathname: '/(auth)/(drawer)/bible', params: { ref: passageRef(item.note.reference)!, jump: String(Date.now()) } })}>
-                  <Text style={s.link}>Open this passage</Text>
-                </Pressable>
-              )}
-              <Text style={s.text}>{item.note.content}</Text>
-              <View style={s.noteActions}>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Edit note${item.note.reference ? ` for ${item.note.reference}` : ''}`}
-                  onPress={() => setEditing(item.note)} style={s.actionButton}><Ionicons name="create-outline" size={17} color={Colors.coralSoft} /><Text style={s.actionText}>Edit</Text></Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={`Delete note${item.note.reference ? ` for ${item.note.reference}` : ''}`}
-                  onPress={() => void deleteNote(item.note)} style={s.actionButton}><Ionicons name="trash-outline" size={17} color={Colors.coralSoft} /><Text style={s.actionText}>Delete</Text></Pressable>
-              </View>
-            </View>
-          )}
+          renderItem={({ item }) => item.type === 'verse' ? renderVerseCard(item.verse) : renderNoteCard(item.note)}
         />
       )}
       <Modal visible={!!filterTarget} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setFilterTarget(null)}>
@@ -204,10 +262,10 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
             initialNumToRender={67}
             keyExtractor={value => value}
             renderItem={({ item }) => (
-              <Pressable accessibilityRole="button" accessibilityState={{ selected: item === activeFilter }}
+              <Pressable accessibilityRole="button" accessibilityState={{ selected: item === modalFilter }}
                 onPress={() => filterTarget && void saveFilter(filterTarget, item)} style={s.bookOption}>
-                <Text style={[s.bookOptionText, item === activeFilter && s.bookOptionActive]}>{item}</Text>
-                {item === activeFilter && <Ionicons name="checkmark" size={18} color={Colors.coralSoft} />}
+                <Text style={[s.bookOptionText, item === modalFilter && s.bookOptionActive]}>{item}</Text>
+                {item === modalFilter && <Ionicons name="checkmark" size={18} color={Colors.coralSoft} />}
               </Pressable>
             )}
           />
@@ -221,6 +279,20 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
 
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  nativeScroll: { flex: 1 },
+  nativeContent: { paddingBottom: spacing.xxl },
+  nativePageWidth: { width: '100%', maxWidth: 680, alignSelf: 'center' },
+  eyebrow: { color: Colors.coralSoft, fontSize: 11, letterSpacing: 2, fontWeight: '800', marginTop: spacing.xs, marginBottom: spacing.md },
+  nativeTitle: { color: Colors.text, fontSize: 32, lineHeight: 40, fontFamily: scriptureFontFamily, marginBottom: spacing.xl },
+  nativeSection: { marginBottom: spacing.xl },
+  sectionHeadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  nativeSectionTitle: { color: Colors.text, fontSize: 20, lineHeight: 28, fontWeight: '800', marginBottom: spacing.md },
+  sectionCount: { color: Colors.textMuted, fontSize: 15, fontWeight: '700', marginTop: -spacing.md },
+  nativeEmpty: { color: Colors.textMuted, fontSize: 15, lineHeight: 23, marginTop: spacing.xs, marginBottom: spacing.sm },
+  nativeFilter: { marginTop: spacing.xs, marginBottom: spacing.md },
+  nativeFilterLabel: { color: Colors.textMuted, fontSize: 14, marginBottom: spacing.sm },
+  nativeFilterButton: { width: '100%', minHeight: 46, borderRadius: 10, paddingHorizontal: spacing.md, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.borderStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  nativeFilterText: { color: Colors.text, fontSize: 16, fontWeight: '600' },
   list: { width: '100%', maxWidth: 840, alignSelf: 'center' },
   hint: { width: '100%', maxWidth: 840, alignSelf: 'center', color: Colors.textMuted, lineHeight: 22, marginBottom: spacing.md },
   tabs: { flexDirection: 'row', width: '100%', maxWidth: 840, alignSelf: 'center', gap: 7, marginBottom: spacing.md },
