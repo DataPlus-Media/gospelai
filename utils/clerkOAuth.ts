@@ -15,6 +15,44 @@ const SAFE_OAUTH_QUERY_MARKERS = [
   'error_code',
   'state',
 ] as const;
+const SAFE_CLERK_ERROR_CODES = new Set([
+  'auth_service_unavailable',
+  'network_error',
+  'native_api_disabled',
+  'oauth_access_denied',
+  'oauth_email_domain_reserved',
+  'strategy_for_user_invalid',
+  'external_account_not_found',
+  'sso_session_not_found',
+  'not_allowed_access',
+  'request_not_found',
+  'form_param_missing',
+  'form_param_format_invalid',
+]);
+
+function safeClerkErrorCategory(error: unknown): string {
+  try {
+    const value = error as {
+      code?: unknown;
+      errors?: Array<{ code?: unknown }> | null;
+    } | null;
+    const code = value?.errors?.[0]?.code ?? value?.code;
+    return typeof code === 'string' && SAFE_CLERK_ERROR_CODES.has(code)
+      ? code
+      : 'other';
+  } catch {
+    return 'other';
+  }
+}
+
+function safeClerkErrorCount(error: unknown): string {
+  try {
+    const errors = (error as { errors?: unknown } | null)?.errors;
+    return Array.isArray(errors) ? String(Math.min(errors.length, 20)) : 'none';
+  } catch {
+    return 'none';
+  }
+}
 
 function safeCallbackDestination(value: string): string {
   try {
@@ -87,57 +125,74 @@ export async function runClerkOAuthFlow({
     redirectUrl: string
   ) => Promise<{ type: string; url?: string }>;
 }): Promise<OAuthResult> {
-  let resource = await signIn.create({ strategy, redirectUrl });
-  requireAuthResponseState(resource);
-
-  const continueWithResource = async (): Promise<OAuthResult> => {
-    if (resource.firstFactorVerification?.status === 'transferable') {
-      return { kind: 'signUp', resource: await signUp.create({ transfer: true }) };
-    }
-    return { kind: 'signIn', resource };
-  };
-
-  if (
-    resource.status === 'complete' ||
-    resource.status === 'needs_second_factor' ||
-    resource.status === 'needs_new_password' ||
-    resource.firstFactorVerification?.status === 'transferable'
-  ) {
-    return continueWithResource();
-  }
-
-  const externalUrl = resource.firstFactorVerification?.externalVerificationRedirectURL;
-  if (!externalUrl) {
-    if (getSignInFactorPlan(resource)) return continueWithResource();
-    const provider = strategy === 'oauth_apple' ? 'Apple' : 'Google';
-    throw new AuthFlowError(
-      `${provider} sign-in could not start because the sign-in service did not provide a browser link. Check the provider settings in the Clerk instance used by this build. This is separate from the app’s return URL.`
-    );
-  }
-
-  const response = await openAuthSession(String(externalUrl), redirectUrl);
-  if (response.type === 'cancel' || response.type === 'dismiss') {
-    return { kind: 'cancelled' };
-  }
-  if (response.type !== 'success' || !response.url) {
-    throw new AuthFlowError('The sign-in browser did not finish. Close it and try again.');
-  }
-  let callback: URL;
+  const provider = strategy === 'oauth_apple' ? 'Apple' : 'Google';
+  let phase = 'sign_in_create';
   try {
-    callback = new URL(response.url);
-  } catch {
+    let resource = await signIn.create({ strategy, redirectUrl });
+    requireAuthResponseState(resource);
+
+    const continueWithResource = async (): Promise<OAuthResult> => {
+      if (resource.firstFactorVerification?.status === 'transferable') {
+        phase = 'sign_up_transfer';
+        return { kind: 'signUp', resource: await signUp.create({ transfer: true }) };
+      }
+      return { kind: 'signIn', resource };
+    };
+
+    if (
+      resource.status === 'complete' ||
+      resource.status === 'needs_second_factor' ||
+      resource.status === 'needs_new_password' ||
+      resource.firstFactorVerification?.status === 'transferable'
+    ) {
+      return continueWithResource();
+    }
+
+    const externalUrl = resource.firstFactorVerification?.externalVerificationRedirectURL;
+    if (!externalUrl) {
+      if (getSignInFactorPlan(resource)) return continueWithResource();
+      throw new AuthFlowError(
+        `${provider} sign-in could not start because the sign-in service did not provide a browser link. Check the provider settings in the Clerk instance used by this build. This is separate from the app’s return URL.`
+      );
+    }
+
+    phase = 'provider_browser';
+    const response = await openAuthSession(String(externalUrl), redirectUrl);
+    if (response.type === 'cancel' || response.type === 'dismiss') {
+      return { kind: 'cancelled' };
+    }
+    if (response.type !== 'success' || !response.url) {
+      const resultType = /^(locked|opened)$/i.test(response.type) ? response.type : 'other';
+      throw new AuthFlowError(
+        'The sign-in browser did not finish. Close it and try again.',
+        `provider=${provider}; phase=provider_return; browser_result=${resultType}; expected=${safeCallbackDestination(redirectUrl)}; returned=missing`
+      );
+    }
+    let callback: URL;
+    try {
+      callback = new URL(response.url);
+    } catch {
+      throw new AuthFlowError(
+        'The sign-in return link could not be read. Please start sign-in again.',
+        `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
+      );
+    }
+    const nonce = callback.searchParams.get('rotating_token_nonce');
+    if (!nonce) {
+      throw new AuthFlowError(
+        'The sign-in return link is incomplete. Please start sign-in again.',
+        `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
+      );
+    }
+    phase = 'sign_in_reload';
+    resource = await resource.reload({ rotatingTokenNonce: nonce });
+    requireAuthResponseState(resource);
+    return continueWithResource();
+  } catch (error) {
+    if (error instanceof AuthFlowError) throw error;
     throw new AuthFlowError(
-      `The sign-in return link could not be read. Please start sign-in again. Safe diagnostics: ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
+      'Clerk could not complete sign-in. Please try again.',
+      `provider=${provider}; phase=${phase}; category=${safeClerkErrorCategory(error)}; clerk_errors=${safeClerkErrorCount(error)}`
     );
   }
-  const nonce = callback.searchParams.get('rotating_token_nonce');
-  if (!nonce) {
-    const provider = strategy === 'oauth_apple' ? 'Apple' : 'Google';
-    throw new AuthFlowError(
-      `The sign-in return link is incomplete. Please start sign-in again. Safe diagnostics: provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
-    );
-  }
-  resource = await resource.reload({ rotatingTokenNonce: nonce });
-  requireAuthResponseState(resource);
-  return continueWithResource();
 }

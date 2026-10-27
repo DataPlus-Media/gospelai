@@ -6,7 +6,12 @@ export type SignInFactorStrategy =
 
 // Only app-authored messages may be displayed verbatim. Provider/API errors
 // can include user identifiers or request details, so map their codes below.
-export class AuthFlowError extends Error {}
+export class AuthFlowError extends Error {
+  constructor(message: string, diagnostics?: string) {
+    super(diagnostics ? `${message} Safe diagnostics: ${diagnostics}` : message);
+    this.name = 'AuthFlowError';
+  }
+}
 
 export type SignInFactorPlan = {
   stage: 'first' | 'second';
