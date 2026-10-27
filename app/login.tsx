@@ -9,6 +9,7 @@ import { reloadAppAsync } from 'expo';
 import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import * as Clipboard from 'expo-clipboard';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,12 +26,14 @@ import {
 } from 'react-native';
 import {
   activateSessionIfPresent,
+  AuthFlowError,
   clerkErrorMessage,
   getSignInFactorPlan,
   getSignUpNextStep,
   hasSessionId,
   requireAuthResponseState,
   signUpRecoveryMessage,
+  safeAuthErrorDiagnostics,
   type SignInFactorPlan,
 } from '@/utils/clerkAuth';
 import { runClerkOAuthFlow } from '@/utils/clerkOAuth';
@@ -72,6 +75,9 @@ const Page = () => {
   const retryLock = useRef(false);
   const [retryError, setRetryError] = useState(false);
   const startedProvider = useRef<string | null>(null);
+  const authPhase = useRef('idle');
+  const [authDiagnostic, setAuthDiagnostic] = useState<string | null>(null);
+  const [detailsCopied, setDetailsCopied] = useState(false);
 
   // reset-password specific
   const [resetCode, setResetCode] = useState('');
@@ -86,6 +92,28 @@ const Page = () => {
   const startupUnavailable = startup === 'failed' || startup === 'timedOut';
   const authDisabled = loading || retrying || !authReady;
   const configuration = publicAuthConfiguration(process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const reportAuthFailure = (title: string, error: unknown, flow: string, fallback: string) => {
+    const details = [
+      'Sign-in diagnostics v2',
+      `flow=${flow}; phase=${authPhase.current}`,
+      `platform=${Platform.OS}; app=${Constants.expoConfig?.version ?? 'unknown'}; build=${Constants.nativeBuildVersion ?? 'unavailable'}`,
+      `service=${configuration.hostname}; environment=${configuration.environment}`,
+      safeAuthErrorDiagnostics(error),
+      error instanceof AuthFlowError ? error.diagnostics : undefined,
+    ].filter(Boolean).join('\n');
+    setAuthDiagnostic(details);
+    setDetailsCopied(false);
+    Alert.alert(title, `${clerkErrorMessage(error, fallback)}\n\nYou can copy the safe sign-in details on this page after closing this message.`);
+  };
+  const copyAuthDetails = async () => {
+    if (!authDiagnostic) return;
+    try {
+      await Clipboard.setStringAsync(authDiagnostic);
+      setDetailsCopied(true);
+    } catch {
+      Alert.alert('Couldn’t copy details', 'You can select the details on this page or take a screenshot instead.');
+    }
+  };
   const retryStartup = async () => {
     if (retryLock.current || loading) return;
     retryLock.current = true;
@@ -112,6 +140,7 @@ const Page = () => {
     if (!activateSession) {
       throw new Error('Clerk returned a session, but it cannot be activated on this screen.');
     }
+    if (hasSessionId(sessionId)) authPhase.current = 'session_activation';
     const activated = await activateSessionIfPresent(sessionId, (session) =>
       activateSession({ session })
     );
@@ -135,6 +164,7 @@ const Page = () => {
     }
 
     let prepared = resource;
+    authPhase.current = `prepare_${plan.stage}_factor`;
     if (plan.stage === 'first') {
       if (plan.strategy === 'email_code' && plan.emailAddressId) {
         prepared = await resource.prepareFirstFactor({
@@ -186,6 +216,7 @@ const Page = () => {
     }
 
     if (nextStep?.kind === 'email_code') {
+      authPhase.current = 'prepare_signup_verification';
       const prepared = await resource.prepareEmailAddressVerification({
         strategy: 'email_code',
       });
@@ -228,6 +259,8 @@ const Page = () => {
 
   const doOAuth = async (strategy: 'oauth_apple' | 'oauth_google') => {
     if (authDisabled) return;
+    authPhase.current = 'provider_flow';
+    setAuthDiagnostic(null);
     setLoading(true);
     setPendingChallenge(null);
     try {
@@ -244,17 +277,10 @@ const Page = () => {
         await finishSignUp(result.resource);
       }
     } catch (err: any) {
-      const message = clerkErrorMessage(
-        err,
-        'Clerk could not complete authentication. Check your connection and try again.'
-      );
-      const hasSafeOAuthDiagnostics =
-        err instanceof Error && /Safe diagnostics:/.test(err.message);
-      Alert.alert(
+      reportAuthFailure(
         'Provider sign-in could not finish',
-        hasSafeOAuthDiagnostics
-          ? `${message}\n\nApp: ${Constants.expoConfig?.version ?? 'unknown'} · Build: ${Constants.nativeBuildVersion ?? 'unknown'}`
-          : message
+        err, strategy,
+        'Clerk could not complete authentication. Check your connection and try again.'
       );
     } finally {
       setLoading(false);
@@ -282,6 +308,8 @@ const Page = () => {
 
   const onSignUpPress = async () => {
     if (authDisabled || !signUpLoaded) return;
+    authPhase.current = 'account_creation';
+    setAuthDiagnostic(null);
     setLoading(true);
 
     try {
@@ -291,9 +319,9 @@ const Page = () => {
       });
       await finishSignUp(result);
     } catch (err: any) {
-      Alert.alert(
+      reportAuthFailure(
         'Couldn’t create account',
-        clerkErrorMessage(err, 'Clerk could not create the account. Please try again.')
+        err, 'email_sign_up', 'Clerk could not create the account. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -302,6 +330,8 @@ const Page = () => {
 
   const onSignInPress = async () => {
     if (authDisabled || !isLoaded) return;
+    authPhase.current = 'password_submission';
+    setAuthDiagnostic(null);
     setLoading(true);
 
     try {
@@ -312,9 +342,9 @@ const Page = () => {
       });
       await finishSignIn(completeSignIn);
     } catch (err: any) {
-      Alert.alert(
+      reportAuthFailure(
         'Couldn’t sign in',
-        clerkErrorMessage(err, 'Clerk could not complete sign in. Please try again.')
+        err, 'email_sign_in', 'Clerk could not complete sign in. Please try again.'
       );
     } finally {
       setLoading(false);
@@ -517,6 +547,21 @@ const Page = () => {
                 : 'Create an account to get started with GospelAI.'}
             </Text>
 
+        {authDiagnostic && (
+          <View style={styles.challenge} accessibilityLiveRegion="polite">
+            <Text style={styles.challengeTitle}>Sign-in details</Text>
+            <Text style={styles.diagnostics}>Safe to share with support. No passwords or sign-in tokens are included.</Text>
+            <Text selectable style={styles.diagnostics}>{authDiagnostic}</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Copy sign-in details"
+              style={[defaultStyles.btn, styles.secondaryBtn]}
+              onPress={copyAuthDetails}
+            >
+              <Text style={styles.secondaryText}>{detailsCopied ? 'Details copied' : 'Copy sign-in details'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         {!authReady && (
           <View
             style={styles.authStatus}
@@ -536,7 +581,7 @@ const Page = () => {
         {startupUnavailable && (
           <View>
             <Text selectable style={styles.diagnostics}>
-              {`Service: ${configuration.hostname} · ${configuration.environment}\nApp: ${Constants.expoConfig?.version ?? 'unknown'} · Build: ${Constants.nativeBuildVersion ?? 'web'} · Startup: ${startup}`}
+              {`Service: ${configuration.hostname} · ${configuration.environment}\nPlatform: ${Platform.OS} · App: ${Constants.expoConfig?.version ?? 'unknown'} · Build: ${Constants.nativeBuildVersion ?? 'unavailable'} · Startup: ${startup}`}
             </Text>
             <TouchableOpacity
               style={[defaultStyles.btn, styles.secondaryBtn, retrying && styles.disabled]}

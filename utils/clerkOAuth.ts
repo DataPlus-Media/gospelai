@@ -1,5 +1,5 @@
 import type { useSignIn, useSignUp } from '@clerk/clerk-expo';
-import { AuthFlowError, getSignInFactorPlan, requireAuthResponseState } from './clerkAuth';
+import { AuthFlowError, clerkErrorMessage, getSignInFactorPlan, requireAuthResponseState, safeAuthErrorDiagnostics } from './clerkAuth';
 
 type SignIn = NonNullable<ReturnType<typeof useSignIn>['signIn']>;
 type SignUp = NonNullable<ReturnType<typeof useSignUp>['signUp']>;
@@ -15,44 +15,6 @@ const SAFE_OAUTH_QUERY_MARKERS = [
   'error_code',
   'state',
 ] as const;
-const SAFE_CLERK_ERROR_CODES = new Set([
-  'auth_service_unavailable',
-  'network_error',
-  'native_api_disabled',
-  'oauth_access_denied',
-  'oauth_email_domain_reserved',
-  'strategy_for_user_invalid',
-  'external_account_not_found',
-  'sso_session_not_found',
-  'not_allowed_access',
-  'request_not_found',
-  'form_param_missing',
-  'form_param_format_invalid',
-]);
-
-function safeClerkErrorCategory(error: unknown): string {
-  try {
-    const value = error as {
-      code?: unknown;
-      errors?: Array<{ code?: unknown }> | null;
-    } | null;
-    const code = value?.errors?.[0]?.code ?? value?.code;
-    return typeof code === 'string' && SAFE_CLERK_ERROR_CODES.has(code)
-      ? code
-      : 'other';
-  } catch {
-    return 'other';
-  }
-}
-
-function safeClerkErrorCount(error: unknown): string {
-  try {
-    const errors = (error as { errors?: unknown } | null)?.errors;
-    return Array.isArray(errors) ? String(Math.min(errors.length, 20)) : 'none';
-  } catch {
-    return 'none';
-  }
-}
 
 function safeCallbackDestination(value: string): string {
   try {
@@ -73,6 +35,19 @@ function safeCallbackDestination(value: string): string {
   }
 }
 
+function callbackMatches(expectedUrl: string, returnedUrl: string): boolean {
+  try {
+    const expected = new URL(expectedUrl);
+    const returned = new URL(returnedUrl);
+    return !returned.username && !returned.password &&
+      expected.protocol === returned.protocol &&
+      expected.host === returned.host &&
+      expected.pathname === returned.pathname;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Keep support diagnostics useful without exposing callback values, which can
  * contain rotating tokens, authorization codes, or account-identifying data.
@@ -83,7 +58,10 @@ export function oauthCallbackDiagnostics(
   resultType: string
 ): string {
   const expected = safeCallbackDestination(expectedUrl);
-  const returned = safeCallbackDestination(returnedUrl);
+  const matches = callbackMatches(expectedUrl, returnedUrl);
+  // Unexpected paths/hosts can themselves contain credentials or account IDs.
+  // Only echo the known configured destination, never arbitrary returned text.
+  let returned = matches ? expected : 'redacted_mismatch';
   let queryMarkers = new Set<string>();
   let fragmentMarkers = new Set<string>();
 
@@ -95,14 +73,14 @@ export function oauthCallbackDiagnostics(
       SAFE_OAUTH_QUERY_MARKERS.filter((key) => new URLSearchParams(fragment).has(key))
     );
   } catch {
-    // Invalid URLs are reported as such, with no raw input echoed.
+    returned = 'invalid';
   }
 
   const markerSummary = SAFE_OAUTH_QUERY_MARKERS
     .map((key) => `${key}=${queryMarkers.has(key) ? 'yes' : 'no'}`)
     .join(',');
   const fragmentNonce = fragmentMarkers.has('rotating_token_nonce') ? 'yes' : 'no';
-  return `result=${/^(success|cancel|dismiss|locked|opened)$/i.test(resultType) ? resultType : 'other'}; expected=${expected}; returned=${returned}; callback_match=${expected === returned ? 'yes' : 'no'}; query_markers[${markerSummary}]; fragment_nonce=${fragmentNonce}`;
+  return `result=${/^(success|cancel|dismiss|locked|opened)$/i.test(resultType) ? resultType : 'other'}; expected=${expected}; returned=${returned}; callback_match=${matches ? 'yes' : 'no'}; query_markers[${markerSummary}]; fragment_nonce=${fragmentNonce}`;
 }
 
 /**
@@ -145,12 +123,12 @@ export async function runClerkOAuthFlow({
       resource.status === 'needs_new_password' ||
       resource.firstFactorVerification?.status === 'transferable'
     ) {
-      return continueWithResource();
+      return await continueWithResource();
     }
 
     const externalUrl = resource.firstFactorVerification?.externalVerificationRedirectURL;
     if (!externalUrl) {
-      if (getSignInFactorPlan(resource)) return continueWithResource();
+      if (getSignInFactorPlan(resource)) return await continueWithResource();
       throw new AuthFlowError(
         `${provider} sign-in could not start because the sign-in service did not provide a browser link. Check the provider settings in the Clerk instance used by this build. This is separate from the app’s return URL.`
       );
@@ -177,6 +155,12 @@ export async function runClerkOAuthFlow({
         `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
       );
     }
+    if (!callbackMatches(redirectUrl, response.url)) {
+      throw new AuthFlowError(
+        'The provider returned to an unexpected sign-in destination. Please start sign-in again.',
+        `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
+      );
+    }
     const nonce = callback.searchParams.get('rotating_token_nonce');
     if (!nonce) {
       throw new AuthFlowError(
@@ -187,12 +171,12 @@ export async function runClerkOAuthFlow({
     phase = 'sign_in_reload';
     resource = await resource.reload({ rotatingTokenNonce: nonce });
     requireAuthResponseState(resource);
-    return continueWithResource();
+    return await continueWithResource();
   } catch (error) {
     if (error instanceof AuthFlowError) throw error;
     throw new AuthFlowError(
-      'Clerk could not complete sign-in. Please try again.',
-      `provider=${provider}; phase=${phase}; category=${safeClerkErrorCategory(error)}; clerk_errors=${safeClerkErrorCount(error)}`
+      clerkErrorMessage(error, 'Clerk could not complete sign-in. Please try again.'),
+      `provider=${provider}; phase=${phase}; ${safeAuthErrorDiagnostics(error)}`
     );
   }
 }

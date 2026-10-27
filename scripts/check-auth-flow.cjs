@@ -41,9 +41,22 @@ const {
   getSignUpNextStep,
   requireAuthResponseState,
   signUpRecoveryMessage,
+  safeAuthErrorDiagnostics,
 } = helper.exports;
 
 async function run() {
+  const secret = 'PRIVATE_EMAIL_TOKEN';
+  for (const code of ['native_api_disabled', 'form_password_incorrect', 'origin_invalid']) {
+    const report = safeAuthErrorDiagnostics({
+      name: 'ClerkAPIResponseError', status: 422,
+      errors: [{ code, message: secret, longMessage: secret, meta: { secret } }],
+    });
+    assert.match(report, new RegExp(`category=${code}`));
+    assert.match(report, /http=422/);
+    assert.doesNotMatch(report, /PRIVATE_EMAIL_TOKEN/);
+  }
+  assert.match(safeAuthErrorDiagnostics(new TypeError('null toString')), /category=null_to_string/);
+  assert.doesNotMatch(safeAuthErrorDiagnostics({ code: secret, name: secret, message: secret }), /PRIVATE_EMAIL_TOKEN/);
   assert.equal(authStartupState(false, 'loading', false), 'connecting');
   assert.equal(authStartupState(false, 'loading', true), 'timedOut');
   assert.equal(authStartupState(false, 'error', false), 'failed');
@@ -346,8 +359,35 @@ async function run() {
   );
   await assert.rejects(
     oauthScenario({ status: null }),
-    (error) => error.code === 'auth_service_unavailable',
+    (error) => /category=auth_service_unavailable/.test(error.diagnostics),
     'an empty OAuth resource must not blame saved provider credentials'
+  );
+  for (const phase of ['sign_in_create', 'provider_browser', 'sign_in_reload', 'sign_up_transfer']) {
+    const fail = async () => { throw { name: 'ClerkAPIResponseError', status: 403,
+      errors: [{ code: 'native_api_disabled', message: secret }] }; };
+    const resource = {
+      ...redirectState,
+      reload: phase === 'sign_in_reload' ? fail : async () => ({
+        status: 'needs_first_factor', firstFactorVerification: { status: 'transferable' },
+      }),
+    };
+    await assert.rejects(runClerkOAuthFlow({
+      strategy: 'oauth_google', redirectUrl,
+      signIn: { create: phase === 'sign_in_create' ? fail : async () => resource },
+      signUp: { create: fail },
+      openAuthSession: phase === 'provider_browser' ? fail : async () => success,
+    }), error => {
+      assert.ok(error.diagnostics.includes(`phase=${phase}`));
+      assert.match(error.diagnostics, /category=native_api_disabled/);
+      assert.doesNotMatch(error.message, /PRIVATE_EMAIL_TOKEN/);
+      return true;
+    });
+  }
+  await assert.rejects(
+    oauthScenario(redirectState, { type: 'success', url: 'gospelsai://wrong/PRIVATE_EMAIL_TOKEN?rotating_token_nonce=verified_nonce' }),
+    error => /unexpected sign-in destination/.test(error.message) &&
+      !error.message.includes(secret),
+    'valid tokens from mismatched destinations must not be used or disclosed'
   );
   for (const [strategy, provider] of [
     ['oauth_apple', 'Apple'],

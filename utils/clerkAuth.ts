@@ -7,9 +7,52 @@ export type SignInFactorStrategy =
 // Only app-authored messages may be displayed verbatim. Provider/API errors
 // can include user identifiers or request details, so map their codes below.
 export class AuthFlowError extends Error {
-  constructor(message: string, diagnostics?: string) {
-    super(diagnostics ? `${message} Safe diagnostics: ${diagnostics}` : message);
+  constructor(public readonly userMessage: string, public readonly diagnostics?: string) {
+    super(diagnostics ? `${userMessage} Safe diagnostics: ${diagnostics}` : userMessage);
     this.name = 'AuthFlowError';
+  }
+}
+
+const SAFE_ERROR_CODES = new Set([
+  'auth_service_unavailable', 'network_error', 'native_api_disabled',
+  'oauth_access_denied', 'oauth_email_domain_reserved', 'strategy_for_user_invalid',
+  'external_account_not_found', 'sso_session_not_found', 'not_allowed_access',
+  'request_not_found', 'form_param_missing', 'form_param_format_invalid',
+  'form_password_incorrect', 'form_identifier_not_found', 'form_identifier_exists',
+  'form_password_pwned', 'form_password_length_too_short', 'form_code_incorrect',
+  'verification_expired', 'verification_failed', 'too_many_requests', 'session_exists',
+  'origin_invalid', 'invalid_host', 'captcha_invalid', 'captcha_missing',
+  'captcha_not_supported', 'session_token_invalid', 'authentication_invalid',
+]);
+
+// Never reflect raw API messages, metadata, request URLs, or arbitrary code values.
+// Unknown errors still report a fixed JS error type and numeric HTTP status.
+export function safeAuthErrorDiagnostics(error: unknown): string {
+  try {
+    const value = error as {
+      code?: unknown;
+      name?: unknown;
+      message?: unknown;
+      status?: unknown;
+      statusCode?: unknown;
+      errors?: Array<{ code?: unknown }> | null;
+    } | null;
+    const code = value?.errors?.[0]?.code ?? value?.code;
+    let category = typeof code === 'string' && SAFE_ERROR_CODES.has(code) ? code : 'unmapped';
+    if (category === 'unmapped' && typeof value?.message === 'string') {
+      if (/network request failed|failed to fetch|network_error/i.test(value.message)) category = 'network_error';
+      else if (/timed? ?out/i.test(value.message)) category = 'timeout';
+      else if (/toString.*null|null.*toString/i.test(value.message)) category = 'null_to_string';
+    }
+    const names = ['Error', 'TypeError', 'RangeError', 'SyntaxError', 'AbortError', 'ClerkAPIResponseError', 'AuthFlowError'];
+    const name = typeof value?.name === 'string' && names.includes(value.name) ? value.name : 'other';
+    const status = value?.status ?? value?.statusCode;
+    const http = typeof status === 'number' && Number.isInteger(status) && status >= 100 && status <= 599
+      ? status : 'none';
+    const count = Array.isArray(value?.errors) ? Math.min(value.errors.length, 20) : 0;
+    return `category=${category}; error_type=${name}; http=${http}; clerk_errors=${count}`;
+  } catch {
+    return 'category=unreadable; error_type=other; http=none; clerk_errors=0';
   }
 }
 
@@ -176,5 +219,5 @@ export function clerkErrorMessage(error: any, fallback: string): string {
     form_param_format_invalid: 'Check the format of your account details and try again.',
     form_param_missing: 'Complete the required account details and try again.',
   };
-  return messages[code] || (error instanceof AuthFlowError ? error.message : fallback);
+  return messages[code] || (error instanceof AuthFlowError ? error.userMessage : fallback);
 }
