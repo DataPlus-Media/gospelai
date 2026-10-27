@@ -26,7 +26,7 @@ oauthHelper.require = (specifier) =>
 oauthHelper._compile(ts.transpileModule(fs.readFileSync(oauthPath, 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 },
 }).outputText, oauthPath);
-const { runClerkOAuthFlow } = oauthHelper.exports;
+const { runClerkOAuthFlow, oauthCallbackDiagnostics } = oauthHelper.exports;
 const startupPath = path.resolve(__dirname, '../utils/authStartup.ts');
 const startupHelper = new Module(startupPath, module);
 startupHelper._compile(ts.transpileModule(fs.readFileSync(startupPath, 'utf8'), {
@@ -247,6 +247,29 @@ async function run() {
   assert.ok(loginSource.includes("strategy: 'password'"), 'email sign-in must explicitly attempt the password factor');
 
   const redirectUrl = `${scheme}://oauth-native-callback`;
+  const callbackDiagnostics = oauthCallbackDiagnostics(
+    redirectUrl,
+    `${redirectUrl}?rotating_token_nonce=secret_nonce&state=account_secret`,
+    'success'
+  );
+  assert.match(callbackDiagnostics, /callback_match=yes/);
+  assert.match(callbackDiagnostics, /rotating_token_nonce=yes/);
+  assert.doesNotMatch(callbackDiagnostics, /secret_nonce|account_secret/,
+    'OAuth diagnostics must never expose callback parameter values');
+  const mismatchedDiagnostics = oauthCallbackDiagnostics(
+    redirectUrl,
+    'https://accounts.example/callback?error=access_denied',
+    'success'
+  );
+  assert.match(mismatchedDiagnostics, /callback_match=no/);
+  assert.match(mismatchedDiagnostics, /error=yes/);
+  assert.doesNotMatch(mismatchedDiagnostics, /access_denied/);
+  assert.match(
+    oauthCallbackDiagnostics(redirectUrl, `${redirectUrl}#rotating_token_nonce=secret`, 'success'),
+    /fragment_nonce=yes/
+  );
+  assert.match(oauthCallbackDiagnostics(redirectUrl, 'not a url', 'success'), /returned=invalid/);
+
   async function oauthScenario(initial, browserResult, reloaded) {
     let opens = 0;
     let reloads = 0;
@@ -328,8 +351,11 @@ async function run() {
   );
   await assert.rejects(
     oauthScenario(redirectState, { type: 'success', url: redirectUrl }),
-    /return link is incomplete/,
-    'callbacks without a verification nonce must not reload with an empty token'
+    (error) => /return link is incomplete/.test(error.message) &&
+      /callback_match=yes/.test(error.message) &&
+      /rotating_token_nonce=no/.test(error.message) &&
+      !/secret_nonce/.test(error.message),
+    'incomplete callbacks should report safe markers without reloading or leaking tokens'
   );
 
   console.log('Authentication continuation checks passed.');

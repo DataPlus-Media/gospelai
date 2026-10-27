@@ -244,12 +244,17 @@ const Page = () => {
         await finishSignUp(result.resource);
       }
     } catch (err: any) {
+      const message = clerkErrorMessage(
+        err,
+        'Clerk could not complete authentication. Check your connection and try again.'
+      );
+      const hasSafeOAuthDiagnostics =
+        err instanceof Error && /Safe diagnostics:/.test(err.message);
       Alert.alert(
         'Provider sign-in could not finish',
-        clerkErrorMessage(
-          err,
-          'Clerk could not complete authentication. Check your connection and try again.'
-        )
+        hasSafeOAuthDiagnostics
+          ? `${message}\n\nApp: ${Constants.expoConfig?.version ?? 'unknown'} · Build: ${Constants.nativeBuildVersion ?? 'unknown'}`
+          : message
       );
     } finally {
       setLoading(false);
