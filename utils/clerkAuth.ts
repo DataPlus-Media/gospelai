@@ -4,6 +4,10 @@ export type SignInFactorStrategy =
   | 'totp'
   | 'backup_code';
 
+// Only app-authored messages may be displayed verbatim. Provider/API errors
+// can include user identifiers or request details, so map their codes below.
+export class AuthFlowError extends Error {}
+
 export type SignInFactorPlan = {
   stage: 'first' | 'second';
   strategy: SignInFactorStrategy;
@@ -151,10 +155,21 @@ export function clerkErrorMessage(error: any, fallback: string): string {
   if (code === 'native_api_disabled') {
     return 'Mobile sign-in is not enabled for this service. Contact support to enable the Native API for the Clerk instance used by this build.';
   }
-  return (
-    error?.errors?.[0]?.longMessage ||
-    error?.errors?.[0]?.message ||
-    error?.message ||
-    fallback
-  );
+  const messages: Record<string, string> = {
+    form_password_incorrect: 'The email or password could not be verified. Check your details and try again.',
+    form_identifier_not_found: 'The email or password could not be verified. Check your details and try again.',
+    form_identifier_exists: 'An account already exists with these details. Try signing in instead.',
+    form_password_pwned: 'Choose a different password. This password appears in a known data breach.',
+    form_password_length_too_short: 'Choose a longer password and try again.',
+    form_code_incorrect: 'That verification code is incorrect. Check it and try again.',
+    verification_expired: 'That verification code has expired. Start sign-in again to request another code.',
+    too_many_requests: 'Too many attempts. Wait a little, then try again.',
+    oauth_access_denied: 'Provider authorization was cancelled or denied. Try again or use another sign-in option.',
+    oauth_email_domain_reserved: 'This provider account cannot be used here. Try another sign-in option.',
+    not_allowed_access: 'This account is not permitted to sign in. Contact support.',
+    session_exists: 'A session already exists. Close sign-in and return to Today.',
+    form_param_format_invalid: 'Check the format of your account details and try again.',
+    form_param_missing: 'Complete the required account details and try again.',
+  };
+  return messages[code] || (error instanceof AuthFlowError ? error.message : fallback);
 }

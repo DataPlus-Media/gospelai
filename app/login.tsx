@@ -5,6 +5,8 @@ import Colors from '@/constants/Colors';
 import { useSignIn, useSignUp } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { makeRedirectUri } from 'expo-auth-session';
+import { reloadAppAsync } from 'expo';
+import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useRef, useState } from 'react';
@@ -32,6 +34,8 @@ import {
   type SignInFactorPlan,
 } from '@/utils/clerkAuth';
 import { runClerkOAuthFlow } from '@/utils/clerkOAuth';
+import { useAuthStartup } from '@/hooks/useAuthStartup';
+import { publicAuthConfiguration, retryAuthStartup } from '@/utils/authStartup';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -64,7 +68,9 @@ const Page = () => {
   const [signupFirstName, setSignupFirstName] = useState('');
   const [signupLastName, setSignupLastName] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
-  const [authWaitExpired, setAuthWaitExpired] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const retryLock = useRef(false);
+  const [retryError, setRetryError] = useState(false);
   const startedProvider = useRef<string | null>(null);
 
   // reset-password specific
@@ -76,14 +82,26 @@ const Page = () => {
     path: 'oauth-native-callback',
   });
   const authReady = isLoaded && signUpLoaded;
-
-  useEffect(() => {
-    setAuthWaitExpired(false);
-    if (authReady) return;
-
-    const timeout = setTimeout(() => setAuthWaitExpired(true), 12000);
-    return () => clearTimeout(timeout);
-  }, [authReady]);
+  const startup = useAuthStartup(authReady);
+  const startupUnavailable = startup === 'failed' || startup === 'timedOut';
+  const authDisabled = loading || retrying || !authReady;
+  const configuration = publicAuthConfiguration(process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const retryStartup = async () => {
+    if (retryLock.current || loading) return;
+    retryLock.current = true;
+    setRetrying(true);
+    setRetryError(false);
+    try {
+      await retryAuthStartup(() => Platform.OS === 'web'
+        ? Promise.resolve(window.location.reload())
+        : reloadAppAsync('Retry sign-in initialization'));
+    } catch {
+      setRetryError(true);
+    } finally {
+      retryLock.current = false;
+      setRetrying(false);
+    }
+  };
 
   const activateAndContinue = async (
     sessionId: unknown,
@@ -111,10 +129,7 @@ const Page = () => {
     if (!plan) {
       Alert.alert(
         'Sign-in needs another step',
-        `This sign-in cannot continue on this screen. Try another sign-in option or share these details with support: status=${resource.status ?? 'unknown'}; methods=${[
-          ...(resource.supportedFirstFactors ?? []),
-          ...(resource.supportedSecondFactors ?? []),
-        ].map((factor) => factor.strategy).join(', ') || 'none'}.`
+        'This sign-in requires a verification method that this screen does not support. Try another sign-in option or contact support.'
       );
       return;
     }
@@ -212,7 +227,7 @@ const Page = () => {
   };
 
   const doOAuth = async (strategy: 'oauth_apple' | 'oauth_google') => {
-    if (!isLoaded || !signUpLoaded || loading) return;
+    if (authDisabled) return;
     setLoading(true);
     setPendingChallenge(null);
     try {
@@ -230,7 +245,7 @@ const Page = () => {
       }
     } catch (err: any) {
       Alert.alert(
-        'Couldn’t sign in',
+        'Provider sign-in could not finish',
         clerkErrorMessage(
           err,
           'Clerk could not complete authentication. Check your connection and try again.'
@@ -261,7 +276,7 @@ const Page = () => {
   const newPasswordRef = useRef<TextInput | null>(null);
 
   const onSignUpPress = async () => {
-    if (!signUpLoaded) return;
+    if (authDisabled || !signUpLoaded) return;
     setLoading(true);
 
     try {
@@ -281,7 +296,7 @@ const Page = () => {
   };
 
   const onSignInPress = async () => {
-    if (!isLoaded) return;
+    if (authDisabled || !isLoaded) return;
     setLoading(true);
 
     try {
@@ -302,7 +317,7 @@ const Page = () => {
   };
 
   const onRequestResetCode = async () => {
-    if (!isLoaded) return;
+    if (authDisabled || !isLoaded) return;
     if (!emailAddress.trim()) {
       Alert.alert('Email needed', 'Enter your email address first.');
       return;
@@ -321,8 +336,7 @@ const Page = () => {
     } catch (err: any) {
       Alert.alert(
         'Password reset unavailable',
-        err?.errors?.[0]?.message ||
-          'We couldn’t start the password reset. Please try again, or contact support if it keeps happening.'
+        clerkErrorMessage(err, 'We couldn’t start the password reset. Please try again.')
       );
     } finally {
       setLoading(false);
@@ -330,7 +344,7 @@ const Page = () => {
   };
 
   const onCompleteReset = async () => {
-    if (!isLoaded) return;
+    if (authDisabled || !isLoaded) return;
     if (!resetCode.trim() || !newPassword.trim()) {
       Alert.alert('A few details are missing', 'Enter the code and your new password.');
       return;
@@ -356,7 +370,7 @@ const Page = () => {
     } catch (err: any) {
       Alert.alert(
         'Couldn’t reset password',
-        err?.errors?.[0]?.message || 'The code may be invalid or expired.'
+        clerkErrorMessage(err, 'The code may be invalid or expired.')
       );
     } finally {
       setLoading(false);
@@ -364,7 +378,7 @@ const Page = () => {
   };
 
   const onSubmitVerification = async () => {
-    if (!pendingChallenge) return;
+    if (authDisabled || !pendingChallenge) return;
     if (pendingChallenge.kind === 'newPassword') {
       if (!newPassword.trim()) {
         Alert.alert('Password needed', 'Enter a new password to continue.');
@@ -421,7 +435,7 @@ const Page = () => {
   };
 
   const onSubmitSignupDetails = async () => {
-    if (pendingChallenge?.kind !== 'signUpFields') return;
+    if (authDisabled || pendingChallenge?.kind !== 'signUpFields') return;
     const { resource, fields } = pendingChallenge;
     const update: { firstName?: string; lastName?: string; password?: string } = {};
     if (fields.includes('first_name')) update.firstName = signupFirstName.trim();
@@ -504,12 +518,36 @@ const Page = () => {
             accessibilityLiveRegion="polite"
             accessibilityRole="alert"
           >
-            {!authWaitExpired && <ActivityIndicator size="small" color={Colors.coral} />}
+            {startup === 'connecting' && <ActivityIndicator size="small" color={Colors.coral} />}
             <Text style={styles.authStatusText}>
-              {authWaitExpired
-                ? 'Sign-in is taking longer than expected. Check your internet connection, then close and reopen the app to try again.'
+              {startupUnavailable
+                ? startup === 'failed'
+                  ? 'The sign-in service could not initialize. Check your connection, then retry sign-in. If this continues, share the service details below with support.'
+                  : 'Sign-in is taking longer than expected. Check your connection, then retry sign-in. You can also continue as a guest.'
                 : 'Connecting to the sign-in service… You can enter your details while it loads.'}
             </Text>
+          </View>
+        )}
+        {startupUnavailable && (
+          <View>
+            <Text selectable style={styles.diagnostics}>
+              {`Service: ${configuration.hostname} · ${configuration.environment}\nApp: ${Constants.expoConfig?.version ?? 'unknown'} · Build: ${Constants.nativeBuildVersion ?? 'web'} · Startup: ${startup}`}
+            </Text>
+            <TouchableOpacity
+              style={[defaultStyles.btn, styles.secondaryBtn, retrying && styles.disabled]}
+              onPress={retryStartup}
+              disabled={retrying}
+              accessibilityRole="button"
+              accessibilityLabel="Retry sign-in"
+            >
+              <Text style={styles.secondaryText}>{retrying ? 'Restarting…' : 'Retry sign-in'}</Text>
+            </TouchableOpacity>
+            <Text style={styles.diagnostics}>
+              Retry reloads the app. You’ll need to re-enter your details; saved sessions and study stay on this device.
+            </Text>
+            {retryError && <Text accessibilityRole="alert" style={styles.authStatusText}>
+              Couldn’t restart. Close and reopen the app, or continue as a guest.
+            </Text>}
           </View>
         )}
 
@@ -602,13 +640,13 @@ const Page = () => {
                     />
                   )}
                   <TouchableOpacity
-                    style={[defaultStyles.btn, styles.secondaryBtn]}
+                    style={[defaultStyles.btn, styles.secondaryBtn, authDisabled && styles.disabled]}
                     onPress={
                       pendingChallenge.kind === 'signUpFields'
                         ? onSubmitSignupDetails
                         : onSubmitVerification
                     }
-                    disabled={loading}
+                    disabled={authDisabled}
                     accessibilityRole="button"
                     accessibilityLabel={
                       pendingChallenge.kind === 'signUpFields'
@@ -677,9 +715,9 @@ const Page = () => {
 
             {isLogin ? (
               <TouchableOpacity
-                style={[defaultStyles.btn, styles.btnPrimary]}
+                style={[defaultStyles.btn, styles.btnPrimary, authDisabled && styles.disabled]}
                 onPress={onSignInPress}
-                disabled={loading || !isLoaded}
+                disabled={authDisabled}
                 accessibilityRole="button"
                 accessibilityLabel="Sign in"
               >
@@ -687,9 +725,9 @@ const Page = () => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                style={[defaultStyles.btn, styles.btnPrimary]}
+                style={[defaultStyles.btn, styles.btnPrimary, authDisabled && styles.disabled]}
                 onPress={onSignUpPress}
-                disabled={loading || !signUpLoaded}
+                disabled={authDisabled}
                 accessibilityRole="button"
                 accessibilityLabel="Create account"
               >
@@ -705,9 +743,9 @@ const Page = () => {
 
             <View style={styles.oauthRow}>
               <TouchableOpacity
-                style={styles.oauthButton}
+                style={[styles.oauthButton, authDisabled && styles.disabled]}
                 onPress={() => doOAuth('oauth_apple')}
-                disabled={loading || !authReady}
+                disabled={authDisabled}
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Apple"
               >
@@ -715,9 +753,9 @@ const Page = () => {
                 <Text style={styles.oauthButtonText}>Apple</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.oauthButton}
+                style={[styles.oauthButton, authDisabled && styles.disabled]}
                 onPress={() => doOAuth('oauth_google')}
-                disabled={loading || !authReady}
+                disabled={authDisabled}
                 accessibilityRole="button"
                 accessibilityLabel="Continue with Google"
               >
@@ -744,9 +782,9 @@ const Page = () => {
                 onSubmitEditing={onRequestResetCode}
               />
               <TouchableOpacity
-                style={[defaultStyles.btn, styles.secondaryBtn]}
+                style={[defaultStyles.btn, styles.secondaryBtn, authDisabled && styles.disabled]}
                 onPress={onRequestResetCode}
-                disabled={loading || !isLoaded}
+                disabled={authDisabled}
               >
                 <Text style={styles.secondaryText}>Send reset code</Text>
               </TouchableOpacity>
@@ -778,9 +816,9 @@ const Page = () => {
             </View>
 
             <TouchableOpacity
-              style={[defaultStyles.btn, styles.btnPrimary]}
+              style={[defaultStyles.btn, styles.btnPrimary, authDisabled && styles.disabled]}
               onPress={onCompleteReset}
-              disabled={loading || !isLoaded}
+              disabled={authDisabled}
             >
               <Text style={styles.btnPrimaryText}>Update password & sign in</Text>
             </TouchableOpacity>
@@ -793,6 +831,14 @@ const Page = () => {
             </TouchableOpacity>
           </>
         )}
+            <TouchableOpacity
+              style={styles.backLink}
+              onPress={() => router.replace('/(auth)/(drawer)/today')}
+              accessibilityRole="button"
+              accessibilityLabel="Continue as a guest"
+            >
+              <Text style={styles.backText}>Continue as a guest</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -801,6 +847,13 @@ const Page = () => {
 };
 
 const styles = StyleSheet.create({
+  disabled: { opacity: 0.45 },
+  diagnostics: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    lineHeight: 17,
+    marginBottom: 14,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,

@@ -15,3 +15,17 @@ Keep Clerk's `rethrowOfflineNetworkErrors` enabled and treat an empty authentica
 **Why:** The installed Clerk SDK can swallow native fetch failures and return an unchanged, empty resource. This made email sign-up and both social providers report misleading continuation errors when the public sign-in hostname could not resolve.
 
 **How to apply:** Check public DNS/reachability before sending the user through repeated OAuth credential setup. Mocked successful resource shapes alone do not verify native service connectivity.
+
+## Startup retry
+
+Use a supported full JavaScript app reload for a stalled native startup, preserving
+SecureStore. Do not rely on remounting the provider as a retry.
+
+**Why:** Expo Clerk holds its native client in a module-level singleton; remounting
+the React provider can reuse the failed client instead of restarting startup.
+Expo's public app reload works in release builds without requiring an OTA update.
+
+**How to apply:** Warn that unsaved form contents are discarded, never save
+credentials to survive a reload, and keep guest study available. Confirm the
+installed binary's public hostname/build before treating workspace reachability
+as evidence about TestFlight.

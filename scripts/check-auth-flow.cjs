@@ -27,6 +27,12 @@ oauthHelper._compile(ts.transpileModule(fs.readFileSync(oauthPath, 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 },
 }).outputText, oauthPath);
 const { runClerkOAuthFlow } = oauthHelper.exports;
+const startupPath = path.resolve(__dirname, '../utils/authStartup.ts');
+const startupHelper = new Module(startupPath, module);
+startupHelper._compile(ts.transpileModule(fs.readFileSync(startupPath, 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2021 },
+}).outputText, startupPath);
+const { authStartupState, watchAuthStartup, publicAuthConfiguration, retryAuthStartup } = startupHelper.exports;
 
 const {
   activateSessionIfPresent,
@@ -38,6 +44,54 @@ const {
 } = helper.exports;
 
 async function run() {
+  assert.equal(authStartupState(false, 'loading', false), 'connecting');
+  assert.equal(authStartupState(false, 'loading', true), 'timedOut');
+  assert.equal(authStartupState(false, 'error', false), 'failed');
+  assert.equal(authStartupState(true, 'error', true), 'ready', 'delayed readiness must recover');
+  let listener, timeout, cancelled = false, unsubscribed = false;
+  const states = [];
+  const cleanup = watchAuthStartup({
+    ready: false,
+    status: 'loading',
+    subscribe: (callback) => { listener = callback; return () => { unsubscribed = true; }; },
+    onChange: (state) => states.push(state),
+    schedule: (callback, ms) => { assert.equal(ms, 12000); timeout = callback; return 42; },
+    cancel: (id) => { assert.equal(id, 42); cancelled = true; },
+  });
+  assert.deepEqual(states, ['connecting']);
+  listener('error');
+  assert.equal(states.at(-1), 'failed', 'SDK startup errors should surface before the timeout');
+  listener('loading');
+  timeout();
+  assert.equal(states.at(-1), 'timedOut');
+  cleanup();
+  assert.ok(cancelled && unsubscribed, 'screen cleanup must cancel timers and SDK subscriptions');
+  const readyStates = [];
+  watchAuthStartup({
+    ready: true, status: 'ready', onChange: state => readyStates.push(state),
+    subscribe: () => { throw new Error('Ready screens must not subscribe'); },
+    schedule: () => { throw new Error('Ready screens must not time out'); },
+  })();
+  assert.deepEqual(readyStates, ['ready']);
+  let reloads = 0;
+  await retryAuthStartup(async () => { reloads++; });
+  assert.equal(reloads, 1);
+  await assert.rejects(retryAuthStartup(async () => { throw new Error('reload failed'); }), /reload failed/);
+  const publicKey = `pk_live_${Buffer.from('auth.example.com$').toString('base64')}`;
+  assert.deepEqual(publicAuthConfiguration(publicKey), { environment: 'live', hostname: 'auth.example.com' });
+  for (const key of [undefined, '', 'invalid', 'pk_live_%%%%', `pk_test_${Buffer.from('private@example.com$').toString('base64')}`]) {
+    const safe = publicAuthConfiguration(key);
+    assert.deepEqual(safe, { environment: 'invalid', hostname: 'unavailable' });
+    assert.doesNotMatch(JSON.stringify(safe), /private@|pk_test|pk_live/);
+  }
+  const { spawnSync } = require('node:child_process');
+  for (const [key, expected] of [[publicKey, 0], ['', 1], ['not-a-key', 1]]) {
+    const check = spawnSync(process.execPath, [path.resolve(__dirname, 'check-native-auth-config.cjs')], {
+      env: { ...process.env, EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: key }, encoding: 'utf8',
+    });
+    assert.equal(check.status, expected);
+    assert.doesNotMatch(check.stdout + check.stderr, /pk_live_|not-a-key/);
+  }
   let activatedSession = null;
   const activated = await activateSessionIfPresent('session_123', async (sessionId) => {
     activatedSession = sessionId;
@@ -102,13 +156,13 @@ async function run() {
 
   assert.equal(
     clerkErrorMessage(
-      { errors: [{ longMessage: 'Verify the email address to continue.' }] },
+      { errors: [{ code: 'form_code_incorrect', longMessage: 'private@example.invalid token=do-not-display' }] },
       'Fallback'
     ),
-    'Verify the email address to continue.',
-    'Clerk authentication errors should remain actionable'
+    'That verification code is incorrect. Check it and try again.',
+    'Clerk errors should remain actionable without exposing arbitrary API text'
   );
-  assert.equal(clerkErrorMessage(new Error('Network unavailable'), 'Fallback'), 'Network unavailable');
+  assert.equal(clerkErrorMessage(new Error('private@example.invalid'), 'Fallback'), 'Fallback');
 
   assert.deepEqual(
     getSignUpNextStep({
@@ -180,10 +234,15 @@ async function run() {
     'the auth screen should give a recovery message if Clerk initialization stalls');
   assert.match(loginSource, /Please wait…/,
     'authentication submissions should show a readable progress state');
-  assert.match(loginSource, /disabled=\{loading \|\| !isLoaded\}/,
-    'sign-in submission should be disabled until the Clerk sign-in resource is ready');
-  assert.match(loginSource, /disabled=\{loading \|\| !signUpLoaded\}/,
-    'sign-up submission should be disabled until the Clerk sign-up resource is ready');
+  assert.match(loginSource, /const authDisabled = loading \|\| retrying \|\| !authReady/);
+  assert.equal((loginSource.match(/disabled=\{authDisabled\}/g) || []).length, 7,
+    'sign-in, registration, verification, both providers, and both reset actions share the readiness gate');
+  assert.match(loginSource, /accessibilityLabel="Retry sign-in"/);
+  assert.match(loginSource, /accessibilityLabel="Continue as a guest"/);
+  assert.match(loginSource, /reloadAppAsync\('Retry sign-in initialization'\)/,
+    'native retry must restart the actual SDK singleton, not just remount its provider');
+  assert.doesNotMatch(loginSource, /SecureStore.*delete|AsyncStorage.*setItem/,
+    'retry must not clear saved sessions or persist credentials');
   assert.ok(loginSource.includes(`scheme: '${scheme}'`), 'OAuth return scheme must match the installed app');
   assert.ok(loginSource.includes("strategy: 'password'"), 'email sign-in must explicitly attempt the password factor');
 

@@ -13,6 +13,8 @@
     "test:study": "node scripts/check-study.cjs",
     "test:study:notes-api": "node scripts/check-study-notes-api.cjs",
     "test:auth": "node scripts/check-auth-flow.cjs",
+    "test:auth:browser": "node scripts/check-auth-startup-browser.cjs",
+    "eas-build-post-install": "node scripts/check-native-auth-config.cjs",
     "test:study:browser": "node scripts/check-study-browser.cjs",
     "test:welcome:browser": "node scripts/check-welcome-browser.cjs",
     "test:library": "node scripts/check-library.cjs && node scripts/check-spurgeon.cjs",
