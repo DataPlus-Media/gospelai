@@ -324,7 +324,7 @@ export default function LibraryHome({
         ListEmptyComponent={query.trim() ? (
          <View style={styles.emptyState}><View style={styles.emptyMark}><Ionicons name="search-outline" size={20} color={C.gold} /></View><Text style={styles.emptyTitle}>{loading ? 'Searching your library' : 'No matching passages'}</Text><Text style={styles.emptyBody}>{loading ? 'Looking through the works downloaded on this device.' : 'Try another search, or clear it to browse available works. Some works can’t be shared in the app.'}</Text>{!loading && <Pressable onPress={() => setQuery('')} style={styles.emptyAction}><Text style={styles.linkText}>Browse available works</Text></Pressable>}</View>
         ) : <View style={styles.emptyState}><Text style={styles.emptyTitle}>No works for this author</Text><Text style={styles.emptyBody}>Choose another author or view all works.</Text></View>}
-        ListFooterComponent={<View style={styles.footer}><Text style={styles.footerTitle}>Three writers · carefully sourced</Text><Text style={styles.footerCopy}>This library keeps historical editions distinct from modern commentary and generative text.</Text></View>}
+        ListFooterComponent={<View style={styles.footer}><Text style={styles.footerTitle}> Christian Writers · carefully sourced</Text><Text style={styles.footerCopy}>This library keeps historical editions distinct from modern commentary and generative text.</Text></View>}
       />
     </View>
   );
