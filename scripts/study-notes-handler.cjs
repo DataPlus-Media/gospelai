@@ -241,6 +241,14 @@ module.exports = async function handleStudyNotes(req, res) {
     const status = error?.message === 'DATABASE_NOT_CONFIGURED' ? 503
       : error?.message === 'BODY_TOO_LARGE' ? 413
         : error?.message === 'INVALID_JSON' ? 400 : 500;
+    if (status >= 500) {
+      // Log only diagnostic codes, never database messages or user/request data.
+      const rawCode = typeof error?.code === 'string' ? error.code : '';
+      const code = /^[0-9A-Z]{5}$/.test(rawCode) ||
+        ['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'ETIMEDOUT'].includes(rawCode)
+        ? rawCode : status === 503 ? 'DATABASE_NOT_CONFIGURED' : 'UNKNOWN';
+      console.error('[study-notes] Database request failed', { method: req.method, code });
+    }
     json(res, status, {
       error: status === 500
         ? 'Your notes could not be saved right now. Please retry.'

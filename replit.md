@@ -74,3 +74,7 @@ npm run web   # Start Expo web dev server on port 5000
 ## Study verification
 
 See `docs/daily-study-verification.md` for repeatable checks and explicit native/signed-in verification limits. `npm run test:study` tests migrations and study behavior using SQLite. Browser checks are separate from native-device checks.
+
+Signed-in notes require the PostgreSQL schema in `database/study-notes.sql`.
+See `docs/signed-in-notes-database.md` for development setup and the managed
+production database publishing flow; do not add startup or deployment-build DDL.

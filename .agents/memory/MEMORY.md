@@ -11,3 +11,4 @@
 - [Library delivery verification](library-delivery-verification.md) — verify large packages through the published HTTP endpoint, not only bucket integrity and local mocks.
 - [Native Clerk configuration](native-clerk-configuration.md) — EAS uses external Clerk; workspace management detection does not establish native build configuration.
 - [Native store billing](native-store-billing.md) — use Apple and Google store purchases for GospelAI support subscriptions, not RevenueCat.
+- [Notes storage verification](notes-storage-verification.md) — mocked API tests and a successful publish do not establish real database or signed-in sync readiness.

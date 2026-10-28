@@ -8,9 +8,15 @@ const kid = 'study-notes-test-key';
 const domain = 'gospelsai-test.clerk.accounts.dev';
 const notes = [];
 const queries = [];
+let nextDatabaseError;
 
 class TestPool {
   async query(sql, values) {
+    if (nextDatabaseError) {
+      const error = nextDatabaseError;
+      nextDatabaseError = null;
+      throw error;
+    }
     queries.push({ sql, values });
     if (sql.startsWith('SELECT')) return { rows: notes.filter(note => note.user_id === values[0]).map(({ user_id, ...note }) => note), rowCount: notes.length };
     if (sql.startsWith('INSERT')) {
@@ -105,6 +111,21 @@ async function main() {
     assert.equal(queries.at(-1).values[1], 'user_bob');
     const deleted = await fetch(`${base}/1`, { method: 'DELETE', headers: { Authorization: `Bearer ${alice}` } });
     assert.equal(deleted.status, 200);
+    const originalError = console.error;
+    const diagnostics = [];
+    console.error = (...args) => diagnostics.push(args);
+    try {
+      nextDatabaseError = Object.assign(new Error('private database and note details'), { code: '42P01' });
+      const failed = await fetch(base, { headers: { Authorization: `Bearer ${alice}` } });
+      assert.equal(failed.status, 500);
+      assert.equal((await failed.json()).error, 'Your notes could not be saved right now. Please retry.');
+      assert.deepEqual(diagnostics, [
+        ['[study-notes] Database request failed', { method: 'GET', code: '42P01' }],
+      ]);
+      assert.equal(JSON.stringify(diagnostics).includes('private'), false);
+    } finally {
+      console.error = originalError;
+    }
     console.log('PASS Clerk signature/issuer/expiry verification, ownership-scoped CRUD, untrusted client owner rejection and origin checks');
   } finally {
     await new Promise(resolve => server.close(resolve));
