@@ -8,7 +8,9 @@ Clerk key, or passing mocked database tests.
 
 **Why:** The notes API passed mocked CRUD tests while the required development
 table and managed production database had not been provisioned. Correcting Clerk
-configuration exposed a second, independent database failure.
+configuration exposed a second, independent database failure. The user confirmed
+that enabling the managed production database and publishing after the development
+schema was ready restored signed-in notes.
 
 **How to apply:** Verify CRUD against a real development schema, confirm the
 production database exists, and distinguish those checks from a signed-in
