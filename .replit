@@ -47,6 +47,9 @@ run = ["node", "scripts/server.cjs"]
 [userenv.shared]
 LIBRARY_STORAGE_BUCKET_ID = "replit-objstore-39f35c6c-d21a-483a-b502-9a71688abd63"
 
+[userenv.production]
+CLERK_PUBLISHABLE_KEY = "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_Y2xlcmsuZ29zcGVsc2FpLmFwcCQ"
+
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 240000
