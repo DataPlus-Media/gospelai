@@ -245,7 +245,7 @@ export default function PassageInsight({
   };
 
   const openExternal = (url: string) => {
-    void Linking.openURL(url).catch(() => setLinkError('We couldn’t open that source link. External editions and rights pages need an internet connection and a browser. Downloaded text is still available offline.'));
+    void Linking.openURL(url).catch(() => setLinkError('We couldn’t open that source link. Source information needs an internet connection and a browser. Downloaded text is still available offline.'));
   };
 
   return (
@@ -315,13 +315,13 @@ export default function PassageInsight({
         {linkError && <Text accessibilityRole="alert" style={styles.errorText}>{linkError}</Text>}
         <View style={styles.sectionTitleRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.sectionEyebrow}>READ THE RECORD</Text>
+            <Text style={styles.sectionEyebrow}>ABOUT THIS PASSAGE</Text>
             <Text style={styles.sectionTitle}>Commentaries on {scripture?.reference ?? 'selected passage'}</Text>
           </View>
           {loading ? <ActivityIndicator color={C.green} /> : !loadError && <Text style={styles.count}>{availableDownload ? 'Download available' : catalogStates.some(item => item.state === 'incomplete') ? 'Repair required' : `${rows.length} ${rows.length === 1 ? 'match' : 'matches'}`}</Text>}
         </View>
         <Text style={styles.intro}>
-          Commentary appears only when a downloaded source names this passage. These are the authors’ preserved words, not AI-generated opinions.
+          Commentary appears when a downloaded source includes this passage. These are the authors’ preserved words, not AI-generated opinions.
         </Text>
 
         {loadError ? (
@@ -337,7 +337,7 @@ export default function PassageInsight({
           <View style={styles.emptyPanel}>
             <View style={styles.emptyMark}><Ionicons name="document-text-outline" size={19} color={C.gold} /></View>
             <Text style={styles.emptyTitle}>{catalogStates.some(item => item.state === 'incomplete') ? 'A commentary download needs repair' : 'No verified commentary for this passage'}</Text>
-            <Text style={styles.emptyCopy}>The list below shows downloads that aren’t available, editions we can’t redistribute, and downloaded works without a verified match for this passage.</Text>
+            <Text style={styles.emptyCopy}>The list below shows works you can download, editions we can’t provide in the app, and downloaded texts that don’t match this passage.</Text>
           </View>
         ) : null}
 
@@ -463,8 +463,8 @@ export default function PassageInsight({
               <Ionicons name="information-circle-outline" size={17} color={C.gold} />
               <Text style={styles.honestCopy}>
                 {rows.length < 2
-                  ? `Only ${rows.length} downloaded commentary source ${rows.length === 1 ? 'passage is' : 'passages are'} available for this scripture. Two are needed for comparison. Devotionals and rights-blocked works are not substitutes.`
-                  : 'Choose two matching source passages above to compare them. Remove one to choose a different passage.'}
+                  ? `Only ${rows.length} downloaded commentary ${rows.length === 1 ? 'text is' : 'texts are'} available for this passage. Choose two to compare them. Devotionals and editions not offered in the app don’t count as commentary.`
+                  : 'Choose two commentaries on this passage to compare them. Remove one to choose a different source.'}
               </Text>
             </View>
           ) : null}
@@ -520,9 +520,9 @@ export default function PassageInsight({
 
         {!loading && !loadError && catalogStates.length > 0 ? (
           <View style={styles.catalogSection}>
-            <Text style={styles.sectionEyebrow}>CATALOG STATUS</Text>
+              <Text style={styles.sectionEyebrow}>MORE WORKS</Text>
             <Text style={styles.sectionTitle}>Other commentary</Text>
-            <Text style={styles.catalogIntro}>Other works are shown as commentary for this verse only when the passage match is verified.</Text>
+              <Text style={styles.catalogIntro}>A work appears as commentary for this verse only when the selected passage match is verified.</Text>
             {catalogStates.map(({ work, state }) => (
               <PassageCatalogRow key={work.id} work={work} state={state}
                 chapterLabel={work.id === 'henry-whole-bible' ? chapterLabel : undefined}
@@ -538,7 +538,7 @@ export default function PassageInsight({
             <View style={styles.devotionalNote}>
               <Ionicons name="bookmark-outline" size={16} color={C.gold} />
               <Text style={styles.devotionalCopy}>
-                These devotionals don’t have a verified verse match in the catalog. They’re kept separate and aren’t counted as commentary or included in source comparisons.
+                These devotionals aren’t matched to this verse, so they’re shown separately and aren’t included in commentary comparisons.
               </Text>
             </View>
             {devotionals.map(work => (

@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import type { LibraryWork, PassageMatch } from '@/utils/libraryTypes';
 import type { LoadedSource } from './PassageTypes';
 import { C, styles } from './PassageStyles';
+import { readerFriendlySourceNotice } from '@/utils/insight';
 
 export default function PassageSourceReading({
   work,
@@ -21,7 +22,7 @@ export default function PassageSourceReading({
   return (
     <View>
       <View style={styles.provenance}>
-        <Text style={styles.metaLabel}>CONTRIBUTOR / ATTRIBUTION</Text>
+        <Text style={styles.metaLabel}>AUTHOR & CONTRIBUTORS</Text>
         <Text selectable style={styles.metaText}>{loaded.content.attribution}</Text>
         <Text style={styles.metaLabel}>EDITION</Text>
         <Text selectable style={styles.metaText}>{work.edition}</Text>
@@ -29,16 +30,16 @@ export default function PassageSourceReading({
         <Pressable accessibilityRole="link" accessibilityLabel="Open source edition" onPress={() => onOpenLink(loaded.content.source_url)}>
           <Text selectable style={styles.urlText}>{loaded.content.source_url}</Text>
         </Pressable>
-        <Text style={styles.metaLabel}>RIGHTS</Text>
+        <Text style={styles.metaLabel}>SHARING DETAILS</Text>
         <Text selectable style={styles.metaText}>{work.rights}</Text>
-        <Pressable accessibilityRole="link" accessibilityLabel="Open rights statement" onPress={() => onOpenLink(work.rightsUrl)}>
-          <Text style={styles.urlText}>Open rights statement</Text>
+        <Pressable accessibilityRole="link" accessibilityLabel="View source sharing details" onPress={() => onOpenLink(work.rightsUrl)}>
+          <Text style={styles.urlText}>View source details</Text>
         </Pressable>
       </View>
       {loaded.notices.length > 0 ? (
         <View style={styles.noticePanel}>
-          <Text style={styles.noticeTitle}>DOWNLOADED EDITION NOTICES</Text>
-          {loaded.notices.map((notice, index) => <Text selectable key={`${index}:${notice}`} style={styles.noticeText}>{notice}</Text>)}
+          <Text style={styles.noticeTitle}>ABOUT THIS EDITION</Text>
+          {loaded.notices.map((notice, index) => <Text selectable key={`${index}:${notice}`} style={styles.noticeText}>{readerFriendlySourceNotice(notice)}</Text>)}
         </View>
       ) : null}
       <View style={styles.fullTextHeader}>

@@ -35,6 +35,19 @@ async function main() {
     assert.equal(insight.coverageLabel({ title: 'John 3 · Chapter introduction', verse_start: null, verse_end: null }), 'Chapter introduction');
     assert.equal(insight.coverageLabel({ title: 'John 3:16', verse_start: 16, verse_end: 16 }), 'Verse 16');
     assert.equal(insight.coverageLabel({ title: 'John 3:14–21', verse_start: 14, verse_end: 21 }), 'Verses 14–21');
+    assert.equal(
+      insight.readerFriendlySourceNotice('Public domain text. No rights reserved. May be distributed freely.'),
+      'The source says this text may be freely shared.'
+    );
+    assert.equal(
+      insight.readerFriendlySourceNotice('MORNING & EVENING: DAILY READINGS by Charles Spurgeon. Public Domain -- Copy Freely.'),
+      'The source marks this edition as free to copy and share.'
+    );
+    assert.equal(
+      insight.readerFriendlySourceNotice('Source page: https://example.test/edition'),
+      'Source page: https://example.test/edition',
+      'unrecognized source notes should remain intact'
+    );
     console.log('PASS actual bundled KJV scripture, canonical reference, translation, chapter entry and invalid references');
 
     await library.initLibrary(db);

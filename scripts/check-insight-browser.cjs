@@ -36,7 +36,7 @@ async function main() {
     await text('Full work · 37.7 MB').waitFor();
     assert.equal(await text('0 matches').count(), 0);
     assert.equal(await page.locator('body').evaluate(el => el.scrollWidth > window.innerWidth), false);
-    assert.equal(await text('Rights blocked').count(), 1);
+    assert.equal(await text('Not available here').count(), 1);
     await button('Ask AI about selected scripture').click();
     const scriptureDraft = page.getByRole('textbox', { name: 'Write a message', exact: true });
     await scriptureDraft.waitFor();
@@ -91,10 +91,11 @@ async function main() {
     await page.getByText('Only 1 downloaded commentary', { exact: false }).waitFor();
     await button('Author Insights').click();
     await button('Read full source section: John 3').click();
-    await text('CONTRIBUTOR / ATTRIBUTION').waitFor();
-    await text('DOWNLOADED EDITION NOTICES').waitFor();
+    await text('AUTHOR & CONTRIBUTORS').waitFor();
+    await text('ABOUT THIS EDITION').waitFor();
+    await text('The source says this text may be freely shared.').waitFor();
     await page.getByRole('link', { name: 'Open source edition' }).waitFor();
-    await page.getByRole('link', { name: 'Open rights statement' }).waitFor();
+    await page.getByRole('link', { name: 'View source sharing details' }).waitFor();
     console.log('PASS guest verse header, actual KJV, distinct unavailable states, real download, honest single source and provenance');
 
     let sends = 0;

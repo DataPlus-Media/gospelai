@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { LIBRARY_AUTHORS, LIBRARY_WORKS } from '@/constants/libraryWorks';
 import { getLibraryPosition, installedWorks, removeWork, searchLibrary, workNotices, workAvailability } from '@/utils/library';
+import { readerFriendlySourceNotice } from '@/utils/insight';
 import type { InstalledWork, LibraryHit, LibraryWork } from '@/utils/libraryTypes';
 import LibraryReader from '@/components/library/LibraryReader';
 import LibraryWorkCard from '@/components/library/LibraryWorkCard';
@@ -213,10 +214,10 @@ export default function LibraryHome({
           <Text style={styles.detailTitle}>{title}</Text>
           <View style={styles.sourcePanel}>
             <Text style={styles.fieldLabel}>EDITION / SOURCE</Text><Text style={styles.fieldText}>{selectedWork.edition}</Text>
-            <Text style={styles.fieldLabel}>RIGHTS</Text><Text style={styles.fieldText}>{selectedWork.rights}</Text>
-            <Text style={styles.fieldLabel}>ATTRIBUTION</Text><Text style={styles.fieldText}>{selectedWork.attribution}</Text>
+            <Text style={styles.fieldLabel}>SHARING DETAILS</Text><Text style={styles.fieldText}>{selectedWork.rights}</Text>
+            <Text style={styles.fieldLabel}>AUTHOR & CONTRIBUTORS</Text><Text style={styles.fieldText}>{selectedWork.attribution}</Text>
             <Pressable onPress={() => void Linking.openURL(selectedWork.sourceUrl)} style={styles.provenanceLink}><Ionicons name="open-outline" size={15} color={C.green} /><Text style={styles.linkText}>Open source edition</Text></Pressable>
-            <Pressable onPress={() => void Linking.openURL(selectedWork.rightsUrl)} style={styles.provenanceLink}><Ionicons name="open-outline" size={15} color={C.green} /><Text style={styles.linkText}>Open rights statement</Text></Pressable>
+            <Pressable onPress={() => void Linking.openURL(selectedWork.rightsUrl)} style={styles.provenanceLink}><Ionicons name="open-outline" size={15} color={C.green} /><Text style={styles.linkText}>View source details</Text></Pressable>
             {selectedWork.package ? <Text style={styles.packageMeta}>Verified package · {selectedWork.package.sections} sections · {formatBytes(selectedWork.package.bytes)}</Text> : null}
           </View>
           {selectedWork.blocker ? <View style={styles.blocker}><Ionicons name="lock-closed-outline" size={18} color="#E9A197" /><Text style={styles.blockerText}>{selectedWork.blocker}</Text><Text style={styles.blockerFoot}>This work cannot be downloaded in the app at this time.</Text></View> : null}
@@ -229,7 +230,7 @@ export default function LibraryHome({
             <>
               <View style={styles.offlineNote}><Ionicons name="cloud-offline-outline" size={17} color={C.green} /><Text style={styles.offlineCopy}>Downloaded for offline reading on this device.</Text></View>
               <Pressable accessibilityRole="button" onPress={() => setParams({ work: selectedWork.id, section: detailPosition?.section_id ?? '__start__', paragraph: detailPosition ? String(detailPosition.paragraph) : undefined })} style={styles.primaryButton}><Text style={styles.primaryText}>{detailPosition ? 'Resume reading' : 'Read this work'}</Text><Ionicons name="arrow-forward" size={17} color={Colors.onCoral} /></Pressable>
-              {detailNotices.map((notice, index) => <View key={`${index}-${notice}`} style={styles.notice}><Ionicons name="information-circle-outline" size={16} color={C.gold} /><Text style={styles.noticeText}>{notice}</Text></View>)}
+              {detailNotices.map((notice, index) => <View key={`${index}-${notice}`} style={styles.notice}><Ionicons name="information-circle-outline" size={16} color={C.gold} /><Text style={styles.noticeText}>{readerFriendlySourceNotice(notice)}</Text></View>)}
               <Pressable disabled={downloadBusy} onPress={() => setRemoveVisible(true)} style={styles.removeButton}><Text style={styles.removeText}>Remove download</Text></Pressable>
             </>
           ) : selectedWork.package && !selectedWork.blocker ? (
@@ -321,7 +322,7 @@ export default function LibraryHome({
         }}
         ItemSeparatorComponent={() => <View style={{ height: 9 }} />}
         ListEmptyComponent={query.trim() ? (
-          <View style={styles.emptyState}><View style={styles.emptyMark}><Ionicons name="search-outline" size={20} color={C.gold} /></View><Text style={styles.emptyTitle}>{loading ? 'Searching your library' : 'No matching passages'}</Text><Text style={styles.emptyBody}>{loading ? 'Looking through the works downloaded on this device.' : 'Try another search, or clear it to browse available works. Some works can’t be downloaded because of their rights.'}</Text>{!loading && <Pressable onPress={() => setQuery('')} style={styles.emptyAction}><Text style={styles.linkText}>Browse available works</Text></Pressable>}</View>
+         <View style={styles.emptyState}><View style={styles.emptyMark}><Ionicons name="search-outline" size={20} color={C.gold} /></View><Text style={styles.emptyTitle}>{loading ? 'Searching your library' : 'No matching passages'}</Text><Text style={styles.emptyBody}>{loading ? 'Looking through the works downloaded on this device.' : 'Try another search, or clear it to browse available works. Some works can’t be shared in the app.'}</Text>{!loading && <Pressable onPress={() => setQuery('')} style={styles.emptyAction}><Text style={styles.linkText}>Browse available works</Text></Pressable>}</View>
         ) : <View style={styles.emptyState}><Text style={styles.emptyTitle}>No works for this author</Text><Text style={styles.emptyBody}>Choose another author or view all works.</Text></View>}
         ListFooterComponent={<View style={styles.footer}><Text style={styles.footerTitle}>Three writers · carefully sourced</Text><Text style={styles.footerCopy}>This library keeps historical editions distinct from modern commentary and generative text.</Text></View>}
       />

@@ -9,6 +9,20 @@ export type SourceContent = {
   paragraphs: { paragraph: number; text: string }[];
 };
 
+export function readerFriendlySourceNotice(notice: string): string {
+  const lower = notice.toLowerCase();
+  if (lower.includes('public domain text. no rights reserved. may be distributed freely')) {
+    return 'The source says this text may be freely shared.';
+  }
+  if (lower.includes('public domain') && lower.includes('free to copy, share and build on')) {
+    return 'SermonIndex says this edition is free to copy, share, and adapt.';
+  }
+  if (lower.includes('public domain') && lower.includes('copy freely')) {
+    return 'The source marks this edition as free to copy and share.';
+  }
+  return notice;
+}
+
 export function coverageLabel(row: Pick<PassageMatch, 'verse_start' | 'verse_end' | 'title'>) {
   if (row.verse_start === null) {
     return row.title.endsWith(' · Chapter introduction') ? 'Chapter introduction' : 'Whole chapter';
@@ -45,7 +59,7 @@ export function sourceDraft(scripture: SelectedScripture, work: LibraryWork, row
   return [
     `Help me study ${scripture.reference}. Please distinguish your AI explanation from the original source; do not present generated wording as an author quotation or a source-verified answer.`,
     `SCRIPTURE · ${scripture.reference} · ${scripture.translation}\n${scripture.text}`,
-    `HISTORICAL SOURCE · ${work.author} · ${work.title}\nSection: ${content.title}\nCoverage: ${coverageLabel(row)} (not a narrower verse mapping)\nPassage attribution: ${content.attribution}\nEdition: ${work.edition}\nSource: ${content.source_url}\nRights: ${work.rights}\nEdition attribution: ${work.attribution}`,
+    `HISTORICAL SOURCE · ${work.author} · ${work.title}\nSection: ${content.title}\nCoverage: ${coverageLabel(row)} (not a narrower verse mapping)\nAuthor and contributor details: ${content.attribution}\nEdition: ${work.edition}\nSource: ${content.source_url}\nSharing details: ${work.rights}\nEdition attribution: ${work.attribution}`,
     `ORIGINAL SOURCE TEXT\n${content.paragraphs.map(p => p.text).join('\n\n')}`,
     'MY QUESTION (edit before sending):\nHow does this source relate to the selected Bible passage?',
   ].join('\n\n');

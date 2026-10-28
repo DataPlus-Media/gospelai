@@ -19,7 +19,7 @@ export default function PassageCatalogRow({
 }) {
   const hasChapterCommentary = state === 'download' && !!chapterLabel;
   const status = state === 'rights'
-    ? 'Rights blocked'
+    ? 'Not available here'
     : state === 'download'
       ? hasChapterCommentary
          ? 'Chapter commentary available · download required'
@@ -28,7 +28,7 @@ export default function PassageCatalogRow({
         ? 'Incomplete download'
          : 'No verified verse match';
   const description = state === 'rights'
-    ? work.blocker ?? 'This edition cannot currently be redistributed.'
+    ? work.blocker ?? 'This edition isn’t available in the app right now.'
     : state === 'download'
       ? hasChapterCommentary
         ? `Henry's commentary covers ${chapterLabel} as a chapter, not as verse-specific commentary.`
