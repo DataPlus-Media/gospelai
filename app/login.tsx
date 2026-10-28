@@ -57,6 +57,7 @@ type PendingChallenge =
 
 const Page = () => {
   const { type, provider } = useLocalSearchParams<{ type?: string; provider?: string }>();
+  const isLogin = type === 'login';
   const router = useRouter();
   const { signIn, isLoaded, setActive } = useSignIn();
   const { signUp, isLoaded: signUpLoaded, setActive: signupSetActive } = useSignUp();
@@ -96,6 +97,7 @@ const Page = () => {
     const details = [
       'Sign-in diagnostics v2',
       `flow=${flow}; phase=${authPhase.current}`,
+      `intent=${isLogin ? 'sign_in' : 'sign_up'}`,
       `platform=${Platform.OS}; app=${Constants.expoConfig?.version ?? 'unknown'}; build=${Constants.nativeBuildVersion ?? 'unavailable'}`,
       `service=${configuration.hostname}; environment=${configuration.environment}`,
       safeAuthErrorDiagnostics(error),
@@ -266,6 +268,7 @@ const Page = () => {
     try {
       const result = await runClerkOAuthFlow({
         strategy,
+        intent: isLogin ? 'signIn' : 'signUp',
         redirectUrl,
         signIn,
         signUp,
@@ -308,6 +311,10 @@ const Page = () => {
 
   const onSignUpPress = async () => {
     if (authDisabled || !signUpLoaded) return;
+    if (!signupFirstName.trim()) {
+      Alert.alert('First name needed', 'Enter the name you would like to see in your daily greeting.');
+      return;
+    }
     authPhase.current = 'account_creation';
     setAuthDiagnostic(null);
     setLoading(true);
@@ -316,6 +323,7 @@ const Page = () => {
       const result = await signUp.create({
         emailAddress: emailAddress.trim(),
         password,
+        firstName: signupFirstName.trim(),
       });
       await finishSignUp(result);
     } catch (err: any) {
@@ -500,8 +508,6 @@ const Page = () => {
     }
   };
 
-  const isLogin = type === 'login';
-
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -604,6 +610,20 @@ const Page = () => {
         {mode === 'auth' ? (
           <>
             <View style={styles.fieldGroup}>
+              {!isLogin && !pendingChallenge && (
+                <TextInput
+                  accessibilityLabel="First name"
+                  placeholder="First name"
+                  placeholderTextColor={Colors.textMuted}
+                  value={signupFirstName}
+                  onChangeText={setSignupFirstName}
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                  onSubmitEditing={() => emailRef.current?.focus()}
+                  style={styles.inputField}
+                />
+              )}
               {pendingChallenge && (
                 <View style={styles.challenge}>
                   <Text style={styles.challengeTitle}>

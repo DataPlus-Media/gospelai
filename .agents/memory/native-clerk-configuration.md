@@ -38,6 +38,12 @@ Clerk's mobile SSO redirect allowlist must contain the exact app return URL for 
 
 **How to apply:** Verify Native API and the exact mobile redirect before diagnosing the returned URL. Never bypass nonce validation or ask the user to create an OAuth application for social SSO.
 
+An exact callback match with no nonce does not by itself prove the redirect allowlist is wrong. Correlate it with the server-side provider event and the screen's account-creation intent.
+
+**Why:** Apple returned an empty, correctly addressed callback while Clerk logged `external_account_not_found` on a sign-in attempt that the user started from Create account. Repeating redirect setup did not explain that distinction.
+
+**How to apply:** Inspect which account flow was actually started and whether verification can transfer to the other flow. Do not assume choosing Create account in the UI changed the underlying OAuth request, or present an unverified native repair as confirmed by mocked tests.
+
 ## Identifying native failures
 
 Do not infer the platform from a missing native build number, or assume every sign-in screenshot represents the same authentication method.

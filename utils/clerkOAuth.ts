@@ -89,12 +89,14 @@ export function oauthCallbackDiagnostics(
  */
 export async function runClerkOAuthFlow({
   strategy,
+  intent = 'signIn',
   redirectUrl,
   signIn,
   signUp,
   openAuthSession,
 }: {
   strategy: 'oauth_apple' | 'oauth_google';
+  intent?: 'signIn' | 'signUp';
   redirectUrl: string;
   signIn: SignIn;
   signUp: SignUp;
@@ -104,8 +106,34 @@ export async function runClerkOAuthFlow({
   ) => Promise<{ type: string; url?: string }>;
 }): Promise<OAuthResult> {
   const provider = strategy === 'oauth_apple' ? 'Apple' : 'Google';
-  let phase = 'sign_in_create';
+  let phase = intent === 'signUp' ? 'sign_up_create' : 'sign_in_create';
   try {
+    if (intent === 'signUp') {
+      let signup = await signUp.create({ strategy, redirectUrl });
+      requireAuthResponseState(signup);
+      const continueSignup = async (): Promise<OAuthResult> => {
+        if (signup.verifications.externalAccount.status === 'transferable') {
+          phase = 'sign_in_transfer';
+          return { kind: 'signIn', resource: await signIn.create({ transfer: true }) };
+        }
+        return { kind: 'signUp', resource: signup };
+      };
+      if (signup.status === 'complete' || signup.verifications.externalAccount.status === 'transferable') {
+        return await continueSignup();
+      }
+      const externalUrl = signup.verifications.externalAccount.externalVerificationRedirectURL;
+      if (!externalUrl) {
+        if (signup.verifications.externalAccount.status === 'verified') return await continueSignup();
+        throw new AuthFlowError(`${provider} account creation could not start because the sign-in service did not provide a browser link.`);
+      }
+      phase = 'provider_browser';
+      const nonce = await requestOAuthNonce(provider, String(externalUrl), redirectUrl, openAuthSession);
+      if (nonce === null) return { kind: 'cancelled' };
+      phase = 'sign_up_reload';
+      signup = await signup.reload({ rotatingTokenNonce: nonce });
+      requireAuthResponseState(signup);
+      return await continueSignup();
+    }
     let resource = await signIn.create({ strategy, redirectUrl });
     requireAuthResponseState(resource);
 
@@ -135,9 +163,31 @@ export async function runClerkOAuthFlow({
     }
 
     phase = 'provider_browser';
-    const response = await openAuthSession(String(externalUrl), redirectUrl);
+    const nonce = await requestOAuthNonce(provider, String(externalUrl), redirectUrl, openAuthSession);
+    if (nonce === null) return { kind: 'cancelled' };
+    phase = 'sign_in_reload';
+    resource = await resource.reload({ rotatingTokenNonce: nonce });
+    requireAuthResponseState(resource);
+    return await continueWithResource();
+  } catch (error) {
+    if (error instanceof AuthFlowError) throw error;
+    throw new AuthFlowError(
+      clerkErrorMessage(error, 'Clerk could not complete sign-in. Please try again.'),
+      `provider=${provider}; phase=${phase}; ${safeAuthErrorDiagnostics(error)}`
+    );
+  }
+}
+
+/** Both entry paths require the same validated native return token. */
+async function requestOAuthNonce(
+  provider: string,
+  externalUrl: string,
+  redirectUrl: string,
+  openAuthSession: (url: string, redirectUrl: string) => Promise<{ type: string; url?: string }>
+): Promise<string | null> {
+    const response = await openAuthSession(externalUrl, redirectUrl);
     if (response.type === 'cancel' || response.type === 'dismiss') {
-      return { kind: 'cancelled' };
+      return null;
     }
     if (response.type !== 'success' || !response.url) {
       const resultType = /^(locked|opened)$/i.test(response.type) ? response.type : 'other';
@@ -168,15 +218,5 @@ export async function runClerkOAuthFlow({
         `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
       );
     }
-    phase = 'sign_in_reload';
-    resource = await resource.reload({ rotatingTokenNonce: nonce });
-    requireAuthResponseState(resource);
-    return await continueWithResource();
-  } catch (error) {
-    if (error instanceof AuthFlowError) throw error;
-    throw new AuthFlowError(
-      clerkErrorMessage(error, 'Clerk could not complete sign-in. Please try again.'),
-      `provider=${provider}; phase=${phase}; ${safeAuthErrorDiagnostics(error)}`
-    );
-  }
+    return nonce;
 }

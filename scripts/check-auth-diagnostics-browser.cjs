@@ -9,7 +9,15 @@ async function main() {
     args: ['--no-sandbox'],
   });
   try {
-    for (const flow of ['email_sign_in', 'email_sign_up', 'oauth_google', 'oauth_apple']) {
+    for (const testCase of [
+      { flow: 'email_sign_in', register: false },
+      { flow: 'email_sign_up', register: true },
+      { flow: 'oauth_google', register: false },
+      { flow: 'oauth_apple', register: false },
+      { flow: 'oauth_google', register: true },
+      { flow: 'oauth_apple', register: true },
+    ]) {
+      const { flow, register } = testCase;
       const context = await browser.newContext({
         viewport: { width: 402, height: 874 },
         permissions: ['clipboard-read', 'clipboard-write'],
@@ -28,23 +36,27 @@ async function main() {
         });
       });
       const page = await context.newPage();
-      await page.goto(`${base}/login?type=${flow === 'email_sign_up' ? 'register' : 'login'}`);
+      await page.goto(`${base}/login?type=${register ? 'register' : 'login'}`);
       const buttonName = flow === 'email_sign_in' ? 'Sign in'
         : flow === 'email_sign_up' ? 'Create account'
         : flow === 'oauth_google' ? 'Continue with Google' : 'Continue with Apple';
       const button = page.getByRole('button', { name: buttonName, exact: true });
       await expect(button).toBeEnabled({ timeout: 60000 });
-      if (flow === 'email_sign_up') {
+      if (register) {
         // Simulate rejection before browser bot-protection runs; native signup
         // does not use the web Turnstile widget. This is isolated test state.
         await page.evaluate(() => {
-          window.Clerk.client.signUp.create = async () => {
+          window.Clerk.client.signUp.create = async (params) => {
             window.__syntheticSignupRejected = true;
+            window.__syntheticSignupParams = params;
             throw { errors: [{ code: 'form_param_format_invalid', message: 'PRIVATE_SERVER_MESSAGE' }] };
           };
         });
       }
       if (flow.startsWith('email')) {
+        if (flow === 'email_sign_up') {
+          await page.getByRole('textbox', { name: 'First name', exact: true }).fill('Synthetic');
+        }
         await page.getByRole('textbox', { name: 'Email address', exact: true }).fill('synthetic@example.invalid');
         await page.getByLabel('Password', { exact: true }).fill('SYNTHETIC_PASSWORD');
       }
@@ -52,12 +64,19 @@ async function main() {
       await expect(page.getByText(/Sign-in diagnostics v2/)).toBeVisible({ timeout: 15000 });
       const report = await page.getByText(/Sign-in diagnostics v2/).innerText();
       assert.match(report, new RegExp(`flow=${flow}`));
+      assert.match(report, new RegExp(`intent=${register ? 'sign_up' : 'sign_in'}`));
       assert.match(report, /category=form_param_format_invalid/);
-      if (flow.startsWith('oauth')) assert.match(report, /phase=sign_in_create/);
+      if (flow.startsWith('oauth')) assert.match(report, new RegExp(`phase=${register ? 'sign_up_create' : 'sign_in_create'}`));
       else assert.match(report, new RegExp(`phase=${flow === 'email_sign_in' ? 'password_submission' : 'account_creation'}`));
       assert.doesNotMatch(report, /PRIVATE_SERVER_MESSAGE|SYNTHETIC_PASSWORD|synthetic@example/);
-      if (flow === 'email_sign_up') {
+      if (register) {
         assert.equal(await page.evaluate(() => window.__syntheticSignupRejected), true);
+        const params = await page.evaluate(() => window.__syntheticSignupParams);
+        if (flow === 'email_sign_up') {
+          assert.equal(params.firstName, 'Synthetic', 'email registration must persist the entered name');
+        } else {
+          assert.equal(params.strategy, flow, 'provider registration must use the signup resource');
+        }
         assert.equal(intercepted, 0, 'synthetic signup must not reach the network');
       } else {
         assert.equal(intercepted, 1, 'submission must be intercepted, not sent to Clerk');
@@ -66,7 +85,7 @@ async function main() {
       await expect(page.getByText('Details copied', { exact: true })).toBeVisible();
       assert.equal(await page.evaluate(() => navigator.clipboard.readText()), report);
       await expect(button).toBeEnabled();
-      console.log(`PASS ${flow}: safe details visible, copyable, and retry enabled`);
+      console.log(`PASS ${flow} (${register ? 'register' : 'login'}): correct resource, safe copyable details, retry enabled`);
       await context.close();
     }
   } finally {

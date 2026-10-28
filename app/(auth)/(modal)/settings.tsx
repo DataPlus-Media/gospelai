@@ -13,7 +13,8 @@ import { useAuth, useOAuth, useUser } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { clerkErrorMessage } from '@/utils/clerkAuth';
 import {
   Alert,
   Platform,
@@ -40,6 +41,30 @@ export default function SettingsScreen() {
   const [busy, setBusy] = useState(false);
   const [deleteInputFocused, setDeleteInputFocused] = useState(false);
   const [focusedAction, setFocusedAction] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [nameStatus, setNameStatus] = useState('');
+  useEffect(() => {
+    setFirstName(user?.firstName ?? '');
+  }, [user?.id, user?.firstName]);
+
+  const saveName = async () => {
+    if (!user || busy) return;
+    const name = firstName.trim();
+    if (!name) {
+      setNameStatus('Enter your first name.');
+      return;
+    }
+    setBusy(true);
+    setNameStatus('');
+    try {
+      await user.update({ firstName: name });
+      setNameStatus('Name saved. Your Today greeting will use this name.');
+    } catch (error) {
+      setNameStatus(clerkErrorMessage(error, 'Couldn’t save your name. Please try again.'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   // Delete account UI state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -189,6 +214,30 @@ export default function SettingsScreen() {
                     <Text style={styles.signedSub}>You’re signed in</Text>
                   </View>
                 </View>
+
+                <Text style={styles.profileLabel}>First name for your daily greeting</Text>
+                <TextInput
+                  accessibilityLabel="First name"
+                  value={firstName}
+                  onChangeText={(value) => { setFirstName(value); setNameStatus(''); }}
+                  placeholder="First name"
+                  placeholderTextColor={Colors.textMuted}
+                  autoComplete="given-name"
+                  autoCapitalize="words"
+                  editable={!busy}
+                  style={styles.profileInput}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Save first name"
+                  disabled={busy}
+                  onPress={() => void saveName()}
+                  style={({ pressed }) => [styles.rowBtn, pressed && styles.pressed, busy && { opacity: 0.6 }]}
+                >
+                  <Ionicons name="save-outline" size={20} color={Colors.coral} />
+                  <Text style={styles.signedSub}>Save name</Text>
+                </Pressable>
+                {!!nameStatus && <Text accessibilityLiveRegion="polite" style={styles.helperText}>{nameStatus}</Text>}
 
                   <Pressable
                     accessibilityRole="button"
@@ -494,6 +543,17 @@ const styles = StyleSheet.create({
   },
 
   // Signed-in block
+  profileLabel: { color: Colors.textMuted, fontSize: 13, marginBottom: 8 },
+  profileInput: {
+    color: Colors.text,
+    backgroundColor: Colors.surfaceRaised,
+    borderColor: Colors.border,
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    minHeight: 50,
+  },
   signedHeader: {
     flexDirection: 'row',
     alignItems: 'center',

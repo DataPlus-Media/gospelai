@@ -323,6 +323,56 @@ async function run() {
     firstFactorVerification: { externalVerificationRedirectURL: 'https://provider.example/authorize' },
   };
   const success = { type: 'success', url: `${redirectUrl}?rotating_token_nonce=verified_nonce` };
+  // Registration must start with signUp, not silently reuse the sign-in endpoint.
+  for (const strategy of ['oauth_apple', 'oauth_google']) {
+    for (const outcome of ['complete', 'requirements', 'existing', 'cancel', 'missing_nonce']) {
+      let signupCreates = 0, signupReloads = 0, signInTransfers = 0;
+      const afterReturn = {
+        status: outcome === 'complete' ? 'complete' : 'missing_requirements',
+        createdSessionId: outcome === 'complete' ? 'signup_session' : null,
+        missingFields: outcome === 'requirements' ? ['first_name'] : [],
+        verifications: { externalAccount: { status: outcome === 'existing' ? 'transferable' : 'verified' } },
+      };
+      const runSignup = () => runClerkOAuthFlow({
+        strategy, redirectUrl, intent: 'signUp',
+        signIn: { create: async (params) => {
+          assert.deepEqual(params, { transfer: true }, 'existing identities may only transfer a verified attempt');
+          signInTransfers++;
+          return { status: 'complete', createdSessionId: 'existing_session' };
+        } },
+        signUp: { create: async (params) => {
+          signupCreates++;
+          assert.deepEqual(params, { strategy, redirectUrl });
+          return {
+            status: 'missing_requirements',
+            verifications: { externalAccount: {
+              status: 'unverified', externalVerificationRedirectURL: 'https://provider.example/authorize',
+            } },
+            reload: async ({ rotatingTokenNonce }) => {
+              signupReloads++;
+              assert.equal(rotatingTokenNonce, 'verified_nonce');
+              return afterReturn;
+            },
+          };
+        } },
+        openAuthSession: async () => outcome === 'cancel' ? { type: 'cancel' }
+          : outcome === 'missing_nonce' ? { type: 'success', url: redirectUrl } : success,
+      });
+      if (outcome === 'missing_nonce') {
+        await assert.rejects(runSignup(), /return link is incomplete/);
+        assert.equal(signupReloads, 0);
+        assert.equal(signInTransfers, 0);
+      } else {
+        const result = await runSignup();
+        assert.equal(result.kind, outcome === 'cancel' ? 'cancelled' : outcome === 'existing' ? 'signIn' : 'signUp');
+        assert.equal(signupReloads, outcome === 'cancel' ? 0 : 1);
+        assert.equal(signInTransfers, outcome === 'existing' ? 1 : 0);
+        if (outcome === 'requirements') assert.deepEqual(getSignUpNextStep(result.resource), { kind: 'fields', fields: ['first_name'] });
+        if (outcome === 'complete') assert.equal(result.resource.createdSessionId, 'signup_session');
+      }
+      assert.equal(signupCreates, 1);
+    }
+  }
   let scenario = await oauthScenario(redirectState, success, { status: 'complete', createdSessionId: 'session_new' });
   assert.equal(scenario.result.resource.createdSessionId, 'session_new');
   assert.equal(scenario.reloads, 1);
