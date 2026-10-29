@@ -72,12 +72,20 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
       tint="dark"
       style={[{ paddingBottom: bottom, paddingTop: 10 }, Platform.OS === 'web' && styles.webBlur]}
     >
-      <View style={[styles.row, Platform.OS === 'web' && styles.webRow]}>
+      <View style={[
+        styles.row,
+        Platform.OS === 'ios' && styles.iosRow,
+        Platform.OS === 'web' && styles.webRow,
+      ]}>
         <ATouchableOpacity
           accessibilityRole="button"
           accessibilityLabel="More chat options"
           onPress={expandItems}
-          style={[styles.roundBtn, expandButtonStyle]}
+          style={[
+            styles.roundBtn,
+            Platform.OS === 'ios' && styles.iosRoundBtn,
+            expandButtonStyle,
+          ]}
         >
           <Ionicons name="add" size={24} color={Colors.coral} />
         </ATouchableOpacity>
@@ -104,7 +112,10 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
           accessibilityLabel="Write a message"
           autoFocus={false}
           editable={!disabled}
-          style={styles.messageInput}
+          style={[
+            styles.messageInput,
+            Platform.OS === 'ios' && styles.iosMessageInput,
+          ]}
           onFocus={collapseItems}
           onChangeText={onChangeText}
           value={message}
@@ -130,6 +141,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
   },
+  iosRow: {
+    paddingHorizontal: 16,
+  },
   webBlur: {
     width: '100%',
   },
@@ -148,6 +162,16 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surfaceRaised,
   },
+  iosMessageInput: {
+    minHeight: 48,
+    maxHeight: 120,
+    marginHorizontal: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 24,
+    fontSize: 16,
+    lineHeight: 20,
+  },
   roundBtn: {
     width: 44,
     height: 44,
@@ -155,6 +179,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.plum,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iosRoundBtn: {
+    borderRadius: 22,
   },
   buttonView: {
     flexDirection: 'row',
