@@ -33,6 +33,7 @@ async function main() {
       await expect(page.getByRole('button', { name: 'Continue with Google' })).toBeDisabled();
       await expect(page.getByText(/Sign-in is taking longer than expected/)).toBeVisible({ timeout: 20000 });
       await expect(page.getByRole('button', { name: 'Retry sign-in', exact: true })).toBeEnabled();
+      await expect(page.getByText(/Service:|Platform:|Build:|Startup:|environment=/i)).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Continue as a guest' })).toBeEnabled();
       release();
       await expect(primary).toBeEnabled({ timeout: 60000 });

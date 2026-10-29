@@ -36,6 +36,7 @@ const { authStartupState, watchAuthStartup, publicAuthConfiguration, retryAuthSt
 
 const {
   activateSessionIfPresent,
+  AuthFlowError,
   clerkErrorMessage,
   getSignInFactorPlan,
   getSignUpNextStep,
@@ -176,6 +177,9 @@ async function run() {
     'Clerk errors should remain actionable without exposing arbitrary API text'
   );
   assert.equal(clerkErrorMessage(new Error('private@example.invalid'), 'Fallback'), 'Fallback');
+  const diagnosticError = new AuthFlowError('Please try again.', 'provider=Apple; rotating_token_nonce=no');
+  assert.equal(diagnosticError.message, 'Please try again.');
+  assert.equal(diagnosticError.diagnostics, 'provider=Apple; rotating_token_nonce=no');
 
   assert.deepEqual(
     getSignUpNextStep({
@@ -197,7 +201,7 @@ async function run() {
   );
   assert.match(
     signUpRecoveryMessage({ verifications: { emailAddress: { supportedStrategies: ['email_link'] } } }),
-    /email verification codes/
+    /Check your email for a link/
   );
   assert.equal(
     getSignUpNextStep({
@@ -213,24 +217,25 @@ async function run() {
     missingFields: ['username', 'private@example.invalid'],
     unverifiedFields: ['email_address', 'token_do_not_log'],
   });
-  assert.match(safeSummary, /username/);
-  assert.match(safeSummary, /email_address/);
-  assert.doesNotMatch(safeSummary, /private@|token_do_not_log/);
+  assert.match(safeSummary, /one more step/i);
+  assert.doesNotMatch(safeSummary, /status=|missing=|unverified=|username|email_address|private@|token_do_not_log/);
   for (const status of [null, undefined, '']) {
     assert.throws(
       () => requireAuthResponseState({ status }),
       (error) => {
         assert.equal(error.code, 'auth_service_unavailable');
-        assert.match(clerkErrorMessage(error, 'Fallback'), /couldn’t reach the sign-in service/);
+        assert.match(clerkErrorMessage(error, 'Fallback'), /couldn’t connect to sign-in/);
         return true;
       },
       'an empty native resource must be treated as a service failure, not a verification step'
     );
   }
   assert.doesNotThrow(() => requireAuthResponseState({ status: 'missing_requirements' }));
-  assert.match(clerkErrorMessage({ code: 'network_error' }, 'Fallback'), /DNS/);
-  assert.match(clerkErrorMessage(new TypeError('Network request failed'), 'Fallback'), /DNS/);
-  assert.match(clerkErrorMessage({ errors: [{ code: 'native_api_disabled' }] }, 'Fallback'), /Native API/);
+  assert.match(clerkErrorMessage({ code: 'network_error' }, 'Fallback'), /Check your internet connection/);
+  assert.match(clerkErrorMessage(new TypeError('Network request failed'), 'Fallback'), /Check your internet connection/);
+  assert.doesNotMatch(clerkErrorMessage({ code: 'network_error' }, 'Fallback'), /DNS|service domain/i);
+  assert.match(clerkErrorMessage({ errors: [{ code: 'native_api_disabled' }] }, 'Fallback'), /Mobile sign-in isn’t available/);
+  assert.doesNotMatch(clerkErrorMessage({ errors: [{ code: 'native_api_disabled' }] }, 'Fallback'), /Native API|Clerk/);
   const layoutSource = fs.readFileSync(path.resolve(__dirname, '../app/_layout.tsx'), 'utf8');
   assert.match(layoutSource, /rethrowOfflineNetworkErrors:\s*true/,
     'native networking failures must not be swallowed by Clerk');
@@ -359,7 +364,11 @@ async function run() {
           : outcome === 'missing_nonce' ? { type: 'success', url: redirectUrl } : success,
       });
       if (outcome === 'missing_nonce') {
-        await assert.rejects(runSignup(), /return link is incomplete/);
+        await assert.rejects(runSignup(), (error) =>
+          /couldn’t finish sign-in/.test(error.userMessage) &&
+          /rotating_token_nonce=no/.test(error.diagnostics) &&
+          !/rotating_token_nonce/.test(error.message)
+        );
         assert.equal(signupReloads, 0);
         assert.equal(signInTransfers, 0);
       } else {
@@ -404,7 +413,7 @@ async function run() {
   }
   await assert.rejects(
     oauthScenario({ status: 'needs_first_factor', firstFactorVerification: { externalVerificationRedirectURL: null } }),
-    /Google sign-in could not start/,
+    /start sign-in with Google/,
     'missing redirect must produce a useful error, not null.toString'
   );
   await assert.rejects(
@@ -435,7 +444,8 @@ async function run() {
   }
   await assert.rejects(
     oauthScenario(redirectState, { type: 'success', url: 'gospelsai://wrong/PRIVATE_EMAIL_TOKEN?rotating_token_nonce=verified_nonce' }),
-    error => /unexpected sign-in destination/.test(error.message) &&
+    error => /couldn’t finish sign-in/.test(error.userMessage) &&
+      /callback_match=no/.test(error.diagnostics) &&
       !error.message.includes(secret),
     'valid tokens from mismatched destinations must not be used or disclosed'
   );
@@ -445,11 +455,11 @@ async function run() {
   ]) {
     await assert.rejects(
       oauthScenario(redirectState, { type: 'success', url: redirectUrl }, undefined, strategy),
-      (error) => error.message.includes(`provider=${provider}`) &&
-        /return link is incomplete/.test(error.message) &&
-        /callback_match=yes/.test(error.message) &&
-        /rotating_token_nonce=no/.test(error.message) &&
-        !/secret_nonce/.test(error.message),
+      (error) => error.diagnostics.includes(`provider=${provider}`) &&
+        /couldn’t finish sign-in/.test(error.userMessage) &&
+        /callback_match=yes/.test(error.diagnostics) &&
+        /rotating_token_nonce=no/.test(error.diagnostics) &&
+        !/secret_nonce|rotating_token_nonce/.test(error.message),
       `incomplete ${provider} callbacks should report safe markers without reloading or leaking tokens`
     );
   }
@@ -458,13 +468,14 @@ async function run() {
       type: 'success',
       url: `${redirectUrl}?error=access_denied&state=private_state`,
     }),
-    (error) => /error=yes/.test(error.message) &&
-      !/access_denied|private_state/.test(error.message),
+    (error) => /error=yes/.test(error.diagnostics) &&
+      !/access_denied|private_state|error=yes/.test(error.message),
     'provider error details must be reported without exposing parameter values'
   );
   await assert.rejects(
     oauthScenario(redirectState, { type: 'success', url: 'invalid callback secret' }),
-    (error) => /returned=invalid/.test(error.message) &&
+    (error) => /couldn’t finish sign-in/.test(error.userMessage) &&
+      /returned=invalid/.test(error.diagnostics) &&
       !/callback secret/.test(error.message),
     'malformed callback URLs must be reported without echoing raw input'
   );

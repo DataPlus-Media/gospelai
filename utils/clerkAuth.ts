@@ -8,7 +8,7 @@ export type SignInFactorStrategy =
 // can include user identifiers or request details, so map their codes below.
 export class AuthFlowError extends Error {
   constructor(public readonly userMessage: string, public readonly diagnostics?: string) {
-    super(diagnostics ? `${userMessage} Safe diagnostics: ${diagnostics}` : userMessage);
+    super(userMessage);
     this.name = 'AuthFlowError';
   }
 }
@@ -162,20 +162,9 @@ export function requireAuthResponseState(resource: { status?: string | null }): 
 export function signUpRecoveryMessage(signUp: SignUpContinuation): string {
   const strategies = signUp.verifications?.emailAddress?.supportedStrategies;
   if (strategies?.includes('email_link') && !strategies.includes('email_code')) {
-    return 'This account requires an email verification link, which this mobile screen cannot complete. Contact support to enable email verification codes. Your account has not finished verification.';
+    return 'Your account needs an email verification step. Check your email for a link to finish creating your account. If it doesn’t arrive, contact support.';
   }
-  // Only allow known state labels into diagnostics, never arbitrary values,
-  // resource snapshots, email addresses, IDs, tokens, or keys.
-  const allowedFields = new Set([
-    'email_address', 'phone_number', 'first_name', 'last_name',
-    'username', 'password', 'legal_accepted', 'web3_wallet',
-  ]);
-  const labels = (fields?: string[] | null) =>
-    fields?.filter((field) => allowedFields.has(field)).join(', ') || 'none';
-  const status = ['missing_requirements', 'complete', 'abandoned'].includes(signUp.status ?? '')
-    ? signUp.status
-    : 'unknown';
-  return `Your account needs another step. Contact support with these details: status=${status}; missing=${labels(signUp.missingFields)}; unverified=${labels(signUp.unverifiedFields)}.`;
+  return 'Your account needs one more step before it’s ready. Contact support for help finishing setup.';
 }
 
 export function hasSessionId(sessionId: unknown): sessionId is string {
@@ -198,10 +187,10 @@ export function clerkErrorMessage(error: any, fallback: string): string {
     code === 'auth_service_unavailable' ||
     /network request failed|failed to fetch/i.test(error?.message ?? '')
   ) {
-    return 'We couldn’t reach the sign-in service. Check your connection and try again. If this continues, contact support so the sign-in domain and DNS settings can be checked.';
+    return 'We couldn’t connect to sign-in. Check your internet connection and try again. If it continues, contact support.';
   }
   if (code === 'native_api_disabled') {
-    return 'Mobile sign-in is not enabled for this service. Contact support to enable the Native API for the Clerk instance used by this build.';
+    return 'Mobile sign-in isn’t available right now. Try another sign-in option or contact support.';
   }
   const messages: Record<string, string> = {
     form_password_incorrect: 'The email or password could not be verified. Check your details and try again.',

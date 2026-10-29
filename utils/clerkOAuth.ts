@@ -124,7 +124,7 @@ export async function runClerkOAuthFlow({
       const externalUrl = signup.verifications.externalAccount.externalVerificationRedirectURL;
       if (!externalUrl) {
         if (signup.verifications.externalAccount.status === 'verified') return await continueSignup();
-        throw new AuthFlowError(`${provider} account creation could not start because the sign-in service did not provide a browser link.`);
+        throw new AuthFlowError(`We couldn’t start sign-in with ${provider}. Please try again or use another sign-in option.`);
       }
       phase = 'provider_browser';
       const nonce = await requestOAuthNonce(provider, String(externalUrl), redirectUrl, openAuthSession);
@@ -158,7 +158,7 @@ export async function runClerkOAuthFlow({
     if (!externalUrl) {
       if (getSignInFactorPlan(resource)) return await continueWithResource();
       throw new AuthFlowError(
-        `${provider} sign-in could not start because the sign-in service did not provide a browser link. Check the provider settings in the Clerk instance used by this build. This is separate from the app’s return URL.`
+        `We couldn’t start sign-in with ${provider}. Please try again or use another sign-in option.`
       );
     }
 
@@ -172,7 +172,7 @@ export async function runClerkOAuthFlow({
   } catch (error) {
     if (error instanceof AuthFlowError) throw error;
     throw new AuthFlowError(
-      clerkErrorMessage(error, 'Clerk could not complete sign-in. Please try again.'),
+      clerkErrorMessage(error, 'We couldn’t complete sign-in. Please try again or use another sign-in option.'),
       `provider=${provider}; phase=${phase}; ${safeAuthErrorDiagnostics(error)}`
     );
   }
@@ -192,7 +192,7 @@ async function requestOAuthNonce(
     if (response.type !== 'success' || !response.url) {
       const resultType = /^(locked|opened)$/i.test(response.type) ? response.type : 'other';
       throw new AuthFlowError(
-        'The sign-in browser did not finish. Close it and try again.',
+        'We couldn’t finish sign-in. Please try again or use another sign-in option.',
         `provider=${provider}; phase=provider_return; browser_result=${resultType}; expected=${safeCallbackDestination(redirectUrl)}; returned=missing`
       );
     }
@@ -201,20 +201,20 @@ async function requestOAuthNonce(
       callback = new URL(response.url);
     } catch {
       throw new AuthFlowError(
-        'The sign-in return link could not be read. Please start sign-in again.',
+        'We couldn’t finish sign-in. Please try again or use another sign-in option.',
         `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
       );
     }
     if (!callbackMatches(redirectUrl, response.url)) {
       throw new AuthFlowError(
-        'The provider returned to an unexpected sign-in destination. Please start sign-in again.',
+        'We couldn’t finish sign-in. Please try again or use another sign-in option.',
         `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
       );
     }
     const nonce = callback.searchParams.get('rotating_token_nonce');
     if (!nonce) {
       throw new AuthFlowError(
-        'The sign-in return link is incomplete. Please start sign-in again.',
+        'We couldn’t finish sign-in. Please try again or use another sign-in option.',
         `provider=${provider}; ${oauthCallbackDiagnostics(redirectUrl, response.url, response.type)}`
       );
     }

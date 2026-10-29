@@ -9,7 +9,6 @@ import { reloadAppAsync } from 'expo';
 import Constants from 'expo-constants';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import * as Clipboard from 'expo-clipboard';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -77,8 +76,7 @@ const Page = () => {
   const [retryError, setRetryError] = useState(false);
   const startedProvider = useRef<string | null>(null);
   const authPhase = useRef('idle');
-  const [authDiagnostic, setAuthDiagnostic] = useState<string | null>(null);
-  const [detailsCopied, setDetailsCopied] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
 
   // reset-password specific
   const [resetCode, setResetCode] = useState('');
@@ -103,17 +101,12 @@ const Page = () => {
       safeAuthErrorDiagnostics(error),
       error instanceof AuthFlowError ? error.diagnostics : undefined,
     ].filter(Boolean).join('\n');
-    setAuthDiagnostic(details);
-    setDetailsCopied(false);
-    Alert.alert(title, `${clerkErrorMessage(error, fallback)}\n\nYou can copy the safe sign-in details on this page after closing this message.`);
-  };
-  const copyAuthDetails = async () => {
-    if (!authDiagnostic) return;
-    try {
-      await Clipboard.setStringAsync(authDiagnostic);
-      setDetailsCopied(true);
-    } catch {
-      Alert.alert('Couldn’t copy details', 'You can select the details on this page or take a screenshot instead.');
+    console.warn('[GospelAI auth diagnostics]', details);
+    const message = clerkErrorMessage(error, fallback);
+    if (Platform.OS === 'web') {
+      setAuthErrorMessage(`${title}: ${message}`);
+    } else {
+      Alert.alert(title, message);
     }
   };
   const retryStartup = async () => {
@@ -121,6 +114,7 @@ const Page = () => {
     retryLock.current = true;
     setRetrying(true);
     setRetryError(false);
+    setAuthErrorMessage(null);
     try {
       await retryAuthStartup(() => Platform.OS === 'web'
         ? Promise.resolve(window.location.reload())
@@ -262,7 +256,7 @@ const Page = () => {
   const doOAuth = async (strategy: 'oauth_apple' | 'oauth_google') => {
     if (authDisabled) return;
     authPhase.current = 'provider_flow';
-    setAuthDiagnostic(null);
+    setAuthErrorMessage(null);
     setLoading(true);
     setPendingChallenge(null);
     try {
@@ -283,7 +277,7 @@ const Page = () => {
       reportAuthFailure(
         'Provider sign-in could not finish',
         err, strategy,
-        'Clerk could not complete authentication. Check your connection and try again.'
+        'We couldn’t complete sign-in. Please try again or use another sign-in option.'
       );
     } finally {
       setLoading(false);
@@ -316,7 +310,7 @@ const Page = () => {
       return;
     }
     authPhase.current = 'account_creation';
-    setAuthDiagnostic(null);
+    setAuthErrorMessage(null);
     setLoading(true);
 
     try {
@@ -329,7 +323,7 @@ const Page = () => {
     } catch (err: any) {
       reportAuthFailure(
         'Couldn’t create account',
-        err, 'email_sign_up', 'Clerk could not create the account. Please try again.'
+        err, 'email_sign_up', 'We couldn’t create your account. Check your details and try again.'
       );
     } finally {
       setLoading(false);
@@ -339,7 +333,7 @@ const Page = () => {
   const onSignInPress = async () => {
     if (authDisabled || !isLoaded) return;
     authPhase.current = 'password_submission';
-    setAuthDiagnostic(null);
+    setAuthErrorMessage(null);
     setLoading(true);
 
     try {
@@ -352,7 +346,7 @@ const Page = () => {
     } catch (err: any) {
       reportAuthFailure(
         'Couldn’t sign in',
-        err, 'email_sign_in', 'Clerk could not complete sign in. Please try again.'
+        err, 'email_sign_in', 'We couldn’t sign you in. Check your details and try again.'
       );
     } finally {
       setLoading(false);
@@ -553,19 +547,13 @@ const Page = () => {
                 : 'Create an account to get started with GospelAI.'}
             </Text>
 
-        {authDiagnostic && (
-          <View style={styles.challenge} accessibilityLiveRegion="polite">
-            <Text style={styles.challengeTitle}>Sign-in details</Text>
-            <Text style={styles.diagnostics}>Safe to share with support. No passwords or sign-in tokens are included.</Text>
-            <Text selectable style={styles.diagnostics}>{authDiagnostic}</Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              accessibilityLabel="Copy sign-in details"
-              style={[defaultStyles.btn, styles.secondaryBtn]}
-              onPress={copyAuthDetails}
-            >
-              <Text style={styles.secondaryText}>{detailsCopied ? 'Details copied' : 'Copy sign-in details'}</Text>
-            </TouchableOpacity>
+        {Platform.OS === 'web' && authErrorMessage && (
+          <View
+            style={[styles.authStatus, styles.authError]}
+            accessibilityLiveRegion="polite"
+            accessibilityRole="alert"
+          >
+            <Text style={styles.authErrorText}>{authErrorMessage}</Text>
           </View>
         )}
         {!authReady && (
@@ -578,7 +566,7 @@ const Page = () => {
             <Text style={styles.authStatusText}>
               {startupUnavailable
                 ? startup === 'failed'
-                  ? 'The sign-in service could not initialize. Check your connection, then retry sign-in. If this continues, share the service details below with support.'
+                  ? 'Sign-in is unavailable right now. Try again, or continue as a guest. If it continues, contact support.'
                   : 'Sign-in is taking longer than expected. Check your connection, then retry sign-in. You can also continue as a guest.'
                 : 'Connecting to the sign-in service… You can enter your details while it loads.'}
             </Text>
@@ -586,9 +574,6 @@ const Page = () => {
         )}
         {startupUnavailable && (
           <View>
-            <Text selectable style={styles.diagnostics}>
-              {`Service: ${configuration.hostname} · ${configuration.environment}\nPlatform: ${Platform.OS} · App: ${Constants.expoConfig?.version ?? 'unknown'} · Build: ${Constants.nativeBuildVersion ?? 'unavailable'} · Startup: ${startup}`}
-            </Text>
             <TouchableOpacity
               style={[defaultStyles.btn, styles.secondaryBtn, retrying && styles.disabled]}
               onPress={retryStartup}
@@ -598,7 +583,7 @@ const Page = () => {
             >
               <Text style={styles.secondaryText}>{retrying ? 'Restarting…' : 'Retry sign-in'}</Text>
             </TouchableOpacity>
-            <Text style={styles.diagnostics}>
+            <Text style={styles.retryHelp}>
               Retry reloads the app. You’ll need to re-enter your details; saved sessions and study stay on this device.
             </Text>
             {retryError && <Text accessibilityRole="alert" style={styles.authStatusText}>
@@ -918,12 +903,6 @@ const Page = () => {
 
 const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
-  diagnostics: {
-    color: Colors.textMuted,
-    fontSize: 11,
-    lineHeight: 17,
-    marginBottom: 14,
-  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -1001,6 +980,24 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: 13,
     lineHeight: 19,
+  },
+  authError: {
+    alignItems: 'flex-start',
+    borderColor: Colors.coral,
+    backgroundColor: Colors.coralTint,
+  },
+  authErrorText: {
+    flex: 1,
+    color: Colors.text,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  retryHelp: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 8,
+    marginBottom: 14,
   },
   loadingText: {
     color: Colors.text,

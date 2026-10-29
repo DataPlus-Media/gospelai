@@ -20,7 +20,6 @@ async function main() {
       const { flow, register } = testCase;
       const context = await browser.newContext({
         viewport: { width: 402, height: 874 },
-        permissions: ['clipboard-read', 'clipboard-write'],
       });
       let intercepted = 0;
       await context.route(/\/v1\/client\/sign_(ins|ups)(?:\?|$)/, async route => {
@@ -61,14 +60,12 @@ async function main() {
         await page.getByLabel('Password', { exact: true }).fill('SYNTHETIC_PASSWORD');
       }
       await button.click();
-      await expect(page.getByText(/Sign-in diagnostics v2/)).toBeVisible({ timeout: 15000 });
-      const report = await page.getByText(/Sign-in diagnostics v2/).innerText();
-      assert.match(report, new RegExp(`flow=${flow}`));
-      assert.match(report, new RegExp(`intent=${register ? 'sign_up' : 'sign_in'}`));
-      assert.match(report, /category=form_param_format_invalid/);
-      if (flow.startsWith('oauth')) assert.match(report, new RegExp(`phase=${register ? 'sign_up_create' : 'sign_in_create'}`));
-      else assert.match(report, new RegExp(`phase=${flow === 'email_sign_in' ? 'password_submission' : 'account_creation'}`));
-      assert.doesNotMatch(report, /PRIVATE_SERVER_MESSAGE|SYNTHETIC_PASSWORD|synthetic@example/);
+      const userError = page.getByRole('alert');
+      await expect(userError).toBeVisible({ timeout: 15000 });
+      const renderedError = await userError.innerText();
+      assert.match(renderedError, /Couldn’t sign in|Couldn’t create account|Provider sign-in could not finish/);
+      assert.doesNotMatch(renderedError, /PRIVATE_SERVER_MESSAGE|SYNTHETIC_PASSWORD|synthetic@example/);
+      await expect(page.getByText(/Sign-in diagnostics v2|flow=email_|intent=sign_|platform=|service=|category=|error_type=|http=/i)).toHaveCount(0);
       if (register) {
         assert.equal(await page.evaluate(() => window.__syntheticSignupRejected), true);
         const params = await page.evaluate(() => window.__syntheticSignupParams);
@@ -81,11 +78,8 @@ async function main() {
       } else {
         assert.equal(intercepted, 1, 'submission must be intercepted, not sent to Clerk');
       }
-      await page.getByRole('button', { name: 'Copy sign-in details' }).click();
-      await expect(page.getByText('Details copied', { exact: true })).toBeVisible();
-      assert.equal(await page.evaluate(() => navigator.clipboard.readText()), report);
       await expect(button).toBeEnabled();
-      console.log(`PASS ${flow} (${register ? 'register' : 'login'}): correct resource, safe copyable details, retry enabled`);
+      console.log(`PASS ${flow} (${register ? 'register' : 'login'}): friendly error shown, technical diagnostics hidden, retry enabled`);
       await context.close();
     }
   } finally {
