@@ -162,7 +162,7 @@ export function requireAuthResponseState(resource: { status?: string | null }): 
 export function signUpRecoveryMessage(signUp: SignUpContinuation): string {
   const strategies = signUp.verifications?.emailAddress?.supportedStrategies;
   if (strategies?.includes('email_link') && !strategies.includes('email_code')) {
-    return 'Your account needs an email verification step. Check your email for a link to finish creating your account. If it doesn’t arrive, contact support.';
+    return 'Your account needs another email verification step. Try another sign-in option or contact support for help finishing setup.';
   }
   return 'Your account needs one more step before it’s ready. Contact support for help finishing setup.';
 }

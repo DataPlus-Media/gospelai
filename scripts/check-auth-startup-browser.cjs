@@ -60,6 +60,22 @@ async function main() {
       console.log(`PASS ${type}: retry reloads, clears form, restores ready controls`);
 
       let requests = 0;
+      if (type === 'register') {
+        await page.getByRole('textbox', { name: 'First name', exact: true }).fill('Synthetic');
+        // Avoid web bot protection and any real account creation. Exercise the
+        // same asynchronous failure/recovery path using isolated SDK state.
+        await page.evaluate(() => {
+          window.__syntheticStartupSignupRequests = 0;
+          window.Clerk.client.signUp.create = async () => {
+            window.__syntheticStartupSignupRequests++;
+            await new Promise(resolve => setTimeout(resolve, 600));
+            throw { errors: [{ code: 'form_password_incorrect', message: 'Check your details.' }] };
+          };
+        });
+      }
+      const submissionCount = () => type === 'register'
+        ? page.evaluate(() => window.__syntheticStartupSignupRequests)
+        : Promise.resolve(requests);
       await context.route(/\/client\/sign_(ins|ups)(\?|$)/, async route => {
         requests++;
         // No account creation or real credentials; bounded fake API failure.
@@ -72,13 +88,13 @@ async function main() {
       await primary.click();
       await expect(page.getByText('Please wait…', { exact: true })).toBeVisible();
       await expect(page.getByText('Please wait…', { exact: true })).toHaveCount(0, { timeout: 20000 });
-      assert.ok(requests > 0, 'email submission must call Clerk');
+      assert.ok(await submissionCount() > 0, 'email submission must call the Clerk resource');
       await expect(primary).toBeEnabled();
       for (const name of ['Continue with Apple', 'Continue with Google']) {
-        const before = requests;
+        const before = await submissionCount();
         await page.getByRole('button', { name, exact: true }).click();
         await expect(page.getByText('Please wait…', { exact: true })).toHaveCount(0, { timeout: 20000 });
-        await expect.poll(() => requests).toBeGreaterThan(before);
+        await expect.poll(submissionCount).toBeGreaterThan(before);
         await expect(primary).toBeEnabled();
       }
       console.log(`PASS ${type}: email and both provider entry points submit and recover after errors`);

@@ -201,7 +201,7 @@ async function run() {
   );
   assert.match(
     signUpRecoveryMessage({ verifications: { emailAddress: { supportedStrategies: ['email_link'] } } }),
-    /Check your email for a link/
+    /another email verification step/
   );
   assert.equal(
     getSignUpNextStep({

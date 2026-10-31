@@ -8,6 +8,14 @@ GospelAI's native EAS builds use the user's existing external Clerk account. Do 
 
 **How to apply:** Diagnose native sign-in against the build's existing external instance, registered app scheme, and returned authentication state. Never infer the native production configuration from workspace secrets alone.
 
+## User-facing authentication errors
+
+Keep technical system details out of sign-in and account-creation screens and alerts. Retain plain-language errors and recovery actions; engineering diagnostics must be sanitized and separate from user-facing messages.
+
+**Why:** The user explicitly requested that failed authentication not show technical system reports to app users.
+
+**How to apply:** Apply this to startup failures, email authentication and provider authentication. Do not treat hiding diagnostics as evidence that the underlying native sign-in failure is fixed.
+
 ## Native network failures
 
 Keep Clerk's `rethrowOfflineNetworkErrors` enabled and treat an empty authentication status as a service failure, not as evidence that provider credentials or verification methods are missing.
