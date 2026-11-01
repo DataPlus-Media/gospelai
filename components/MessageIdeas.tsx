@@ -50,6 +50,7 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
     styles.webScrollContent,
     webContentFits ? styles.webScrollCentered : styles.webScrollStart,
   ];
+  const mobileContentStyle = [styles.scrollContent, styles.mobileScrollContent];
   const handleRailLayout = (event: { nativeEvent: { layout: { width: number } } }) => {
     setWebRailWidth(event.nativeEvent.layout.width);
   };
@@ -58,12 +59,12 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
     return (
       <View
         onLayout={Platform.OS === 'web' ? handleRailLayout : undefined}
-        style={Platform.OS === 'web' ? styles.webRail : undefined}>
+        style={Platform.OS === 'web' ? styles.webRail : styles.mobileRail}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={Platform.OS === 'web' ? styles.webScroll : undefined}
-          contentContainerStyle={Platform.OS === 'web' ? webContentStyle : styles.scrollContent}>
+          style={Platform.OS === 'web' ? styles.webScroll : styles.mobileScroll}
+          contentContainerStyle={Platform.OS === 'web' ? webContentStyle : mobileContentStyle}>
           {[0, 1, 2].map((i) => (
             <SkeletonCard key={i} />
           ))}
@@ -79,12 +80,12 @@ const MessageIdeas = ({ onSelectCard, ideas, loading }: Props) => {
   return (
     <View
       onLayout={Platform.OS === 'web' ? handleRailLayout : undefined}
-      style={Platform.OS === 'web' ? styles.webRail : undefined}>
+      style={Platform.OS === 'web' ? styles.webRail : styles.mobileRail}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={Platform.OS === 'web' ? styles.webScroll : undefined}
-        contentContainerStyle={Platform.OS === 'web' ? webContentStyle : styles.scrollContent}>
+        style={Platform.OS === 'web' ? styles.webScroll : styles.mobileScroll}
+        contentContainerStyle={Platform.OS === 'web' ? webContentStyle : mobileContentStyle}>
         {items.map((item, index) => (
           <TouchableOpacity
             key={index}
@@ -115,6 +116,19 @@ const styles = StyleSheet.create({
   },
   webScroll: {
     backgroundColor: Colors.background,
+  },
+  mobileRail: {
+    width: '100%',
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  mobileScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  mobileScrollContent: {
+    paddingTop: 4,
+    paddingBottom: 0,
   },
   webScrollContent: {
     flexGrow: 1,

@@ -1,6 +1,5 @@
 import Colors from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TextInput } from 'react-native-gesture-handler';
@@ -67,10 +66,12 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
   };
 
   return (
-    <BlurView
-      intensity={Platform.OS === 'web' ? 0 : 90}
-      tint="dark"
-      style={[{ paddingBottom: bottom, paddingTop: 10 }, Platform.OS === 'web' && styles.webBlur]}
+    <View
+      style={[
+        styles.dock,
+        { paddingBottom: bottom, paddingTop: Platform.OS === 'web' ? 10 : 4 },
+        Platform.OS === 'web' && styles.webBlur,
+      ]}
     >
       <View style={[
         styles.row,
@@ -131,11 +132,15 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
           </TouchableOpacity>
         )}
       </View>
-    </BlurView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  dock: {
+    width: '100%',
+    backgroundColor: 'transparent',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
