@@ -69,7 +69,7 @@ const MessageInput = ({ onShouldSend, onNewChat, draft, draftId, disabled }: Pro
     <View
       style={[
         styles.dock,
-        { paddingBottom: bottom, paddingTop: Platform.OS === 'web' ? 10 : 4 },
+        { paddingBottom: bottom, paddingTop: 10 },
         Platform.OS === 'web' && styles.webBlur,
       ]}
     >

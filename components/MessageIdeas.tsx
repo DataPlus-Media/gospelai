@@ -119,16 +119,19 @@ const styles = StyleSheet.create({
   },
   mobileRail: {
     width: '100%',
+    height: 108,
     flexGrow: 0,
     flexShrink: 0,
   },
   mobileScroll: {
+    height: 108,
     flexGrow: 0,
     flexShrink: 0,
   },
   mobileScrollContent: {
-    paddingTop: 4,
-    paddingBottom: 0,
+    paddingTop: 10,
+    paddingBottom: 10,
+    alignItems: 'center',
   },
   webScrollContent: {
     flexGrow: 1,
