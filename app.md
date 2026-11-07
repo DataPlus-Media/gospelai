@@ -49,6 +49,7 @@ npm run web   # Start Expo web dev server on port 5000
 - `EXPO_PUBLIC_API_BASE` - Backend Railway API URL
 - `EXPO_PUBLIC_REVOLUT_LINK_ONCE` - Payment link (one-time)
 - `EXPO_PUBLIC_REVOLUT_LINK_MONTHLY` - Payment link (monthly)
+- `EXPO_PUBLIC_REVOLUT_ELIGIBILITY_APPROVED` - Set to `true` only after Revolut confirms the voluntary-support use for GospelAI’s legal entity; web checkout stays disabled otherwise.
 
 ## Features
 

@@ -46,6 +46,7 @@ run = ["node", "scripts/server.cjs"]
 
 [userenv.shared]
 LIBRARY_STORAGE_BUCKET_ID = "replit-objstore-39f35c6c-d21a-483a-b502-9a71688abd63"
+EXPO_PUBLIC_REVOLUT_ELIGIBILITY_APPROVED = "true"
 
 [userenv.production]
 CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsuZ29zcGVsc2FpLmFwcCQ"

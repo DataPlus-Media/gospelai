@@ -49,6 +49,7 @@ npm run web   # Start Expo web dev server on port 5000
 - `EXPO_PUBLIC_API_BASE` - Backend Railway API URL
 - `EXPO_PUBLIC_REVOLUT_LINK_ONCE` - Payment link (one-time)
 - `EXPO_PUBLIC_REVOLUT_LINK_MONTHLY` - Payment link (monthly)
+- `EXPO_PUBLIC_REVOLUT_ELIGIBILITY_APPROVED` - Set to `true` only after Revolut confirms the voluntary-support use for GospelAI’s legal entity; web checkout stays disabled otherwise.
 
 ## Features
 
@@ -59,7 +60,7 @@ npm run web   # Start Expo web dev server on port 5000
 - **Daily study**: Today connects daily KJV scripture, saved reading position, seven bundled reading-plan passages, chat and library shortcuts. Bible supports local bookmarks/highlights, exact saved-verse opening, copy/notes and an editable verse-to-chat draft. Plan completion and reset are explicit. Study state stays on the device.
 - **Shared Bible DB util**: Native `utils/bibleDb.ts` opens the bundled SQLite file; `utils/bibleDb.web.ts` deserializes the bundled asset without native filesystem calls. Web SQLite needs cross-origin isolation headers, supplied by Metro in development and by the production Node server.
 - **Landing page**: `app/index.tsx` preserves free guest welcome and sign-in/register/OAuth buttons. Continue opens Today; signed-in users enter Today.
-- **Support screen**: `components/Support.tsx` (native IAP) + `components/Support.web.tsx` (web fallback). Platform-specific file resolution prevents expo-iap crash on web.
+- **Support screen**: `components/Support.tsx` (native IAP) + `components/Support.web.tsx` (web fallback). Web Revolut checkout requires confirmed legal-entity eligibility and valid HTTPS Revolut links; platform-specific file resolution prevents expo-iap crash on web.
 - **Header home button**: The GospelAI chat title returns both guests and signed-in users to Today. Chat drafts do not autofocus or auto-send; failures have a retry action.
 - **Authors insight**: Guest-accessible Christian author books, linked from the drawer/menu, Today and the Bible page (chapter or selected verse). Canonical references keep links independent of future translations. Available verified editions download through the server from private App Storage; a shared access policy locks Morning and Evening in both app and endpoint. The static web export contains no packages. Downloaded text and positions use a separate `library.db`; notes remain in `chat.db`. See `docs/authors-library.md` for package storage, access policy and native-release configuration.
 - **Drawer auth footer**: Drawer footer conditionally shows user profile (signed in) or "Sign In" / "Create Account" buttons (signed out).
