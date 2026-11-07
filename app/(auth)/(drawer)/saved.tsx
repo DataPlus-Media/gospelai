@@ -10,8 +10,8 @@ import { loadStudyNotes, removeStudyNote, saveStudyNote } from '@/utils/studyNot
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Tab = 'bookmarks' | 'notes' | 'highlights';
@@ -37,11 +37,12 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
   const db = useSQLiteContext();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { isSignedIn, getToken } = useAuth();
   const getTokenRef = useRef(getToken);
   getTokenRef.current = getToken;
   const signedInRef = useRef(!!isSignedIn);
-  const [tab, setTab] = useState<Tab>(initialTab);
+  const [category, setCategory] = useState<Tab | null>(notesOnly ? initialTab : null);
   const [items, setItems] = useState<SavedVerse[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesBook, setNotesBook] = useState('All books');
@@ -75,10 +76,7 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
   }, [db, isSignedIn]);
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
-  const visibleItems = useMemo(
-    () => items.filter(item => item.kind === (tab === 'highlights' ? 'highlight' : 'bookmark')),
-    [items, tab],
-  );
+  const tab = category ?? 'bookmarks';
   const bookmarkItems = useMemo(() => items.filter(item => item.kind === 'bookmark'), [items]);
   const highlightItems = useMemo(() => items.filter(item => item.kind === 'highlight'), [items]);
   const visibleHighlights = useMemo(
@@ -126,20 +124,34 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
     }
   }
 
-  const activeVerseItems = visibleItems;
   const listItems: SavedListItem[] = tab === 'notes'
     ? visibleNotes.map(note => ({ type: 'note', note }))
-    : activeVerseItems.map(verse => ({ type: 'verse', verse }));
+    : (tab === 'highlights' ? visibleHighlights : bookmarkItems).map(verse => ({ type: 'verse', verse }));
   const activeFilter = tab === 'notes' ? notesBook : highlightsBook;
   const emptyText = tab === 'notes'
     ? `No notes for ${notesBook === 'All books' ? 'any book' : notesBook} yet.`
     : tab === 'highlights'
       ? `No highlights for ${highlightsBook === 'All books' ? 'any book' : highlightsBook} yet.`
       : 'No bookmarks yet. Tap a verse in the Bible to bookmark it.';
-  const stackedNativeLayout = Platform.OS !== 'web' && !notesOnly;
   const modalFilter = filterTarget === 'notes' ? notesBook
     : filterTarget === 'highlights' ? highlightsBook
       : activeFilter;
+  const categories: { key: Tab; title: string; description: string; count: number; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { key: 'notes', title: 'Notes', description: 'Your personal reflections', count: notes.length, icon: 'document-text-outline' },
+    { key: 'bookmarks', title: 'Bookmarks', description: 'Verses saved for later', count: bookmarkItems.length, icon: 'bookmark-outline' },
+    { key: 'highlights', title: 'Highlights', description: 'Verses marked in your Bible', count: highlightItems.length, icon: 'color-wand-outline' },
+  ];
+  const categoryTitle = categories.find(item => item.key === category)?.title ?? 'Saved';
+  const pageWidth = width >= 900 ? 840 : width >= 600 ? 720 : undefined;
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || category === null) return;
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      setCategory(null);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [category]);
 
   const renderVerseCard = (item: SavedVerse) => (
     <View style={s.card}>
@@ -175,84 +187,72 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
     </View>
   );
 
-  const nativeBookFilter = (which: 'notes' | 'highlights', value: string) => (
-    <View style={s.nativeFilter}>
-      <Text style={s.nativeFilterLabel}>Filter {which} by Bible book</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${which === 'notes' ? 'Notes' : 'Highlights'} book filter: ${value}`}
-        onPress={() => setFilterTarget(which)} style={s.nativeFilterButton}>
-        <Text style={s.nativeFilterText}>{value}</Text>
-        <Ionicons name="chevron-down" size={18} color={Colors.textMuted} />
-      </Pressable>
-    </View>
-  );
-
   return (
     <View style={s.page}>
-      {!stackedNativeLayout && <Text style={s.hint}>
-        {isSignedIn
-          ? 'Your notes sync with your account. Bookmarks and highlights stay on this device.'
-          : 'Your notes, bookmarks and highlights are saved on this device.'}
-      </Text>}
-      {!stackedNativeLayout && !notesOnly && <View style={s.tabs}>
-        {(['bookmarks', 'notes', 'highlights'] as const).map(value => (
-          <Pressable key={value} accessibilityRole="button" accessibilityState={{ selected: tab === value }}
-            onPress={() => setTab(value)} style={[s.tab, tab === value && s.tabActive]}>
-            <Text style={[s.tabText, tab === value && s.tabTextActive]}>{value === 'bookmarks' ? 'Bookmarks' : value === 'notes' ? 'Notes' : 'Highlights'}</Text>
-          </Pressable>
-        ))}
-      </View>}
-      {tab !== 'bookmarks' && (
-        <View style={s.filterRow}>
-          <Text style={s.filterLabel}>{tab === 'notes' ? 'Notes in' : 'Highlights in'}</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel={`${tab === 'notes' ? 'Notes' : 'Highlights'} book filter: ${activeFilter}`}
-            onPress={() => setFilterTarget(tab)} style={s.filterButton}>
-            <Text style={s.filterText}>{activeFilter}</Text><Ionicons name="chevron-down" size={16} color={Colors.coralSoft} />
-          </Pressable>
-        </View>
-      )}
       {!!error && <Pressable accessibilityRole="button" onPress={() => void load()}><Text accessibilityRole="alert" style={s.error}>{error} Tap to retry.</Text></Pressable>}
-      {stackedNativeLayout ? (
-        <ScrollView style={s.nativeScroll} contentContainerStyle={s.nativeContent}>
-          <View style={s.nativePageWidth}>
-            <Text style={s.eyebrow}>YOUR STUDY COLLECTION</Text>
-            <Text style={s.nativeTitle}>Saved</Text>
-            {!filterReady ? <Text style={s.hint}>Loading saved items…</Text> : (
-              <>
-                <View style={s.nativeSection}>
-                  <View style={s.sectionHeadingRow}>
-                    <Text style={s.nativeSectionTitle}>Bookmarks</Text>
-                    <Text style={s.sectionCount}>{bookmarkItems.length}</Text>
-                  </View>
-                  {bookmarkItems.length === 0 && <Text style={s.nativeEmpty}>Bookmark a verse from the Bible to find it here.</Text>}
-                  {bookmarkItems.map(item => <View key={`${referenceOf(item)}-${item.kind}`}>{renderVerseCard(item)}</View>)}
+      {!filterReady ? <Text style={s.hint}>Loading saved items…</Text> : category === null ? (
+        <ScrollView style={s.overviewScroll} contentContainerStyle={[s.overviewContent, { maxWidth: pageWidth, paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.xl }]}>
+          <Text style={s.eyebrow}>YOUR STUDY COLLECTION</Text>
+          <Text style={s.pageTitle}>Saved</Text>
+          <Text style={s.hint}>
+            {isSignedIn
+              ? 'Your notes sync with your account. Bookmarks and highlights stay on this device.'
+              : 'Your notes, bookmarks and highlights are saved on this device.'}
+          </Text>
+          <View style={s.categoryList}>
+            {categories.map(item => (
+              <Pressable key={item.key} accessibilityRole="button" accessibilityLabel={`${item.title}, ${item.count} ${item.count === 1 ? 'item' : 'items'}`}
+                onPress={() => setCategory(item.key)} style={({ pressed }) => [s.categoryRow, pressed && s.categoryRowPressed]}>
+                <View style={s.categoryIcon}><Ionicons name={item.icon} size={21} color={Colors.coralSoft} /></View>
+                <View style={s.categoryCopy}>
+                  <Text style={s.categoryTitle}>{item.title}</Text>
+                  <Text style={s.categoryDescription}>{item.description}</Text>
                 </View>
-                <View style={s.nativeSection}>
-                  <Text style={s.nativeSectionTitle}>Notes</Text>
-                  {nativeBookFilter('notes', notesBook)}
-                  {visibleNotes.length === 0
-                    ? <Text style={s.nativeEmpty}>No notes saved in {notesBook === 'All books' ? 'any book' : notesBook}.</Text>
-                    : visibleNotes.map(note => <View key={`note-${note.id}`}>{renderNoteCard(note)}</View>)}
+                <View style={s.categoryMeta}>
+                  <Text style={s.categoryCount}>{item.count}</Text>
+                  <Text style={s.categoryCountLabel}>{item.count === 1 ? 'item' : 'items'}</Text>
                 </View>
-                <View style={s.nativeSection}>
-                  <Text style={s.nativeSectionTitle}>Highlights</Text>
-                  {nativeBookFilter('highlights', highlightsBook)}
-                  {visibleHighlights.length === 0
-                    ? <Text style={s.nativeEmpty}>No highlights saved in {highlightsBook === 'All books' ? 'any book' : highlightsBook}.</Text>
-                    : visibleHighlights.map(item => <View key={`${referenceOf(item)}-${item.kind}`}>{renderVerseCard(item)}</View>)}
-                </View>
-              </>
-            )}
+                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+              </Pressable>
+            ))}
           </View>
         </ScrollView>
-      ) : !filterReady ? <Text style={s.hint}>Loading saved items…</Text> : (
-        <FlatList
-          data={listItems}
-          keyExtractor={item => item.type === 'verse' ? `${referenceOf(item.verse)}-${item.verse.kind}` : `note-${item.note.id}`}
-          style={s.list}
-          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.lg }}
-          ListEmptyComponent={<Text style={s.empty}>{emptyText}</Text>}
-          renderItem={({ item }) => item.type === 'verse' ? renderVerseCard(item.verse) : renderNoteCard(item.note)}
-        />
+      ) : (
+        <View style={[s.categoryPage, { maxWidth: pageWidth }]}>
+          <View style={s.categoryHeader}>
+            <Pressable accessibilityRole="button" accessibilityLabel="Back to Saved" onPress={() => setCategory(null)} style={s.backButton}>
+              <Ionicons name="arrow-back" size={19} color={Colors.coralSoft} />
+              <Text style={s.backText}>Saved</Text>
+            </Pressable>
+            <Text style={s.eyebrow}>YOUR STUDY COLLECTION</Text>
+            <View style={s.categoryHeading}>
+              <Text style={s.pageTitle}>{categoryTitle}</Text>
+              <Text style={s.headingCount}>{categories.find(item => item.key === category)?.count ?? 0}</Text>
+            </View>
+            <Text style={s.hint}>
+              {isSignedIn
+                ? 'Your notes sync with your account. Bookmarks and highlights stay on this device.'
+                : 'Your notes, bookmarks and highlights are saved on this device.'}
+            </Text>
+            {tab !== 'bookmarks' && (
+              <View style={s.filterRow}>
+                <Text style={s.filterLabel}>{tab === 'notes' ? 'Notes in' : 'Highlights in'}</Text>
+                <Pressable accessibilityRole="button" accessibilityLabel={`${tab === 'notes' ? 'Notes' : 'Highlights'} book filter: ${activeFilter}`}
+                  onPress={() => setFilterTarget(tab)} style={s.filterButton}>
+                  <Text style={s.filterText}>{activeFilter}</Text><Ionicons name="chevron-down" size={16} color={Colors.coralSoft} />
+                </Pressable>
+              </View>
+            )}
+          </View>
+          <FlatList
+            data={listItems}
+            keyExtractor={item => item.type === 'verse' ? `${referenceOf(item.verse)}-${item.verse.kind}` : `note-${item.note.id}`}
+            style={s.categoryItemsList}
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.xl }}
+            ListEmptyComponent={<Text style={s.empty}>{emptyText}</Text>}
+            renderItem={({ item }) => item.type === 'verse' ? renderVerseCard(item.verse) : renderNoteCard(item.note)}
+          />
+        </View>
       )}
       <Modal visible={!!filterTarget} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setFilterTarget(null)}>
         <View style={s.filterModal}>
@@ -279,27 +279,28 @@ export function StudySavedScreen({ initialTab = 'bookmarks', notesOnly = false }
 
 const s = StyleSheet.create({
   page: { flex: 1, backgroundColor: Colors.background, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  nativeScroll: { flex: 1 },
-  nativeContent: { paddingBottom: spacing.xxl },
-  nativePageWidth: { width: '100%', maxWidth: 680, alignSelf: 'center' },
+  overviewScroll: { flex: 1, width: '100%', alignSelf: 'center' },
+  overviewContent: { width: '100%', alignSelf: 'center', paddingTop: spacing.xs },
+  categoryPage: { flex: 1, width: '100%', alignSelf: 'center' },
+  categoryHeader: { flexShrink: 0 },
+  categoryItemsList: { flex: 1, width: '100%' },
   eyebrow: { color: Colors.coralSoft, fontSize: 11, letterSpacing: 2, fontWeight: '800', marginTop: spacing.xs, marginBottom: spacing.md },
-  nativeTitle: { color: Colors.text, fontSize: 32, lineHeight: 40, fontFamily: scriptureFontFamily, marginBottom: spacing.xl },
-  nativeSection: { marginBottom: spacing.xl },
-  sectionHeadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  nativeSectionTitle: { color: Colors.text, fontSize: 20, lineHeight: 28, fontWeight: '800', marginBottom: spacing.md },
-  sectionCount: { color: Colors.textMuted, fontSize: 15, fontWeight: '700', marginTop: -spacing.md },
-  nativeEmpty: { color: Colors.textMuted, fontSize: 15, lineHeight: 23, marginTop: spacing.xs, marginBottom: spacing.sm },
-  nativeFilter: { marginTop: spacing.xs, marginBottom: spacing.md },
-  nativeFilterLabel: { color: Colors.textMuted, fontSize: 14, marginBottom: spacing.sm },
-  nativeFilterButton: { width: '100%', minHeight: 46, borderRadius: 10, paddingHorizontal: spacing.md, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.borderStrong, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  nativeFilterText: { color: Colors.text, fontSize: 16, fontWeight: '600' },
-  list: { width: '100%', maxWidth: 840, alignSelf: 'center' },
+  pageTitle: { color: Colors.text, fontSize: 32, lineHeight: 40, fontFamily: scriptureFontFamily, marginBottom: spacing.sm },
+  categoryList: { gap: spacing.md, marginTop: spacing.lg },
+  categoryRow: { minHeight: 82, paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderRadius: 16, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  categoryRowPressed: { borderColor: Colors.borderStrong, backgroundColor: Colors.plum },
+  categoryIcon: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border },
+  categoryCopy: { flex: 1, minWidth: 0 },
+  categoryTitle: { color: Colors.text, fontSize: 17, fontWeight: '800', marginBottom: 4 },
+  categoryDescription: { color: Colors.textMuted, fontSize: 13, lineHeight: 18 },
+  categoryMeta: { alignItems: 'flex-end', minWidth: 42 },
+  categoryCount: { color: Colors.text, fontSize: 19, fontWeight: '800' },
+  categoryCountLabel: { color: Colors.textMuted, fontSize: 11 },
+  backButton: { alignSelf: 'flex-start', minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingRight: spacing.md },
+  backText: { color: Colors.coralSoft, fontSize: 14, fontWeight: '700' },
+  categoryHeading: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  headingCount: { color: Colors.textMuted, fontSize: 16, fontWeight: '700', marginTop: -spacing.sm },
   hint: { width: '100%', maxWidth: 840, alignSelf: 'center', color: Colors.textMuted, lineHeight: 22, marginBottom: spacing.md },
-  tabs: { flexDirection: 'row', width: '100%', maxWidth: 840, alignSelf: 'center', gap: 7, marginBottom: spacing.md },
-  tab: { flex: 1, minHeight: 42, borderRadius: 11, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.surface },
-  tabActive: { backgroundColor: Colors.plum, borderColor: Colors.borderStrong },
-  tabText: { color: Colors.textMuted, fontWeight: '700', fontSize: 12 },
-  tabTextActive: { color: Colors.text },
   filterRow: { width: '100%', maxWidth: 840, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
   filterLabel: { color: Colors.textMuted, fontSize: 13, fontWeight: '600' },
   filterButton: { minHeight: 44, minWidth: 144, maxWidth: '65%', paddingHorizontal: 12, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },

@@ -24,6 +24,10 @@ async function main() {
     });
     await page.getByRole('button', { name: book, exact: true }).click();
   };
+  const openSavedCategory = async name => {
+    await page.getByRole('button', { name: new RegExp(`^${name}, [0-9]+ items?$`) }).click();
+  };
+  const backToSaved = async () => page.getByRole('button', { name: 'Back to Saved', exact: true }).click();
   await page.goto(base);
   await page.getByRole('button', { name: 'Start exploring. Continue without an account.', exact: true }).click();
   await page.getByText('Continue reading', { exact: true }).waitFor({ timeout: 60000 });
@@ -41,10 +45,26 @@ async function main() {
   await page.getByRole('button', { name: 'Save note' }).click();
   await page.getByText('Note saved on this device.', { exact: true }).waitFor();
   await go('/saved');
+  await page.getByRole('button', { name: 'Notes, 1 item', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Bookmarks, 1 item', exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Highlights, 1 item', exact: true }).waitFor();
+  for (const viewport of [{ width: 768, height: 1024 }, { width: 1280, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Saved overview overflows at ${viewport.width}px`);
+    await openSavedCategory('Bookmarks');
+    await page.getByText('John 3:16 · KJV · bookmark', { exact: true }).waitFor();
+    await backToSaved();
+  }
+  await page.setViewportSize({ width: 402, height: 874 });
+  await openSavedCategory('Notes');
+  await backToSaved();
+  await openSavedCategory('Bookmarks');
   await page.getByText('John 3:16 · KJV · bookmark', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Highlights', exact: true }).click();
+  await backToSaved();
+  await openSavedCategory('Highlights');
   await page.getByText('John 3:16 · KJV · highlight', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Bookmarks', exact: true }).click();
+  await backToSaved();
+  await openSavedCategory('Bookmarks');
   await page.getByRole('button', { name: 'Read John 3:16', exact: true }).first().click();
   await verseButton('John 3:16').waitFor();
   await page.waitForFunction(() => {
@@ -95,23 +115,45 @@ async function main() {
   await page.getByRole('button', { name: 'Save note changes' }).click();
   await page.getByText('Edited John 3:16 reflection', { exact: true }).waitFor();
   await go('/saved');
-  await page.getByRole('button', { name: 'Highlights', exact: true }).click();
+  await openSavedCategory('Highlights');
   await chooseBook('Highlights book filter: All books', 'Romans');
   await go('/today');
   await go('/saved');
-  await page.getByRole('button', { name: 'Highlights', exact: true }).click();
+  await openSavedCategory('Highlights');
   await page.getByRole('button', { name: 'Highlights book filter: Romans' }).waitFor();
-  await page.getByRole('button', { name: 'Bookmarks', exact: true }).click();
+  await backToSaved();
+  await openSavedCategory('Bookmarks');
   await page.getByRole('button', { name: 'Remove bookmark for John 3:16' }).click();
-  await page.getByRole('button', { name: 'Highlights', exact: true }).click();
+  await backToSaved();
+  await openSavedCategory('Highlights');
+  await chooseBook('Highlights book filter: Romans', 'All books');
   await page.getByRole('button', { name: 'Remove highlight for John 3:16' }).click();
+  await chooseBook('Highlights book filter: All books', 'Romans');
   await page.getByText('No highlights for Romans yet.', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Notes', exact: true }).first().click();
+  await backToSaved();
+  await openSavedCategory('Notes');
   await page.getByRole('button', { name: 'Delete note for John 3:16' }).click();
   await page.getByText('No notes for John yet.', { exact: true }).waitFor();
   await go('/saved');
-  await page.getByRole('button', { name: 'Bookmarks', exact: true }).click();
+  await openSavedCategory('Bookmarks');
   await page.getByText(/No bookmarks yet\./).waitFor();
+  for (const viewport of [{ width: 402, height: 874 }, { width: 768, height: 1024 }, { width: 1280, height: 900 }]) {
+    await page.setViewportSize(viewport);
+    await backToSaved();
+    await page.getByRole('button', { name: 'Notes, 0 items', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Bookmarks, 0 items', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Highlights, 0 items', exact: true }).waitFor();
+    await openSavedCategory('Notes');
+    await page.getByText('No notes for John yet.', { exact: true }).waitFor();
+    await backToSaved();
+    await openSavedCategory('Highlights');
+    await page.getByText('No highlights for Romans yet.', { exact: true }).waitFor();
+    await backToSaved();
+    await openSavedCategory('Bookmarks');
+    await page.getByText(/No bookmarks yet\./).waitFor();
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `Saved pages overflow at ${viewport.width}px`);
+  }
+  await page.setViewportSize({ width: 402, height: 874 });
   console.log('PASS note editing/deletion, independent saved filters and explicit bookmark/highlight removals');
   await go('/today');
   await page.getByRole('button', { name: 'Continue reading John 3:16', exact: true }).waitFor();
@@ -167,8 +209,11 @@ async function main() {
   await page.getByRole('link', { name: 'Open Matthew 10:2 in Bible' }).click();
   await verseButton('Matthew 10:2').waitFor();
   await go('/saved');
+  await openSavedCategory('Bookmarks');
   await page.getByText('Matthew 10:2 · KJV · bookmark', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Highlights', exact: true }).click();
+  await backToSaved();
+  await openSavedCategory('Highlights');
+  await chooseBook('Highlights book filter: Romans', 'All books');
   await page.getByText('Matthew 10:2 · KJV · highlight', { exact: true }).waitFor();
   console.log('PASS Matthew 10:2 stays canonical through book/chapter choice, bookmark, highlight, Authors insight, chat, copy, and note');
 
