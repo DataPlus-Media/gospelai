@@ -19,6 +19,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 
 import { Ionicons } from '@expo/vector-icons';
@@ -61,6 +62,8 @@ function parseSimpleRef(refRaw: string | undefined): {
 
 export default function BibleScreen() {
   const { ref: refParam, jump, planDay } = useLocalSearchParams<{ ref?: string; jump?: string; planDay?: string }>();
+  const { width: viewportWidth } = useWindowDimensions();
+  const compactPhoneLayout = viewportWidth <= 600;
   const appDb = useSQLiteContext();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -398,11 +401,11 @@ export default function BibleScreen() {
 
   return (
     <View style={styles.page}>
-      <View style={styles.pageIntro}>
-        <Text style={{ color: Colors.textMuted }}>King James Version · Bible text · available offline on this device</Text>
-        <Text style={{ color: Colors.textMuted }}>Tap a verse to bookmark it, highlight it, save a note, open Authors insight, or start a chat.</Text>
+      <View style={[styles.pageIntro, compactPhoneLayout && styles.phonePageIntro]}>
+        <Text style={[{ color: Colors.textMuted }, compactPhoneLayout && styles.phoneIntroText]}>King James Version · Bible text · available offline on this device</Text>
+        <Text style={[{ color: Colors.textMuted }, compactPhoneLayout && styles.phoneIntroText]}>Tap a verse to bookmark it, highlight it, save a note, open Authors insight, or start a chat.</Text>
         <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Open Authors insight for ${bookName} ${chapter}`}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: 44, paddingVertical: 12 }}
+          style={[{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start', minHeight: 44, paddingVertical: 12 }, compactPhoneLayout && styles.phoneIntroLink]}
           onPress={() => router.push({ pathname: '/(auth)/(drawer)/library', params: {
             book: String(BOOK_NAME_TO_ID[bookName]), chapter: String(chapter), jump: String(Date.now()),
           } })}>
@@ -457,7 +460,7 @@ export default function BibleScreen() {
         ListHeaderComponent={
           <View style={{ backgroundColor: Colors.surfaceSubtle }} onLayout={event => { headerHeight.current = event.nativeEvent.layout.height; }}>
             {/* Controls */}
-            <View style={styles.controls}>
+            <View style={[styles.controls, compactPhoneLayout && styles.phoneControls]}>
               {/* Book (opens searchable picker) */}
               <View style={styles.field}>
                 <Text style={styles.label}>Book</Text>
@@ -507,7 +510,7 @@ export default function BibleScreen() {
                   <Text style={styles.versionText}>KJV</Text>
                 </Pressable>
               </View>
-              <View style={styles.fontControls}>
+              <View style={[styles.fontControls, compactPhoneLayout && styles.phoneFontControls]}>
                 <Text style={styles.label}>Text size</Text>
                 <View style={styles.fontControlRow}>
                   <Pressable accessibilityRole="button" accessibilityLabel="Decrease Bible text size" disabled={fontSize <= 14}
@@ -522,7 +525,7 @@ export default function BibleScreen() {
                 </View>
               </View>
               {/* In-chapter search */}
-              <View style={styles.chapterSearch}>
+              <View style={[styles.chapterSearch, compactPhoneLayout && styles.phoneChapterSearch]}>
                 <Text style={styles.label}>Find in chapter</Text>
                 <TextInput
                   accessibilityLabel="Find words in this chapter"
@@ -535,7 +538,7 @@ export default function BibleScreen() {
             </View>
 
             {/* Section heading */}
-            <Text style={[styles.heading, { paddingHorizontal: 14 }]}>
+            <Text style={[styles.heading, { paddingHorizontal: 14 }, compactPhoneLayout && styles.phoneHeading]}>
               {bookName} {chapter}
             </Text>
           </View>
@@ -789,6 +792,18 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     gap: 4,
   },
+  phonePageIntro: {
+    paddingVertical: 4,
+    gap: 2,
+  },
+  phoneIntroText: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  phoneIntroLink: {
+    minHeight: 36,
+    paddingVertical: 4,
+  },
   listContent: {
     width: '100%',
     maxWidth: 960,
@@ -808,9 +823,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'flex-end',
   },
+  phoneControls: {
+    paddingHorizontal: 12,
+    paddingTop: 6,
+    paddingBottom: 8,
+    gap: 6,
+  },
   field: { flex: 1, minWidth: 140 },
   fieldSmall: { width: 84 },
   fontControls: { minWidth: 128 },
+  phoneFontControls: { minWidth: 128 },
   fontControlRow: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 6 },
   fontButton: { minWidth: 40, minHeight: 40, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceRaised, alignItems: 'center', justifyContent: 'center' },
   fontButtonText: { color: Colors.text, fontWeight: '800', fontSize: 14 },
@@ -819,11 +841,16 @@ const styles = StyleSheet.create({
   versionChoice: { height: 44, justifyContent: 'center', paddingHorizontal: 12 },
   versionText: { color: Colors.text, fontSize: 14, fontWeight: '700' },
   chapterSearch: { width: '100%' },
+  phoneChapterSearch: { width: 'auto', flex: 1, minWidth: 150 },
   label: {
     fontSize: 12,
     color: Colors.textMuted,
     marginBottom: 6,
     fontWeight: '600',
+  },
+  phoneHeading: {
+    marginTop: 8,
+    marginBottom: 6,
   },
   selectLike: {
     borderRadius: 12,
