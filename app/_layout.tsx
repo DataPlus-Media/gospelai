@@ -1,3 +1,70 @@
+import { Redirect } from 'expo-router';
+import { Platform } from 'react-native';
+import MarketingSite from '@/components/marketing/MarketingSite';
+
+export default function FeaturesRoute() {
+  return Platform.OS === 'web' ? (
+    <MarketingSite page="features" />
+  ) : (
+    <Redirect href="/" />
+  );
+}
+
+Stephen Omitogun
+08:35
+import { Redirect } from 'expo-router';
+import { Platform } from 'react-native';
+import MarketingSite from '@/components/marketing/MarketingSite';
+
+export default function AskRoute() {
+  return Platform.OS === 'web' ? (
+    <MarketingSite page="ask" />
+  ) : (
+    <Redirect href="/" />
+  );
+}
+
+Stephen Omitogun
+08:37
+import { Redirect } from 'expo-router';
+import { Platform } from 'react-native';
+import MarketingSite from '@/components/marketing/MarketingSite';
+
+export default function AuthorsInsightRoute() {
+  return Platform.OS === 'web' ? (
+    <MarketingSite page="authors" />
+  ) : (
+    <Redirect href="/" />
+  );
+}
+import { Redirect } from 'expo-router';
+import { Platform } from 'react-native';
+import MarketingSite from '@/components/marketing/MarketingSite';
+
+export default function AuthorsInsightRoute() {
+  return Platform.OS === 'web' ? (
+    <MarketingSite page="authors" />
+  ) : (
+    <Redirect href="/" />
+  );
+}
+
+Stephen Omitogun
+08:39
+import { Redirect } from 'expo-router';
+import { Platform } from 'react-native';
+import MarketingSite from '@/components/marketing/MarketingSite';
+
+export default function SupportRoute() {
+  return Platform.OS === 'web' ? (
+    <MarketingSite page="support" />
+  ) : (
+    <Redirect href="/" />
+  );
+}
+
+Stephen Omitogun
+08:46
 import { ClerkProvider, useAuth } from '@clerk/clerk-expo';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
@@ -49,13 +116,17 @@ const InitialLayout = () => {
 
   useEffect(() => {
     const first: string | undefined = (segments as string[])[0];
-    const destination = entryRedirect(isLoaded, isSignedIn, first);
+    const destination = entryRedirect(isLoaded, isSignedIn, first, Platform.OS === 'web');
     if (destination) router.replace(destination);
   }, [isLoaded, isSignedIn, segments, router]);
 
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      {Platform.OS === 'web' && <Stack.Screen name="features" options={{ headerShown: false }} />}
+      {Platform.OS === 'web' && <Stack.Screen name="ask" options={{ headerShown: false }} />}
+      {Platform.OS === 'web' && <Stack.Screen name="authors-insight" options={{ headerShown: false }} />}
+      {Platform.OS === 'web' && <Stack.Screen name="support" options={{ headerShown: false }} />}
 
       <Stack.Screen
         name="login"
