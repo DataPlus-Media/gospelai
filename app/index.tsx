@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import {
   Animated,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { welcomeStyles as styles } from '@/components/welcome/styles';
 import { useWelcomeMotion } from '@/hooks/useWelcomeMotion';
 import Colors from '@/constants/Colors';
+import MarketingSite from '@/components/marketing/MarketingSite';
 
 const FEATURES = [
   {
@@ -46,6 +48,13 @@ const FEATURES = [
 const WELCOME_ROUTE = '/(auth)/(drawer)/today' as const;
 
 export default function Index() {
+  if (Platform.OS === 'web') {
+    return <MarketingSite page="home" />;
+  }
+  return <NativeWelcome />;
+}
+
+export function NativeWelcome() {
   const { bottom, left, right, top } = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
   const router = useRouter();
@@ -155,7 +164,7 @@ export default function Index() {
                   { transform: [{ translateY: entrance[index] }] },
                 ]}
               >
-                <View style={[styles.iconWrap, { backgroundColor: `${feature.iconColor}17` }]}>
+                <View style={[styles.iconWrap, { backgroundColor: ${feature.iconColor}17 }]}>
                   <Ionicons name={feature.icon} size={20} color={feature.iconColor} />
                 </View>
                 <View style={styles.featureCopy}>
