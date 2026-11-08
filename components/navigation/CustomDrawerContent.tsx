@@ -174,6 +174,12 @@ export default function CustomDrawerContent(props: any) {
   };
 
   const openWelcomePage = () => {
+    if (Platform.OS === 'web') {
+      Keyboard.dismiss();
+      props.navigation.dispatch(DrawerActions.closeDrawer());
+      router.replace('/');
+      return;
+    }
     if (welcomeRoute) navigateToRoute('welcome', welcomeRoute.key);
   };
 
@@ -362,7 +368,7 @@ export default function CustomDrawerContent(props: any) {
           <Pressable
             onPress={openWelcomePage}
             accessibilityRole="button"
-            accessibilityLabel="Open welcome page"
+            accessibilityLabel={Platform.OS === 'web' ? 'Open home page' : 'Open welcome page'}
             accessibilityState={{ selected: activeRoute === 'welcome' }}
             {...(Platform.OS === 'web' ? { 'aria-current': activeRoute === 'welcome' ? 'page' : undefined } : {})}
             style={({ pressed }) => [

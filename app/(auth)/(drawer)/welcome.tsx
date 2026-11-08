@@ -1,5 +1,8 @@
-import Index from '../../index';
+import { NativeWelcome } from '../../index';
+import { Redirect } from 'expo-router';
+import { Platform } from 'react-native';
 
 export default function Welcome() {
-  return <Index />;
+  if (Platform.OS === 'web') return <Redirect href="/" />;
+  return <NativeWelcome />;
 }

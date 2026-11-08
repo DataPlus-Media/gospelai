@@ -77,6 +77,12 @@ async function main() {
   assert.equal(nav.entryRedirect(true, false, '(auth)'), null);
   assert.equal(nav.entryRedirect(true, false, 'login'), null);
   assert.equal(nav.entryRedirect(true, false, 'unknown'), '/');
+  for (const route of ['index', 'features', 'ask', 'authors-insight', 'support', 'login']) {
+    assert.equal(nav.entryRedirect(true, false, route, true), null);
+    assert.equal(nav.entryRedirect(true, true, route, true), null);
+  }
+  assert.equal(nav.entryRedirect(true, false, 'unknown', true), '/');
+  assert.equal(nav.entryRedirect(true, true, '(auth)', true), null);
   console.log('PASS guest/signed-in entry routing and no app redirect loop');
 
   for (const version of [0, 1, 2]) {

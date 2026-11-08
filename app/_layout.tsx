@@ -49,13 +49,17 @@ const InitialLayout = () => {
 
   useEffect(() => {
     const first: string | undefined = (segments as string[])[0];
-    const destination = entryRedirect(isLoaded, isSignedIn, first);
+    const destination = entryRedirect(isLoaded, isSignedIn, first, Platform.OS === 'web');
     if (destination) router.replace(destination);
   }, [isLoaded, isSignedIn, segments, router]);
 
   return (
     <Stack>
       <Stack.Screen name="index" options={{ headerShown: false }} />
+      {Platform.OS === 'web' && <Stack.Screen name="features" options={{ headerShown: false }} />}
+      {Platform.OS === 'web' && <Stack.Screen name="ask" options={{ headerShown: false }} />}
+      {Platform.OS === 'web' && <Stack.Screen name="authors-insight" options={{ headerShown: false }} />}
+      {Platform.OS === 'web' && <Stack.Screen name="support" options={{ headerShown: false }} />}
 
       <Stack.Screen
         name="login"

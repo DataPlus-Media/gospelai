@@ -77,14 +77,14 @@ async function main() {
     console.log('PASS GospelAI logo returns to Today from Bible and chat');
 
     await open();
-    await button('Open welcome page').click();
-    await page.waitForURL(url => url.pathname === '/welcome');
-    await button('Start exploring. Continue without an account.').waitFor();
-    await button('Start exploring. Continue without an account.').click();
+    await button('Open home page').click();
+    await page.waitForURL(url => url.pathname === '/');
+    await page.getByRole('heading', { name: /Read Scripture/ }).waitFor();
+    await page.locator('footer a[href="/today"]').click();
     await page.waitForURL(url => url.pathname === '/today');
     await page.getByText('Continue reading', { exact: true }).first().waitFor();
     await button('Open navigation').waitFor();
-    console.log('PASS Welcome page drawer route returns guests to Today');
+    console.log('PASS public homepage drawer link and return to Today');
 
     await open();
     await button('Start a new conversation').click();
