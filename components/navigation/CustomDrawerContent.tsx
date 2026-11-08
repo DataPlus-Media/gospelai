@@ -52,7 +52,7 @@ export default function CustomDrawerContent(props: any) {
   const { user } = useUser();
   const displayName =
     (user?.firstName || user?.lastName
-      ? `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()
+      ? ${user?.firstName ?? ''} ${user?.lastName ?? ''}.trim()
       : user?.username) ||
     user?.primaryEmailAddress?.emailAddress ||
     'Account';
@@ -174,12 +174,18 @@ export default function CustomDrawerContent(props: any) {
   };
 
   const openWelcomePage = () => {
+    if (Platform.OS === 'web') {
+      Keyboard.dismiss();
+      props.navigation.dispatch(DrawerActions.closeDrawer());
+      router.replace('/');
+      return;
+    }
     if (welcomeRoute) navigateToRoute('welcome', welcomeRoute.key);
   };
 
   const openChat = (chat: Chat) => {
     Keyboard.dismiss();
-    router.push(`/(auth)/(drawer)/(chat)/${chat.id}`);
+    router.push(/(auth)/(drawer)/(chat)/${chat.id});
     props.navigation.dispatch(DrawerActions.closeDrawer());
   };
 
@@ -314,7 +320,7 @@ export default function CustomDrawerContent(props: any) {
                     onPress={() => openChat(chat)}
                     onLongPress={() => onRowLongPress(chat)}
                     accessibilityRole="button"
-                    accessibilityLabel={`${chat.title}. Hold for conversation options.`}
+                    accessibilityLabel={${chat.title}. Hold for conversation options.}
                     accessibilityState={{ selected }}
                     {...(Platform.OS === 'web' ? { 'aria-current': selected ? 'page' : undefined } : {})}
                     style={({ pressed }) => [
@@ -337,7 +343,7 @@ export default function CustomDrawerContent(props: any) {
                         onRowLongPress(chat);
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={`Options for ${chat.title}`}
+                      accessibilityLabel={Options for ${chat.title}}
                       hitSlop={9}
                       style={styles.chatMore}
                     >
@@ -362,7 +368,7 @@ export default function CustomDrawerContent(props: any) {
           <Pressable
             onPress={openWelcomePage}
             accessibilityRole="button"
-            accessibilityLabel="Open welcome page"
+            accessibilityLabel={Platform.OS === 'web' ? 'Open home page' : 'Open welcome page'}
             accessibilityState={{ selected: activeRoute === 'welcome' }}
             {...(Platform.OS === 'web' ? { 'aria-current': activeRoute === 'welcome' ? 'page' : undefined } : {})}
             style={({ pressed }) => [
@@ -411,7 +417,7 @@ export default function CustomDrawerContent(props: any) {
           <Link href="/(auth)/(modal)/settings" asChild>
             <TouchableOpacity
               accessibilityRole="button"
-              accessibilityLabel={`${displayName}, account settings`}
+              accessibilityLabel={${displayName}, account settings}
               style={styles.accountCard}
             >
               <UserAvatar
