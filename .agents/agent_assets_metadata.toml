@@ -378,3 +378,73 @@ mtime_ms = 1794309283118
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/9d5107e7-b086-4086-9c90-34a699655de8/26577c95-86c7-48f0-ba29-4e506ee9ada6"
 storage_version_token = "1794309301718790"
 content_type = "image/png"
+
+[[outputs]]
+id = "E1g2MWwhbmQujZ7rjv6AT"
+uri = "file://assets/store-listing/google-play-phone-screenshots/google-play-phone-01-today.png"
+type = "image"
+title = "Google Play screenshot — Today"
+description = "1476 × 2624 PNG, portrait 9:16, ready for Play Console."
+logical_id = "43e69cfa-619d-4693-8c31-846d696916e1"
+content_hash = "sha256:92f071b028dbbe6b032e69a9d94f19be0c220c855a6db6dc6c8bd2a7cbd135f2"
+size = 718340
+mtime_ms = 1794309877431
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/43e69cfa-619d-4693-8c31-846d696916e1/fbba3f3a-0f42-43b4-8227-c5d9d54cacba"
+storage_version_token = "1794309909404046"
+content_type = "image/png"
+
+[[outputs]]
+id = "RJMQ7Ru4lMn-YPJR0YqTQ"
+uri = "file://assets/store-listing/google-play-phone-screenshots/google-play-phone-02-bible.png"
+type = "image"
+title = "Google Play screenshot — Bible"
+description = "1476 × 2624 PNG, portrait 9:16, ready for Play Console."
+logical_id = "d9189d3b-3372-46d8-b144-d61b8c6818cb"
+content_hash = "sha256:9a6de58f4306588ce80d68adb9a5cb603d805888e328489003b1d51890f0b7fb"
+size = 978616
+mtime_ms = 1794309878443
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/d9189d3b-3372-46d8-b144-d61b8c6818cb/987702a5-d035-4e63-a261-47ca6c91c09f"
+storage_version_token = "1794309910345542"
+content_type = "image/png"
+
+[[outputs]]
+id = "Ard9NjySq9lyHwonFfomO"
+uri = "file://assets/store-listing/google-play-phone-screenshots/google-play-phone-03-ask-gospelai.png"
+type = "image"
+title = "Google Play screenshot — Ask GospelAI"
+description = "1476 × 2624 PNG, portrait 9:16, ready for Play Console."
+logical_id = "a887ba95-ce1e-4de7-92cd-65a01d60a984"
+content_hash = "sha256:6ad4c4fb2a83642c841a15b4a19db9bc6c060730d6996e97fb31087eda2cad50"
+size = 436732
+mtime_ms = 1794309879233
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/a887ba95-ce1e-4de7-92cd-65a01d60a984/8e8fc19c-7ade-450d-8164-202666716144"
+storage_version_token = "1794309911140200"
+content_type = "image/png"
+
+[[outputs]]
+id = "bzg4Yw1EiJQ9c6lPNmNfD"
+uri = "file://assets/store-listing/google-play-phone-screenshots/google-play-phone-04-authors-insight.png"
+type = "image"
+title = "Google Play screenshot — Authors’ insights"
+description = "1476 × 2624 PNG, portrait 9:16, ready for Play Console."
+logical_id = "66e6bd4f-ed75-4372-bad5-1b2a5fe5e448"
+content_hash = "sha256:c73104d6d8046f8d76644193e5489f882656dfb5d35e6c5af8016f09b80b5e7b"
+size = 845749
+mtime_ms = 1794309880211
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/66e6bd4f-ed75-4372-bad5-1b2a5fe5e448/4da2aad1-b8aa-472a-b70f-207fb2fd8457"
+storage_version_token = "1794309911976801"
+content_type = "image/png"
+
+[[outputs]]
+id = "gp4u0b1xiFdNXm7ohRgx5"
+uri = "file://assets/store-listing/google-play-phone-screenshots/google-play-phone-05-saved.png"
+type = "image"
+title = "Google Play screenshot — Saved collection"
+description = "1476 × 2624 PNG, portrait 9:16, ready for Play Console."
+logical_id = "223386b7-6682-4f75-9386-6981c192e48c"
+content_hash = "sha256:a78f008aea43671c6db2997d16e8ff96351004dd95ee6ed4ac6835b111a93475"
+size = 421433
+mtime_ms = 1794309880922
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/223386b7-6682-4f75-9386-6981c192e48c/1a69e5e1-32ca-4d76-81d8-9dab44f883f7"
+storage_version_token = "1794309912816543"
+content_type = "image/png"
