@@ -350,3 +350,31 @@ mtime_ms = 1793041891661
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/82b05336-f1df-4b66-b548-bb7e45c6e946/1db5c044-9ee2-4dc6-810c-8c762f133d4e"
 storage_version_token = "1793041916086252"
 content_type = "image/jpeg"
+
+[[outputs]]
+id = "dKsGOLo1e-PBsAqhJP43D"
+uri = "file://assets/store-listing/google-play-icon-512.png"
+type = "image"
+title = "Google Play app icon"
+description = "512 × 512 PNG app icon ready for Play Console upload."
+logical_id = "70f372ee-e555-4739-bf13-2f480e0f65ea"
+content_hash = "sha256:1066bbad5e9be567bf777d9fc0edad196fcc3c0fc54eddd567f502e05fb1919a"
+size = 98912
+mtime_ms = 1794309281363
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/70f372ee-e555-4739-bf13-2f480e0f65ea/93ee1efc-c742-4819-8d81-03058ca1df7f"
+storage_version_token = "1794309300862383"
+content_type = "image/png"
+
+[[outputs]]
+id = "QRBbICaA0fvhuujRlX2_n"
+uri = "file://assets/store-listing/google-play-featured-1024x500.png"
+type = "image"
+title = "Google Play featured graphic"
+description = "1024 × 500 PNG featured graphic ready for Play Console upload."
+logical_id = "9d5107e7-b086-4086-9c90-34a699655de8"
+content_hash = "sha256:4f26243b630bba8732fd7d8d641601f29d8e1fd4faa736a94b46973adbf9de1a"
+size = 533685
+mtime_ms = 1794309283118
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:da131515-796b-4e0f-8bb8-e161d15ad755/9d5107e7-b086-4086-9c90-34a699655de8/26577c95-86c7-48f0-ba29-4e506ee9ada6"
+storage_version_token = "1794309301718790"
+content_type = "image/png"
